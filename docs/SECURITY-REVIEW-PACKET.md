@@ -27,6 +27,10 @@ Review the exact Git commit, lockfile, manifest digest and build evidence togeth
   rejects changed code, pointers, admins or metadata. Neither standard slots nor two caller samples prove
   actual delegatecall paths, all caller behavior, governance or standard token semantics.
 - The injected-wallet harness and browser fixtures do not prove the actual TapeOut/OKX Wallet combination.
+- Wallet connection requests now have application cancellation/generation checks. A late result cannot
+  override another selected wallet or reopen a closed picker. Chain/account responses and discovery
+  metadata are bounded and validated; permission events are checked against subsequent reads.
+  Aborting does not cancel an extension's underlying request or permission dialog.
 - Remaining npm findings are not dismissed by tree-shaking or use of an injected signer.
 
 ## Evidence Commands

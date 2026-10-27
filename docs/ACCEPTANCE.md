@@ -27,6 +27,13 @@ Use the separately documented deployment/fork commands for network evidence. Kee
 
 ## Browser Matrix
 
+The production wallet selection regression cases cover competing pending connections, closing the
+picker before a response, and malformed account responses. Providers are explicit injected fixtures.
+The unit/DOM cases additionally cover immediate application-side abort cleanup, stale errors,
+unmount, account/chain changes during authorization, strict response validation, and bounded
+discovery. Cancelling in TapeExit discards the application request; it cannot dismiss an extension's
+own permission window. This does not replace actual target-wallet acceptance.
+
 After building production and installing the matching Chromium:
 
 ```sh

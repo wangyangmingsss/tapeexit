@@ -10,18 +10,18 @@ describe('wallet signing boundary', () => {
     let chain = '0x1';
     const request = vi.fn(async ({ method }: { method: string }) => {
       if (method === 'wallet_switchEthereumChain') { chain = '0xc4'; return null; }
-      return method === 'eth_chainId' ? chain : method === 'eth_requestAccounts' ? [DEMO_OWNER] : null;
+      return method === 'eth_chainId' ? chain : ['eth_requestAccounts', 'eth_accounts'].includes(method) ? [DEMO_OWNER] : null;
     });
     expect(await connect({ request }, CHAIN_ID)).toBe(DEMO_OWNER);
     expect(request.mock.calls.map(([p]) => p.method)).toEqual([
-      'eth_chainId', 'wallet_switchEthereumChain', 'eth_chainId', 'eth_requestAccounts', 'eth_chainId',
+      'eth_chainId', 'wallet_switchEthereumChain', 'eth_chainId', 'eth_requestAccounts', 'eth_chainId', 'eth_accounts', 'eth_chainId',
     ]);
   });
   it('rejects a network change while account access is being requested', async () => {
     let chain = '0xc4';
     const request = vi.fn(async ({ method }: { method: string }) => {
       if (method === 'eth_requestAccounts') { chain = '0x1'; return [DEMO_OWNER]; }
-      return chain;
+      return method === 'eth_accounts' ? [DEMO_OWNER] : chain;
     });
     await expect(connect({ request }, CHAIN_ID)).rejects.toMatchObject({ code: 'WALLET_CHANGED' });
   });

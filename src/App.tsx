@@ -102,6 +102,8 @@ export default function App() {
   const [wallet, setWallet] = useState<Wallet>();
   const [account, setAccount] = useState<Address>();
   const [walletPicker, setWalletPicker] = useState(false);
+  const [connectingWallet, setConnectingWallet] = useState<string>();
+  const walletConnection = useRef<{ controller: AbortController; id: string } | undefined>(undefined);
   const [tokenId, setTokenId] = useState(DEMO ? '28491' : '');
   const [positionPage, setPositionPage] = useState<PositionPage>();
   const [discovering, setDiscovering] = useState(false);
@@ -171,6 +173,12 @@ export default function App() {
     generation.current++; setPlan(undefined); setPreview(undefined); setAccepted(false);
     if (!txLock.current) setStage(snapshot ? 'ready' : 'idle');
   }
+  function closeWalletPicker() {
+    walletConnection.current?.controller.abort();
+    walletConnection.current = undefined;
+    setConnectingWallet(undefined); setWalletPicker(false);
+  }
+  useEffect(() => () => { walletConnection.current?.controller.abort(); }, []);
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   }, [lang]);
@@ -214,7 +222,7 @@ export default function App() {
     const controls = () => Array.from(dialog?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], select') || []);
     controls()[0]?.focus();
     const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setWalletPicker(false); setDetailsOpen(false); }
+      if (event.key === 'Escape') { closeWalletPicker(); setDetailsOpen(false); }
       if (event.key !== 'Tab') return;
       const items = controls();
       const first = items[0], last = items.at(-1);
@@ -225,6 +233,7 @@ export default function App() {
     return () => { document.removeEventListener('keydown', handler); previous?.focus(); };
   }, [walletPicker, detailsOpen]);
   useEffect(() => wallet ? observeWallet(wallet.provider, () => {
+    walletConnection.current?.controller.abort();
     generation.current++; setAccount(undefined); setPlan(undefined); setPreview(undefined); setAccepted(false);
     if (!txLock.current && !submittedPlan.current) setStage('idle');
     setError(lang === 'zh' ? '钱包账户、网络或连接发生变化，请重新连接和核对。' : 'Wallet changed. Reconnect and review again.');
@@ -239,6 +248,8 @@ export default function App() {
       4200: '钱包不支持所请求的方法，请更换兼容钱包。',
       4900: '钱包已断开，请重新连接。',
       4901: '钱包未连接到 X Layer，请检查网络。',
+      WALLET_RESPONSE: '钱包返回的数据无效，已停止连接或发送，请检查钱包。',
+      WALLET_CHANGED: '钱包账户或网络已变化，请重新连接并核对。',
       EMPTY: '当前没有可执行的退出或领取数量。', DUST: '最低输出因金额过小而归零，暂不支持。',
       SUBMISSION_LOCK: '另一个标签页正在处理交易，或浏览器不支持发送互斥。',
       SUBMISSION_STORAGE: '无法可靠保存待处理状态，已停止发送。请检查浏览器存储。',
@@ -379,7 +390,7 @@ export default function App() {
     } catch (e) {
       showError(e);
       if (requested && (e as { code?: number })?.code !== 4001 &&
-          !(e instanceof ExitError && ['WALLET_CHANGED', 'STALE', 'SUBMISSION_LOCK',
+          !(e instanceof ExitError && ['WALLET_CHANGED', 'WALLET_RESPONSE', 'STALE', 'SUBMISSION_LOCK',
             'SUBMISSION_BLOCKED', 'SUBMISSION_STORAGE', 'ENTRY_CHANGED'].includes(e.code))) {
         setStage('unknown');
       } else { setStage('ready'); txLock.current = false; }
@@ -391,9 +402,22 @@ export default function App() {
     return () => clearInterval(timer);
   }, [hash, plan, stage]);
   async function chooseWallet(w: Wallet) {
-    setError('');
-    try { setAccount(await connect(w.provider, CHAIN_ID)); setWallet(w); setWalletPicker(false); invalidate(); }
-    catch (e) { showError(e); }
+    if (walletConnection.current?.id === w.id) return;
+    walletConnection.current?.controller.abort();
+    const controller = new AbortController();
+    walletConnection.current = { controller, id: w.id };
+    setConnectingWallet(w.id); setError('');
+    setAccount(undefined); setWallet(undefined); invalidate();
+    try {
+      const connected = await connect(w.provider, CHAIN_ID, controller.signal);
+      if (controller.signal.aborted || walletConnection.current?.controller !== controller) return;
+      setAccount(connected); setWallet(w); setWalletPicker(false); invalidate();
+    } catch (e) { if (!controller.signal.aborted) showError(e); }
+    finally {
+      if (walletConnection.current?.controller === controller) {
+        walletConnection.current = undefined; setConnectingWallet(undefined);
+      }
+    }
   }
   async function checkSubmission() {
     if (submissionCheckLock.current) return;
@@ -589,7 +613,7 @@ export default function App() {
       if (txLock.current) { setError(t.unknown); e.target.value = ''; return; }
       try { if (file.size > 16000) throw new Error('Recovery card too large'); const card = importRecoveryCard(await file.text()); if (card.tokenIds[0]) { setTokenId(card.tokenIds[0]); setSnapshot(undefined); invalidate(); setTab('exit'); } } catch (err) { showError(err); } e.target.value = '';
     }} />
-    {walletPicker && <div className="modal-overlay" onClick={() => setWalletPicker(false)}><section className="modal wallet-modal" role="dialog" aria-modal="true" aria-label={t.connect} onClick={e => e.stopPropagation()}><div className="section-top"><h2>{t.connect}</h2><button className="icon-button" aria-label="Close" onClick={() => setWalletPicker(false)}><X size={20} /></button></div>{wallets.length ? wallets.map(w => <button key={w.id} className="wallet-choice" onClick={() => void chooseWallet(w)}><WalletIcon size={22} />{w.name}<ArrowRight size={17} /></button>) : <p>{lang === 'zh' ? '未发现注入钱包。请安装兼容的浏览器钱包后刷新。' : 'No injected wallet found. Install a compatible browser wallet, then refresh.'}</p>}</section></div>}
+    {walletPicker && <div className="modal-overlay" onClick={closeWalletPicker}><section className="modal wallet-modal" role="dialog" aria-modal="true" aria-label={t.connect} onClick={e => e.stopPropagation()}><div className="section-top"><h2>{t.connect}</h2><button className="icon-button" aria-label="Close" onClick={closeWalletPicker}><X size={20} /></button></div>{wallets.length ? wallets.map(w => <button key={w.id} className="wallet-choice" disabled={connectingWallet === w.id} aria-busy={connectingWallet === w.id} onClick={() => void chooseWallet(w)}><WalletIcon size={22} />{w.name}{connectingWallet === w.id ? <LoaderCircle className="spin" size={17} /> : <ArrowRight size={17} />}</button>) : <p>{lang === 'zh' ? '未发现注入钱包。请安装兼容的浏览器钱包后刷新。' : 'No injected wallet found. Install a compatible browser wallet, then refresh.'}</p>}</section></div>}
     {detailsOpen && <div className="modal-overlay" onClick={() => setDetailsOpen(false)}><section className="modal review-modal" role="dialog" aria-modal="true" aria-label={t.review} onClick={e => e.stopPropagation()}><div className="section-top"><h2>{plan && preview ? t.review : t.details}</h2><button className="icon-button" aria-label="Close" onClick={() => setDetailsOpen(false)}><X size={20} /></button></div><dl className="review-facts"><div><dt>{t.version}</dt><dd><code>{RELEASE}</code></dd></div><div><dt>Chain ID</dt><dd>196 · X Layer</dd></div><div><dt>{t.target}</dt><dd><AddressValue value={MANAGER} /></dd></div><div><dt>{t.recipient}</dt><dd>{account ? <AddressValue value={account} /> : '—'}</dd></div>{snapshot && <><div><dt>Token ID</dt><dd>#{snapshot.tokenId.toString()}</dd></div><div><dt>{t.amount}</dt><dd>{collectOnly ? t.onlyCollect : `${bps / 100}%`}</dd></div><div><dt>Token 0</dt><dd><AddressValue value={snapshot.token0.address} /></dd></div><div><dt>Token 1</dt><dd><AddressValue value={snapshot.token1.address} /></dd></div></>}{plan && <div><dt>Plan hash</dt><dd><AddressValue value={plan.hash} /></dd></div>}<div><dt>{t.origin}</dt><dd>{DEMO ? 'Isolated demo' : `${runtime.mode} · ${runtime.label}`}</dd></div></dl><p className="modal-note">{t.disclaimer}</p>{plan && preview && stage === 'review' && <><label className="confirm-label"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} />{lang === 'zh' ? '我已核对目标、仓位和收款地址；此操作由我确认。' : 'I checked the target, position and recipient, and approve this operation.'}</label><button className="primary-button full-width" disabled={!accepted || (!DEMO && !RELEASE_APPROVED)} onClick={() => { setDetailsOpen(false); void execute(); }}><LockKeyhole size={16} />{t.sign}</button></>}</section></div>}
   </div>;
 }
