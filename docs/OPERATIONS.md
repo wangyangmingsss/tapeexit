@@ -10,9 +10,19 @@
 npm run inspect:assets -- <候选代币地址> <另一候选代币地址>
 ```
 
-输出 `release-artifacts/asset-candidates.json`，记录双来源固定区块、代码摘要、symbol/decimals 和 EIP-1967 implementation/beacon 槽。最多 20 个地址。
+输出 `release-artifacts/asset-candidates.json`，记录双来源固定区块、代码摘要、symbol/decimals 和 ERC-1967 implementation/beacon/admin 槽。最多 20 个地址。
 
-这是候选观察记录，不是安全判断。空槽不能证明非代理；beacon 实现、治理权限、暂停/黑名单、税费、重基准、桥和发行人身份都需人工追溯。实际转账行为必须在官方合约测试或固定区块分叉中验证。不自动修改 `SUPPORTED_TOKENS`。
+每个资产包含代理依赖观察图和图摘要。工具追踪标准 implementation 槽、beacon 槽及其 `implementation()` 返回地址，采集依赖合约代码和标准槽、管理员地址及其 runtime 摘要。beacon 调用分别使用零地址和根资产作为 `from` 取样；结果不同、零地址、缺失/畸形代码、冲突槽、依赖环、来源分歧或超过 4 层/12 节点限制会停止。单个 runtime 上限 256 KiB，beacon 调用 gas 上限 300,000。
+
+独立保存候选报告的 SHA-256 后，可重新观察并比较：
+
+```sh
+npm run verify:assets -- <保存的候选报告.json> <独立保存的报告SHA256>
+```
+
+命令限制基线为 2 MiB，核对摘要、完整图与根代码、地址集合和区块；旧版缺少代理图的报告必须重新采集。两来源重新核对基线区块哈希，采集当前状态，比较根代码、精度、symbol、依赖图（含实现、beacon 和管理员）。变化会返回非零退出码并写 `ASSET_IDENTITY_CHANGED` 差异报告；一致为 `OBSERVED_IDENTITY_UNCHANGED`。输出 `release-artifacts/asset-identity-verification.json`；新尝试先删除旧结果，读取失败不保留旧成功。
+
+这是候选观察记录，不是安全判断。依赖合约的槽在各自地址读取，不代表 delegatecall 实际使用的存储；两个 caller 取样不证明对所有 caller 都相同。空槽不能证明非代理，标准槽也不能证明实际执行路径；管理员无 runtime 不能证明无升级权限。治理权限、暂停/黑名单、税费、重基准、桥和发行人身份仍需人工追溯。两次观察之间及之后的变化不在结论内。实际转账行为必须在官方合约测试或固定区块分叉中验证。不自动修改 `SUPPORTED_TOKENS`；复核一致报告不能替代正式资产审阅证据。
 
 ## 2. 容器身份与预算
 

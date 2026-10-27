@@ -3,12 +3,12 @@ import { decodeFunctionData, decodeFunctionResult, encodeFunctionData, getAddres
 import { StrictRpc, type Block } from '../src/core/rpc';
 import { tokenAbi } from '../src/config';
 import { BINDING, REGISTRY, publishAbi, type PublishTransaction } from './publish-core';
+import { IMPL_SLOT, decodeStorageAddress, inspectProxyIdentity } from './proxy-identity-core';
+export { IMPL_SLOT, BEACON_SLOT, ADMIN_SLOT, decodeStorageAddress } from './proxy-identity-core';
 
 // Identity/implementation pins from TapeKit 37c617e7, kernel/src/config.js.
 export const TAPE_FACTORY = getAddress('0x1f09daefa827f02cbb40967cc91b259763760761');
 export const OPENER = getAddress('0x536add8f30f03b69f6fbf29d425a816a0dc50106');
-export const IMPL_SLOT: Hex = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
-export const BEACON_SLOT: Hex = '0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50';
 export const IMPLEMENTATIONS = {
   registry: getAddress('0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f'),
   binding: getAddress('0x5ebf29b80789e548907c707530c3c7607c4347df'),
@@ -60,12 +60,6 @@ async function call<T>(rpc: StrictRpc, block: Block, to: Address, abi: Abi, name
     abi, functionName: name, args,
   }) }, block.number]);
   return decodeFunctionResult({ abi, functionName: name, data }) as T;
-}
-export function decodeStorageAddress(word: unknown): Address | null {
-  if (typeof word !== 'string' || !/^0x0{24}[a-f0-9]{40}$/i.test(word))
-    throw new Error('Malformed address storage slot');
-  const value = getAddress(`0x${word.slice(-40)}`);
-  return value === zeroAddress ? null : value;
 }
 export async function inspectPublication(rpc: StrictRpc, input: unknown, transactions: PublishTransaction[]) {
   const p = parsePublishProfile(input);
@@ -139,21 +133,16 @@ export async function inspectAssets(rpc: StrictRpc, addresses: string[]) {
   const block = await rpc.pin();
   const assets = [];
   for (const token of tokens) {
-    const code = await rpc.request<Hex>('eth_getCode', [token, block.number]);
-    if (!/^0x(?:[a-f0-9]{2})+$/i.test(code)) throw new Error('Candidate has no code');
+    const proxy = await inspectProxyIdentity(rpc, token, block);
     const decimals = Number(await call<number>(rpc, block, token, tokenAbi, 'decimals'));
     if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) throw new Error('Unsupported token precision');
     const symbol = String(await call<string>(rpc, block, token, tokenAbi, 'symbol')).slice(0, 24);
-    const slots: Record<string, Address | null> = {};
-    for (const [name, slot] of Object.entries({ implementation: IMPL_SLOT, beacon: BEACON_SLOT }))
-      slots[name] = decodeStorageAddress(await rpc.request<Hex>('eth_getStorageAt', [token, slot, block.number]));
+    const root = proxy.nodes.find(node => node.address === token)!;
+    const slots = root.slots;
     const implementationHashes: Record<string, Hex> = {};
-    for (const [name, to] of Object.entries(slots)) if (to) {
-      const implementationCode = await rpc.request<Hex>('eth_getCode', [to, block.number]);
-      if (implementationCode === '0x') throw new Error('Candidate proxy points to missing code');
-      implementationHashes[name] = keccak256(implementationCode);
-    }
-    assets.push({ address: token, symbol, decimals, codeHash: keccak256(code), slots, implementationHashes,
+    for (const name of ['implementation', 'beacon'] as const) if (slots[name])
+      implementationHashes[name] = proxy.nodes.find(node => node.address === slots[name])!.codeHash;
+    assets.push({ address: token, symbol, decimals, codeHash: root.codeHash, slots, implementationHashes, proxy,
       approval: 'NOT_APPROVED', behavior: 'NOT_ASSESSED' });
   }
   await rpc.assertBlock(block);
@@ -161,6 +150,6 @@ export async function inspectAssets(rpc: StrictRpc, addresses: string[]) {
     chainId: 196, block, assets, operators: rpc.sources,
     limitations: ['No token is added to SUPPORTED_TOKENS',
       'Empty EIP-1967 slots do not prove absence of a proxy or upgradeability',
-      'Beacon code is recorded; its implementation and governance are not resolved',
+      'Standard proxy pointers and beacon implementation calls are observed; actual delegatecall paths and governance remain unverified',
       'No proof of standard transfer behavior, tax, rebase, blacklist, pause, issuer identity or safety'] };
 }

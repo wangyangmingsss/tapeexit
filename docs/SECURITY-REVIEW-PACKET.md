@@ -22,7 +22,10 @@ Review the exact Git commit, lockfile, manifest digest and build evidence togeth
 - Standard-asset approval requires behavior and governance review; metadata/code hashes alone are insufficient.
 - Publication preflight observes implementation code hashes but does not independently approve them or prove processor sealing.
 - Prefix resume does not lock a mutable container. Every later state and wallet request needs revalidation.
-- Proxy metadata collectors cannot rule out custom proxies or deceptive token semantics.
+- Asset observations now follow standard implementation/beacon pointers, sample beacon returns with two callers,
+  and record admin addresses/code at the fixed block. `verify:assets` compares a digest-bound baseline and
+  rejects changed code, pointers, admins or metadata. Neither standard slots nor two caller samples prove
+  actual delegatecall paths, all caller behavior, governance or standard token semantics.
 - The injected-wallet harness and browser fixtures do not prove the actual TapeOut/OKX Wallet combination.
 - Remaining npm findings are not dismissed by tree-shaking or use of an injected signer.
 

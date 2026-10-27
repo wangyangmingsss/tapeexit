@@ -20,6 +20,7 @@
     "inspect:publication": "tsx tools/inspect-publication.ts",
     "rehearse:publication": "tsx tools/rehearse-publication.ts",
     "inspect:assets": "tsx tools/inspect-assets.ts",
+    "verify:assets": "tsx tools/verify-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",
     "report:users": "node tools/user-validation.mjs",
     "record:demo": "node tools/record-demo.mjs",
