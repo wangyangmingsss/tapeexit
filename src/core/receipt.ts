@@ -2,7 +2,8 @@ import { decodeEventLog, getAddress, type Hex, type Address } from 'viem';
 import { poolAbi, tokenAbi } from '../config';
 import { StrictRpc, ExitError } from './rpc';
 import type { Plan, Snapshot } from './protocol';
-import { assertTransactionIdentity, minedTransaction, receiptEvidence } from './chain-evidence';
+import { assertTransactionIdentity, minedTransaction, receiptEvidence, trackedTransaction,
+  transactionCount } from './chain-evidence';
 
 export interface Result {
   hash: Hex; blockNumber: string; blockHash: Hex; amount0: string; amount1: string;
@@ -13,14 +14,27 @@ export type ReceiptExpectation = Pick<Plan, 'account' | 'manager' | 'data'> & {
 };
 export async function pendingState(rpc: StrictRpc, hash: Hex, account: Address, knownNonce?: bigint):
 Promise<{ state: 'pending' | 'replaced-or-dropped'; nonce?: bigint }> {
-  const tx = await rpc.request<{ from: Address; nonce: Hex } | null>('eth_getTransactionByHash', [hash],
-    value => value ? { from: value.from, nonce: value.nonce } : null);
-  if (tx && getAddress(tx.from) !== getAddress(account))
-    throw new ExitError('TRANSACTION_MISMATCH', 'Pending transaction sender differs');
+  if (knownNonce !== undefined && (typeof knownNonce !== 'bigint' || knownNonce < 0n || knownNonce >= 1n << 256n))
+    throw new ExitError('RPC_INVALID', 'Invalid saved transaction nonce');
+  const readTransaction = async (expectedNonce = knownNonce) => {
+    const tx = trackedTransaction(await rpc.request<unknown>('eth_getTransactionByHash', [hash], trackedTransaction));
+    if (tx && (tx.hash !== hash.toLowerCase() || getAddress(tx.from) !== getAddress(account) ||
+        (expectedNonce !== undefined && BigInt(tx.nonce) !== expectedNonce)))
+      throw new ExitError('TRANSACTION_MISMATCH', 'Pending transaction identity differs');
+    return tx;
+  };
+  const tx = await readTransaction();
   const nonce = tx ? BigInt(tx.nonce) : knownNonce;
-  if (nonce !== undefined) {
-    const minedNonce = await rpc.request<Hex>('eth_getTransactionCount', [account, 'latest']);
-    if (BigInt(minedNonce) > nonce) return { state: 'replaced-or-dropped', nonce };
+  if (nonce !== undefined && tx?.blockNumber == null) {
+    const block = await rpc.pin();
+    const minedNonce = transactionCount(await rpc.request<unknown>('eth_getTransactionCount',
+      [account, block.number], transactionCount));
+    if (BigInt(minedNonce) > nonce) {
+      // A receipt can lag the transaction index; never label an indexed original as a replacement.
+      const current = await readTransaction(nonce);
+      await rpc.assertBlock(block);
+      if (!current) return { state: 'replaced-or-dropped', nonce };
+    } else await rpc.assertBlock(block);
   }
   return { state: 'pending', nonce };
 }

@@ -88,3 +88,7 @@ recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer h
 `tests/recovery-card.test.ts` 和 `tests/app-recovery.test.tsx` 验证完整编号集、uint256 最大值、旧版最小卡、空草稿、重复/畸形 ID、元数据限制、身份不可覆盖、迟到读取及错误隔离、卸载与手动输入。可选网关只接受最多 4 个无凭据/fragment 的 HTTPS URL，不会从导入文件自动加载或导航；导入摘要本身不建立可信发行身份。
 
 生产浏览器在 360/1280 px 导入并切换大整数编号、下载 JSON 核对完整集合与当前清单摘要，断言不请求导入网关或链 RPC，并检查布局/截图；另验证错误卡不覆盖、空卡清除。卡片不触发读取或发送，真实钱包/干净设备恢复任务仍待验收。
+
+## 待处理交易与 nonce
+
+`tests/pending-state.test.ts` 的 42 项用例覆盖严格交易身份/nonce、完整待处理与入块字段、固定区块账户 nonce、重组、原哈希消失/重新出现、收据延迟、大整数与双来源分歧。`tests/app-receipt.test.tsx` 新增 5 项 DOM 用例核对异常、继续等待或替换提示均不清除持久记录、不允许重复发送。测试使用明确 RPC/provider 夹具，不代表真实钱包替换或取消交易验收；替换提示不提供自动解锁。

@@ -14,6 +14,10 @@ export interface MinedTransaction {
   hash: Hex; blockNumber: Hex; blockHash: Hex; transactionIndex: Hex;
   from: Address; to: Address; input: Hex; value: Hex;
 }
+export interface TrackedTransaction {
+  hash: Hex; from: Address; nonce: Hex; blockNumber: Hex | null;
+  blockHash: Hex | null; transactionIndex: Hex | null;
+}
 function invalid(): never { throw new ExitError('RPC_INVALID', 'Invalid transaction or receipt evidence'); }
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return invalid();
@@ -23,6 +27,7 @@ function quantity(value: unknown): Hex {
   if (typeof value !== 'string' || !/^0x(?:0|[1-9a-f][0-9a-f]{0,63})$/i.test(value)) return invalid();
   return value.toLowerCase() as Hex;
 }
+export function transactionCount(value: unknown): Hex { return quantity(value); }
 function hash(value: unknown): Hex {
   if (typeof value !== 'string' || !/^0x[0-9a-f]{64}$/i.test(value)) return invalid();
   return value.toLowerCase() as Hex;
@@ -67,6 +72,15 @@ export function minedTransaction(value: unknown): MinedTransaction {
   return { hash: hash(t.hash), blockNumber: quantity(t.blockNumber), blockHash: hash(t.blockHash),
     transactionIndex: quantity(t.transactionIndex), from: address(t.from), to: address(t.to),
     input: data(t.input), value: quantity(t.value) };
+}
+export function trackedTransaction(value: unknown): TrackedTransaction | null {
+  if (value === null) return null;
+  const t = record(value);
+  const pending = t.blockNumber === null && t.blockHash === null && t.transactionIndex === null;
+  return { hash: hash(t.hash), from: address(t.from), nonce: quantity(t.nonce),
+    blockNumber: pending ? null : quantity(t.blockNumber),
+    blockHash: pending ? null : hash(t.blockHash),
+    transactionIndex: pending ? null : quantity(t.transactionIndex) };
 }
 export function assertTransactionIdentity(tx: MinedTransaction, receipt: ReceiptIdentity) {
   if (tx.hash !== receipt.transactionHash || tx.blockNumber !== receipt.blockNumber ||

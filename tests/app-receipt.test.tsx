@@ -6,7 +6,7 @@ import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { V3Adapter, type Plan } from '../src/core/protocol';
 import { ExitError } from '../src/core/rpc';
-import { inspectReceipt } from '../src/core/receipt';
+import { inspectReceipt, pendingState } from '../src/core/receipt';
 import { reconcileSubmission, sendGuarded, SUBMISSION_KEY } from '../src/core/submission';
 import { loadHistory } from '../src/core/storage';
 import { DEMO_OWNER, demoSnapshot } from '../src/demo/engine';
@@ -28,7 +28,7 @@ vi.mock('../src/core/runtime', async importOriginal => ({
   runtimeStatus: vi.fn(),
 }));
 vi.mock('../src/core/receipt', async importOriginal => ({
-  ...await importOriginal<typeof import('../src/core/receipt')>(), inspectReceipt: vi.fn(),
+  ...await importOriginal<typeof import('../src/core/receipt')>(), inspectReceipt: vi.fn(), pendingState: vi.fn(),
 }));
 vi.mock('../src/core/submission', async importOriginal => ({
   ...await importOriginal<typeof import('../src/core/submission')>(),
@@ -47,6 +47,7 @@ beforeEach(async () => {
   vi.spyOn(navigator, 'language', 'get').mockReturnValue('zh-CN');
   vi.mocked(runtimeStatus).mockReset().mockResolvedValue({ mode: 'local', label: 'Test local runtime', verified: false });
   vi.mocked(inspectReceipt).mockReset().mockResolvedValue(result);
+  vi.mocked(pendingState).mockReset().mockResolvedValue({ state: 'pending', nonce: 3n });
   vi.mocked(reconcileSubmission).mockReset();
   vi.mocked(sendGuarded).mockReset().mockImplementation(async () => {
     localStorage.setItem(SUBMISSION_KEY, JSON.stringify(submission));
@@ -99,6 +100,38 @@ it('keeps success withdrawn if the second check can only establish pending state
   await screen.findByText('交易已提交');
   expect(screen.queryByText('领取证据已核对')).toBeNull();
   expect(loadHistory()[0].state).toBe('verification-pending');
+});
+it.each(['RPC_INVALID', 'TRANSACTION_MISMATCH', 'REORG'])(
+  'preserves the durable intent and send lock on pending evidence failure %s', async code => {
+    vi.mocked(inspectReceipt).mockResolvedValue(null);
+    vi.mocked(pendingState).mockRejectedValue(new ExitError(code, 'Pending evidence rejected'));
+    await confirm();
+    await screen.findByRole('alert');
+    expect(screen.queryByText('领取证据已核对')).toBeNull();
+    expect(screen.getByRole('button', { name: '读取仓位' }).hasAttribute('disabled')).toBe(true);
+    expect(JSON.parse(localStorage.getItem(SUBMISSION_KEY)!)).toEqual(submission);
+    expect(sendGuarded).toHaveBeenCalledTimes(1);
+    expect(reconcileSubmission).not.toHaveBeenCalled();
+  });
+it('keeps a transaction with a lagging receipt pending without suggesting a replacement', async () => {
+  vi.mocked(inspectReceipt).mockResolvedValue(null);
+  await confirm();
+  await waitFor(() => expect(pendingState).toHaveBeenCalledTimes(1));
+  await screen.findByText('交易已提交');
+  expect(screen.queryByText(/原交易的 nonce 已被消耗/)).toBeNull();
+  expect(screen.getByRole('button', { name: '读取仓位' }).hasAttribute('disabled')).toBe(true);
+  expect(JSON.parse(localStorage.getItem(SUBMISSION_KEY)!)).toEqual(submission);
+  expect(sendGuarded).toHaveBeenCalledTimes(1);
+});
+it('keeps the durable send lock when the original is absent and its nonce is consumed', async () => {
+  vi.mocked(inspectReceipt).mockResolvedValue(null);
+  vi.mocked(pendingState).mockResolvedValue({ state: 'replaced-or-dropped', nonce: 3n });
+  await confirm();
+  await screen.findByText(/原交易的 nonce 已被消耗/);
+  expect(screen.getByRole('button', { name: '读取仓位' }).hasAttribute('disabled')).toBe(true);
+  expect(JSON.parse(localStorage.getItem(SUBMISSION_KEY)!)).toEqual(submission);
+  expect(sendGuarded).toHaveBeenCalledTimes(1);
+  expect(reconcileSubmission).not.toHaveBeenCalled();
 });
 it('shows the latest collection evidence instead of the earlier success if final recheck differs', async () => {
   vi.mocked(reconcileSubmission).mockImplementation(async () => {

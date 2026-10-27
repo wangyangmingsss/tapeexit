@@ -49,7 +49,12 @@ describe('wallet signing boundary', () => {
   it('identifies consumed nonce without resending or inventing a replacement hash', async () => {
     const rpc = new StrictRpc([
       { url: 'https://a.example', operator: 'a' }, { url: 'https://b.example', operator: 'b' },
-    ], async (_source, method) => method === 'eth_getTransactionByHash' ? null : '0x4');
+    ], async (_source, method) => {
+      if (method === 'eth_getTransactionByHash') return null;
+      if (method === 'eth_getBlockByNumber') return { number: '0x2',
+        hash: `0x${'cd'.repeat(32)}`, timestamp: `0x${Math.floor(Date.now() / 1000).toString(16)}` };
+      return '0x4';
+    });
     expect(await pendingState(rpc, `0x${'ab'.repeat(32)}`, DEMO_OWNER, 3n)).toEqual({
       state: 'replaced-or-dropped', nonce: 3n,
     });
