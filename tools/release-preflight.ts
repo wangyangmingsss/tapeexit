@@ -2,7 +2,7 @@ import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadPublication } from './publish-core';
-import { parseReleaseProfile, verifyReleaseEvidence } from './release-profile-core';
+import { assertProfileManifest, parseReleaseProfile, verifyReleaseEvidence } from './release-profile-core';
 
 const output = 'release-artifacts/release-preflight.json';
 await rm(output, { force: true });
@@ -10,6 +10,7 @@ const [path] = process.argv.slice(2);
 if (!path || process.argv.length !== 3) throw new Error('Usage: npm run preflight:release -- <profile.json>');
 const profile = parseReleaseProfile(JSON.parse(await readFile(path, 'utf8')));
 const publication = await loadPublication('dist');
+assertProfileManifest(profile, publication.contents.find(c => c.file.path === 'release-manifest.json')!.bytes);
 if (publication.manifestSha256 !== profile.manifestSha256 ||
     execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== profile.sourceCommit ||
     execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim())

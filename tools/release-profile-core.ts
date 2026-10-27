@@ -19,6 +19,13 @@ function address(v: unknown) {
 }
 export type GatewayProfile = Pick<ReleaseProfile, 'schemaVersion' | 'chainId' | 'sourceCommit' |
   'manifestSha256' | 'container' | 'tapeName' | 'gateways'>;
+export function assertProfileManifest(profile: GatewayProfile, bytes: Uint8Array) {
+  const manifest = object(JSON.parse(Buffer.from(bytes).toString('utf8')));
+  if (digest(bytes) !== profile.manifestSha256 || manifest.sourceCommit !== profile.sourceCommit ||
+      manifest.sourceDirty !== false || manifest.app !== 'TapeExit' || manifest.schemaVersion !== 1 ||
+      manifest.chainId !== 196 || manifest.signingApproved !== false)
+    throw new Error('Profile and internal manifest source identity differ');
+}
 export function parseGatewayProfile(input: unknown): GatewayProfile {
   const p = object(input);
   if (p.schemaVersion !== 1 || p.chainId !== 196 || !/^[a-f0-9]{40}$/.test(p.sourceCommit) ||

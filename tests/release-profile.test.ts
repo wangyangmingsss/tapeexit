@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { digest } from '../tools/publish-core';
-import { parseGatewayProfile, parseReleaseProfile, checkGatewayFile, verifyReleaseEvidence } from '../tools/release-profile-core';
+import { assertProfileManifest, parseGatewayProfile, parseReleaseProfile, checkGatewayFile, verifyReleaseEvidence } from '../tools/release-profile-core';
 
 const now = Date.parse('2026-10-28T00:00:00Z');
 const identity = { schemaVersion: 1, chainId: 196, sourceCommit: 'a'.repeat(40), manifestSha256: 'b'.repeat(64),
@@ -25,6 +25,19 @@ function fixture(change: Record<string, Record<string, unknown>> = {}) {
   return { profile: parseReleaseProfile({ ...identity, assets, evidence }), inputs };
 }
 describe('formal release evidence binding', () => {
+  it('rejects an old internal source commit even if the supplied manifest digest is correct', () => {
+    const manifest = { app: 'TapeExit', schemaVersion: 1, chainId: 196, signingApproved: false,
+      sourceDirty: false, sourceCommit: identity.sourceCommit };
+    const bytes = Buffer.from(JSON.stringify(manifest));
+    const profile = { ...parseGatewayProfile(identity), manifestSha256: digest(bytes) };
+    expect(() => assertProfileManifest(profile, bytes)).not.toThrow();
+    for (const patch of [{ sourceCommit: 'c'.repeat(40) }, { sourceDirty: true }, { chainId: 1 },
+      { signingApproved: true }]) {
+      const stale = Buffer.from(JSON.stringify({ ...manifest, ...patch }));
+      expect(() => assertProfileManifest({ ...profile, manifestSha256: digest(stale) }, stale)).toThrow();
+    }
+    expect(() => assertProfileManifest({ ...profile, manifestSha256: 'd'.repeat(64) }, bytes)).toThrow();
+  });
   it('accepts consistent declared evidence without approving signing or authenticating a reviewer', () => {
     const { profile, inputs } = fixture();
     const result = verifyReleaseEvidence(profile, inputs, now);
