@@ -24,12 +24,13 @@ Today the fixed TapeKit build, upload encoder, actual path-resolver compatibilit
 - A local recovery server, hashed file manifest and offline file verification.
 
 No mainnet transaction was broadcast. Production signing is disabled and the approved asset list is empty.
-The prior candidate's 16 browser tests passed remotely. The expanded suite and new tools need their exact commit's results.
-Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, simulation recording and consented-session aggregation are implemented.
+The prior candidate's 16 browser tests passed remotely. The expanded 21-test suite and new tools need their exact commit's results.
+Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, bounded owner-checked position discovery,
+printable public recovery cards, simulation recording and consented-session aggregation are implemented.
 
 ## Scope And Limits
 
-Supports one configured protocol and chain, a known token ID, direct ownership and reviewed standard tokens. Staked/vault-held NFTs, unknown forks, contract-wallet support, fee-on-transfer/rebase assets and lost keys are outside the accepted scope.
+Supports one configured protocol and chain, a manually entered or owner-enumerated token ID, direct ownership and reviewed standard tokens. Staked/vault-held NFTs, unknown forks, contract-wallet support, fee-on-transfer/rebase assets and lost keys are outside the accepted scope.
 
 The browser, wallet, bootstrap files, RPC operators, X Layer and protocol/token contracts remain trusted dependencies. Matching file hashes is not a security audit. Local code still needs network RPC and an operational chain.
 

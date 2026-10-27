@@ -1,6 +1,8 @@
 # TapeExit Demo Script
 
-Target duration: 2 minutes 50 seconds. This is a recording plan; no video or external submission has been produced.
+Target duration: 2 minutes 50 seconds. This is a recording plan, not a completed final pitch.
+The automated short, silent isolation-demo recording is separate footage; check its source metadata and actual CI result.
+No external submission is implied.
 
 ## Current Candidate Recording
 
