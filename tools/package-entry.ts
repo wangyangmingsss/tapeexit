@@ -14,6 +14,7 @@ await rm(root, { recursive: true, force: true });
 await mkdir(`${root}/docs`, { recursive: true });
 await cp('docs/competition', `${root}/docs`, { recursive: true });
 await cp('dist/release-manifest.json', `${root}/release-manifest.json`);
+await cp('release-artifacts/recovery-card', `${root}/recovery-card`, { recursive: true });
 await cp('release-artifacts/readiness.json', `${root}/readiness.json`);
 const readiness = JSON.parse(await readFile(`${root}/readiness.json`, 'utf8'));
 if (readiness.sourceCommit !== sourceCommit || readiness.manifestSha256 !== publication.manifestSha256)

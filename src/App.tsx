@@ -15,6 +15,7 @@ import { recheckHistory } from './core/history';
 import { clearHistory, downloadJson, importRecoveryCard, loadHistory, recoveryCard, saveHistory, type HistoryItem } from './core/storage';
 import { assertSigningRuntime, canSignRuntime, manifestDigest, runtimeStatus, type RuntimeStatus } from './core/runtime';
 import type { DemoEngine, Fault } from './demo/engine';
+import { discoverPositions, type PositionPage } from './core/discovery';
 
 const DEMO = import.meta.env.VITE_DEMO === 'true';
 const demoModule = DEMO ? import('./demo/engine') : null;
@@ -102,6 +103,9 @@ export default function App() {
   const [account, setAccount] = useState<Address>();
   const [walletPicker, setWalletPicker] = useState(false);
   const [tokenId, setTokenId] = useState(DEMO ? '28491' : '');
+  const [positionPage, setPositionPage] = useState<PositionPage>();
+  const [discovering, setDiscovering] = useState(false);
+  const discoveryController = useRef<AbortController | undefined>(undefined);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [plan, setPlan] = useState<Plan>();
   const [preview, setPreview] = useState<Preview>();
@@ -140,6 +144,25 @@ export default function App() {
   const adapter = useRef(new V3Adapter(new StrictRpc(SOURCES), DEPLOYMENT, SUPPORTED_TOKENS)).current;
   const importInput = useRef<HTMLInputElement>(null);
   const busy = ['reading', 'simulating', 'preflight', 'wallet', 'submitted'].includes(stage);
+  useEffect(() => {
+    discoveryController.current?.abort(); setPositionPage(undefined); setDiscovering(false);
+    return () => { discoveryController.current?.abort(); };
+  }, [account]);
+  async function findPositions(next = false) {
+    if (!account || DEMO || txLock.current) return;
+    discoveryController.current?.abort();
+    const controller = new AbortController();
+    discoveryController.current = controller;
+    setDiscovering(true); setError('');
+    try {
+      const page = await discoverPositions(adapter, account, {
+        ...(next && positionPage ? { offset: positionPage.next ?? 0n, block: positionPage.block } : {}),
+        signal: controller.signal,
+      });
+      if (!controller.signal.aborted) setPositionPage(page);
+    } catch (err) { if (!controller.signal.aborted) showError(err); }
+    finally { if (discoveryController.current === controller) setDiscovering(false); }
+  }
   function checkSnapshotFloor(s: Snapshot) {
     if (BigInt(s.block.number) < receiptFloor.current)
       throw new ExitError('STALE', 'Snapshot is older than the last checked receipt; wait for RPC heads to advance');
@@ -515,6 +538,21 @@ export default function App() {
             <section className="position-section" aria-labelledby="workspace-title">
               <div className="section-top"><h2 id="workspace-title">{t.workspace}</h2><span className="neutral-tag">UNISWAP V3</span></div>
               <div className="position-search"><label htmlFor="position-id">{t.id}</label><div className="input-row"><div className="token-input"><span>#</span><input id="position-id" inputMode="numeric" value={tokenId} placeholder="e.g. 28491" disabled={busy || stage === 'unknown'} onChange={e => { setTokenId(e.target.value); setSnapshot(undefined); invalidate(); }} onKeyDown={e => { if (e.key === 'Enter' && !busy) void readPosition(); }} /></div><button className="primary-button" disabled={busy || !tokenId || stage === 'unknown' || (DEMO && !demo)} onClick={() => void readPosition()}>{stage === 'reading' ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}{t.load}</button></div><p className="field-hint">{t.idHint}</p></div>
+              {!DEMO && account && <div className="position-discovery">
+                <div className="discovery-actions"><button className="text-link" disabled={busy || discovering} onClick={() => void findPositions()}><RefreshCw size={14} />{lang === 'zh' ? '查找我的仓位' : 'Find my positions'}</button>
+                  {discovering && <button className="icon-button" title={lang === 'zh' ? '取消查询' : 'Cancel discovery'} aria-label={lang === 'zh' ? '取消查询' : 'Cancel discovery'} onClick={() => { discoveryController.current?.abort(); setDiscovering(false); }}><X size={16} /></button>}
+                </div>
+                <div role="status">{discovering ? (lang === 'zh' ? '正在查询仓位…' : 'Finding positions…') : positionPage ?
+                  (lang === 'zh' ? `共 ${positionPage.total} 个 · 区块 ${BigInt(positionPage.block.number)}` : `${positionPage.total} positions · block ${BigInt(positionPage.block.number)}`) : ''}</div>
+                {positionPage && positionPage.tokenIds.length > 0 && <div className="discovery-actions">
+                  <select aria-label={lang === 'zh' ? '已发现的仓位' : 'Discovered positions'} value="" disabled={busy || stage === 'unknown'}
+                    onChange={event => { setTokenId(event.target.value); setSnapshot(undefined); invalidate(); }}>
+                    <option value="">{lang === 'zh' ? '选择仓位' : 'Select position'}</option>
+                    {positionPage.tokenIds.map(id => <option key={id.toString()} value={id.toString()}>#{id.toString()}</option>)}
+                  </select>
+                  {positionPage.next !== null && <button className="icon-button" title={lang === 'zh' ? '下一页' : 'Next page'} aria-label={lang === 'zh' ? '下一页' : 'Next page'} disabled={busy || discovering} onClick={() => void findPositions(true)}><ArrowRight size={16} /></button>}
+                </div>}
+              </div>}
               {snapshot ? <>
                 <div className="position-identity"><div className="asset-pair"><AssetBadge symbol={snapshot.token0.symbol} index={0} /><AssetBadge symbol={snapshot.token1.symbol} index={1} /></div><div><h3>{snapshot.token0.symbol} / {snapshot.token1.symbol}</h3><span>#{snapshot.tokenId.toString()} <span className="middot">·</span> {snapshot.fee / 10000}%</span></div><span className="success-tag">{own ? <><Check size={12} />{lang === 'zh' ? '直接持有' : 'Directly owned'}</> : t.readOnly}</span></div>
                 <dl className="position-facts"><div><dt>{t.owner}</dt><dd><AddressValue value={snapshot.owner} /></dd></div><div><dt>{t.pool}</dt><dd><AddressValue value={snapshot.pool} /></dd></div><div><dt>{t.range}</dt><dd><code>{snapshot.tickLower} → {snapshot.tickUpper}</code><span className="small-tag">{snapshot.tick >= snapshot.tickLower && snapshot.tick < snapshot.tickUpper ? (lang === 'zh' ? '区间内' : 'In range') : (lang === 'zh' ? '区间外' : 'Out of range')}</span></dd></div><div><dt>{t.liquidity}</dt><dd><code>{snapshot.liquidity.toLocaleString()}</code></dd></div></dl>

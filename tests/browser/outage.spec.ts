@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
-test('controlled primary-origin outage leaves a matching alternate recovery package reachable', async ({ page, request }) => {
+test('controlled primary-origin outage leaves a matching alternate recovery package reachable', async ({ page, context, request }) => {
   const primary = 'http://127.0.0.1:4175', alternate = 'http://127.0.0.1:4176';
   const bytes = await readFile('dist/release-manifest.json');
   const trustedDigest = createHash('sha256').update(bytes).digest('hex');
@@ -13,12 +13,13 @@ test('controlled primary-origin outage leaves a matching alternate recovery pack
   await page.route(`${primary}/**`, route => route.abort('connectionrefused'));
   await expect(page.goto(primary)).rejects.toThrow();
   expect(failed.some(url => url.startsWith(primary))).toBe(true);
-  await page.goto(alternate);
-  await expect(page.getByText('主网只读 · 部署、代币与发行审阅通过前禁止签名')).toBeVisible();
-  await expect(page.getByRole('button', { name: '读取仓位' })).toBeVisible();
-  const recovered = await page.request.get(`${alternate}/release-manifest.json`);
+  const recovery = await context.newPage();
+  await recovery.goto(alternate);
+  await expect(recovery.getByText('主网只读 · 部署、代币与发行审阅通过前禁止签名')).toBeVisible();
+  await expect(recovery.getByRole('button', { name: '读取仓位' })).toBeVisible();
+  const recovered = await recovery.request.get(`${alternate}/release-manifest.json`);
   expect(createHash('sha256').update(await recovered.body()).digest('hex')).toBe(trustedDigest);
-  await page.screenshot({ path: 'test-results/local-outage-alternate.png', fullPage: true });
+  await recovery.screenshot({ path: 'test-results/local-outage-alternate.png', fullPage: true });
   await writeFile('test-results/local-outage.json', JSON.stringify({ schemaVersion: 1,
     sourceCommit: JSON.parse(bytes.toString()).sourceCommit, manifestSha256: trustedDigest,
     environment: 'CONTROLLED_LOOPBACK_BROWSER_FAULT', primary, alternate, failedRequests: failed,

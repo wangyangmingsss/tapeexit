@@ -34,9 +34,11 @@ export async function fixture(port = 18545): Promise<Fixture> {
     return receipt.contractAddress;
   }
   async function write(abi: Abi, address: Address, functionName: string, args: unknown[]) {
-    const hash = await wallet.writeContract({ account, address, abi, functionName, args });
+    const estimate = await client.estimateContractGas({ account, address, abi, functionName, args });
+    const gas = (estimate * 120n + 99n) / 100n;
+    const hash = await wallet.writeContract({ account, address, abi, functionName, args, gas });
     const receipt = await client.waitForTransactionReceipt({ hash });
-    if (receipt.status !== 'success') throw new Error(`Fixture ${functionName} reverted`);
+    if (receipt.status !== 'success') throw new Error(`Fixture ${functionName} reverted: gasUsed=${receipt.gasUsed}; gasLimit=${gas}`);
     return receipt;
   }
   const source = await readFile('tests/fixtures/TestToken.sol', 'utf8');

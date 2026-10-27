@@ -34,7 +34,7 @@ async function installFixture(page: import('@playwright/test').Page) {
 test('wallet harness discovers a fixture safely and never requests transaction signing', async ({ page }) => {
   await installFixture(page);
   await page.goto('http://127.0.0.1:4180');
-  await expect(page.getByLabel('钱包')).toContainText('<img src=x onerror=alert(1)> fixture');
+  await expect(page.getByLabel('钱包', { exact: true })).toContainText('<img src=x onerror=alert(1)> fixture');
   expect(await page.locator('img').count()).toBe(0);
   await page.getByRole('button', { name: '连接钱包' }).click();
   await expect(page.locator('#chain')).toContainText('0x1');

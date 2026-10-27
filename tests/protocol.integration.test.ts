@@ -5,6 +5,7 @@ import { makePlan } from '../src/core/protocol';
 import { managerAbi, tokenAbi } from '../src/config';
 import { inspectReceipt } from '../src/core/receipt';
 import { recheckHistory } from '../src/core/history';
+import { discoverPositions } from '../src/core/discovery';
 describe('official V3 contracts on isolated local EVM', () => {
   let f: Fixture;
   let checkpoint: `0x${string}`;
@@ -25,8 +26,10 @@ describe('official V3 contracts on isolated local EVM', () => {
     const approved = await f.client.readContract({ address: f.manager,
       abi: parseAbi(['function getApproved(uint256 tokenId) view returns (address)']), functionName: 'getApproved', args: [1n] });
     expect(approved).toBe('0x0000000000000000000000000000000000000000');
-    const hash = await f.wallet.sendTransaction({ account: f.account, chain: f.wallet.chain, to: f.manager, data: plan.data, value: 0n });
-    expect((await f.client.waitForTransactionReceipt({ hash })).status).toBe('success');
+    const hash = await f.wallet.sendTransaction({ account: f.account, chain: f.wallet.chain,
+      to: f.manager, data: plan.data, value: 0n, gas: preview.gas });
+    const receipt = await f.client.waitForTransactionReceipt({ hash });
+    expect(receipt.status, `gasUsed=${receipt.gasUsed}; gasLimit=${preview.gas}`).toBe('success');
     expect(await inspectReceipt(f.adapter.rpc, hash, plan)).toMatchObject({
       state: 'received-checked',
     });
@@ -43,6 +46,13 @@ describe('official V3 contracts on isolated local EVM', () => {
   it('rejects a non-owner using actual protocol checks', async () => {
     const data = encodeFunctionData({ abi: managerAbi, functionName: 'collect', args: [{ tokenId: 1n, recipient: f.other, amount0Max: 2n ** 128n - 1n, amount1Max: 2n ** 128n - 1n }] });
     await expect(f.client.call({ account: f.other, to: f.manager, data })).rejects.toThrow();
+  });
+  it('discovers directly owned NFTs using the official enumerable manager', async () => {
+    const page = await discoverPositions(f.adapter, f.account);
+    expect(page.tokenIds).toEqual([f.tokenId]);
+    expect(page.total).toBe(1n);
+    expect(page.next).toBeNull();
+    expect((await discoverPositions(f.adapter, f.other)).tokenIds).toEqual([]);
   });
   async function balances() {
     return Promise.all([f.token0, f.token1].map(address => f.client.readContract({
