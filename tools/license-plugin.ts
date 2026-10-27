@@ -31,6 +31,7 @@ export function licensePlugin(mode: string): Plugin {
         for (const name of licenses) notices.push(readFileSync(resolve(dir, name), 'utf8'));
       }
       this.emitFile({ type: 'asset', fileName: 'THIRD-PARTY-NOTICES.txt', source: notices.join('\n') });
+      this.emitFile({ type: 'asset', fileName: 'LICENSE.txt', source: readFileSync('LICENSE', 'utf8') });
       mkdirSync('release-artifacts', { recursive: true });
       const portableModules = [...modules].map(id => id.replaceAll(resolve('.'), '<project>')).sort();
       writeFileSync(`release-artifacts/bundled-modules-${mode}.json`, JSON.stringify({ modules: portableModules, packages: inventory }, null, 2) + '\n');

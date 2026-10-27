@@ -28,5 +28,6 @@ await mkdir('recovery/tools', { recursive: true });
 await cp('dist', 'recovery/dist', { recursive: true });
 await cp('tools/local-server.mjs', 'recovery/tools/local-server.mjs');
 await cp('tools/verify-bundle.mjs', 'recovery/tools/verify-bundle.mjs');
+await cp('LICENSE', 'recovery/LICENSE');
 await writeFile('recovery/README.txt', 'TapeExit recovery bundle\n\nRequires Node.js 22.12 or newer.\n1. Verify this bundle against a previously saved manifest SHA-256.\n2. Run: node tools/verify-bundle.mjs <previously-saved-sha256>\n3. Run: node tools/local-server.mjs\n4. Open http://localhost:4173\n\nMainnet signing is disabled until release review is complete.\nLocal code still requires network RPC and a functioning chain.\n');
 console.log(`Release: ${list.length} files, ${list.reduce((n, f) => n + f.size, 0)} raw bytes; recovery bundle created.`);
