@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { importRecoveryCard } from '../../src/core/storage';
 
 test('printable recovery card contains valid public JSON and renders its embedded bitmap on mobile', async ({ page }) => {
   const text = await readFile('release-artifacts/recovery-card/card.json', 'utf8');
-  expect(importRecoveryCard(text).tokenIds).toEqual([]);
+  expect(JSON.parse(text)).toMatchObject({ schemaVersion: 1, app: 'TapeExit', chainId: 196, tokenIds: [] });
   await page.setViewportSize({ width: 360, height: 1000 });
   await page.setContent(await readFile('release-artifacts/recovery-card/card.html', 'utf8'));
   const qr = page.getByRole('img');
