@@ -8,3 +8,7 @@
 .history-list>div>.history-actions{flex-direction:row;flex-shrink:0;gap:4px}
 .history-list>div>div:not(.history-actions){min-width:0}
 .history-verification{overflow-wrap:anywhere;max-width:260px}
+.pending-submission{border-top:2px solid #a08b3c;border-bottom:1px solid var(--border);padding:16px 0;margin-bottom:24px;overflow-wrap:anywhere}
+.pending-submission>div:first-child{display:flex;align-items:center;gap:9px}
+.pending-submission p{font-size:12px;color:var(--muted);margin:9px 0}
+.pending-submission>.secondary-button{margin-top:12px}

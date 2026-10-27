@@ -35,6 +35,9 @@ export async function connect(provider: Provider, chainId: number): Promise<Addr
   }
   const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[];
   if (!accounts?.[0]) throw new ExitError('WALLET', 'Wallet did not expose an account');
+  const after = await provider.request({ method: 'eth_chainId' });
+  if (BigInt(after as string) !== BigInt(chainId))
+    throw new ExitError('WALLET_CHANGED', 'Wallet network changed while requesting access');
   return getAddress(accounts[0]);
 }
 export function observeWallet(provider: Provider, invalidate: () => void): () => void {
@@ -53,9 +56,10 @@ export async function assertWallet(provider: Provider, plan: Plan) {
   if (Date.now() - plan.createdAt > 30000)
     throw new ExitError('STALE', 'Preview expired; refresh before signing');
 }
-export async function send(provider: Provider, plan: Plan, gas: bigint): Promise<Hex> {
+export async function send(provider: Provider, plan: Plan, gas: bigint, beforeRequest?: () => void): Promise<Hex> {
   validatePlan(plan);
   await assertWallet(provider, plan);
+  beforeRequest?.();
   const result = await provider.request({ method: 'eth_sendTransaction', params: [{
     from: plan.account, to: plan.manager, data: plan.data, value: '0x0',
     gas: `0x${gas.toString(16)}`, chainId: `0x${plan.chainId.toString(16)}`,

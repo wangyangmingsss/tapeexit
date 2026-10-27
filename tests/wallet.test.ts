@@ -14,8 +14,16 @@ describe('wallet signing boundary', () => {
     });
     expect(await connect({ request }, CHAIN_ID)).toBe(DEMO_OWNER);
     expect(request.mock.calls.map(([p]) => p.method)).toEqual([
-      'eth_chainId', 'wallet_switchEthereumChain', 'eth_chainId', 'eth_requestAccounts',
+      'eth_chainId', 'wallet_switchEthereumChain', 'eth_chainId', 'eth_requestAccounts', 'eth_chainId',
     ]);
+  });
+  it('rejects a network change while account access is being requested', async () => {
+    let chain = '0xc4';
+    const request = vi.fn(async ({ method }: { method: string }) => {
+      if (method === 'eth_requestAccounts') { chain = '0x1'; return [DEMO_OWNER]; }
+      return chain;
+    });
+    await expect(connect({ request }, CHAIN_ID)).rejects.toMatchObject({ code: 'WALLET_CHANGED' });
   });
   it('never sends on stale preview, account or network changes', async () => {
     const p = makePlan(await demoSnapshot(1n, 'none'), DEMO_OWNER, 10000, 50);

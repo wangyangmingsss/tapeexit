@@ -7,7 +7,7 @@ import type { HistoryItem } from './storage';
 
 export type HistoryVerification =
   | { state: 'pending' }
-  | { state: 'reverted'; blockNumber: string }
+  | { state: 'reverted'; blockNumber: string; blockHash: Hex }
   | { state: 'checked'; result: Result };
 
 export function historicalExitToken(data: Hex, account: Address): bigint {
@@ -59,7 +59,7 @@ Promise<HistoryVerification> {
     throw new ExitError('HISTORY', 'Stored position hint does not match the actual direct exit');
   if (BigInt(receipt.status) === 0n) {
     await rpc.assertBlock(block);
-    return { state: 'reverted', blockNumber: BigInt(block.number).toString() };
+    return { state: 'reverted', blockNumber: BigInt(block.number).toString(), blockHash: block.hash };
   }
   if (BigInt(receipt.status) !== 1n) throw new ExitError('HISTORY', 'Invalid transaction status');
   const snapshot = await new V3Adapter(rpc, deployment).snapshotAt(tokenId, block);

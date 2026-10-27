@@ -8,7 +8,8 @@ import { formatUnits, getAddress, type Address, type Hex } from 'viem';
 import { CHAIN_ID, DEPLOYMENT, MANAGER, RELEASE, RELEASE_APPROVED, SOURCES, SUPPORTED_TOKENS } from './config';
 import { StrictRpc, ExitError } from './core/rpc';
 import { makePlan, parseTokenId, V3Adapter, type Plan, type Preview, type Snapshot } from './core/protocol';
-import { assertWallet, connect, discoverWallets, observeWallet, send, type Wallet } from './core/wallet';
+import { assertWallet, connect, discoverWallets, observeWallet, type Wallet } from './core/wallet';
+import { reconcileSubmission, sendGuarded, submissionState, SUBMISSION_KEY, type SubmissionState } from './core/submission';
 import { inspectReceipt, pendingState, type Result } from './core/receipt';
 import { recheckHistory } from './core/history';
 import { clearHistory, downloadJson, importRecoveryCard, loadHistory, recoveryCard, saveHistory, type HistoryItem } from './core/storage';
@@ -116,6 +117,11 @@ export default function App() {
   const [historyChecks, setHistoryChecks] = useState<Record<string, string>>({});
   const historyLocks = useRef(new Set<string>());
   const historyGeneration = useRef(0);
+  const [submission, setSubmission] = useState<SubmissionState>(() => DEMO ? { state: 'empty' } : submissionState());
+  const [checkingSubmission, setCheckingSubmission] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState('');
+  const submissionCheckLock = useRef(false);
+  const submissionBlocked = !DEMO && submission.state !== 'empty';
   const [fault, setFault] = useState<Fault>('none');
   const [accepted, setAccepted] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -144,6 +150,14 @@ export default function App() {
     return discoverWallets(w => setWallets(current => current.some(v => v.id === w.id) ? current : [...current, w]));
   }, []);
   useEffect(() => { void runtimeStatus().then(setRuntime); }, []);
+  useEffect(() => {
+    if (DEMO) return;
+    const update = () => { setSubmission(submissionState()); setSubmissionMessage(''); };
+    const storage = (event: StorageEvent) => { if (event.key === SUBMISSION_KEY || event.key === null) update(); };
+    window.addEventListener('storage', storage);
+    window.addEventListener('focus', update);
+    return () => { window.removeEventListener('storage', storage); window.removeEventListener('focus', update); };
+  }, []);
   useEffect(() => {
     if (!walletPicker && !detailsOpen) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -182,6 +196,11 @@ export default function App() {
       4900: '钱包已断开，请重新连接。',
       4901: '钱包未连接到 X Layer，请检查网络。',
       EMPTY: '当前没有可执行的退出或领取数量。', DUST: '最低输出因金额过小而归零，暂不支持。',
+      SUBMISSION_LOCK: '另一个标签页正在处理交易，或浏览器不支持发送互斥。',
+      SUBMISSION_STORAGE: '无法可靠保存待处理状态，已停止发送。请检查浏览器存储。',
+      SUBMISSION_BLOCKED: '存在未解决的提交，请先核对待处理交易。',
+      SUBMISSION_UNKNOWN: '未保存匹配的交易哈希，请检查钱包记录，勿重复发送。',
+      SUBMISSION_MISMATCH: '实际交易与待处理记录不匹配，保持发送锁定。',
     } : {};
     setError(map[String(code)] || String(err instanceof Error ? err.message : err).slice(0, 240));
   };
@@ -237,6 +256,11 @@ export default function App() {
       setResult(r); setStage('done'); txLock.current = false;
       setHistory(saveHistory({ tokenId: currentPlan.tokenId.toString(), hash: transactionHash,
         time: new Date().toISOString(), environment: 'mainnet', state: r.state }));
+      if (r.finalized) {
+        try { await reconcileSubmission(adapter.rpc, transactionHash); }
+        catch (error) { showError(error); }
+        setSubmission(submissionState());
+      }
     } catch (e) {
       if (id !== generation.current) return;
       showError(e);
@@ -248,6 +272,11 @@ export default function App() {
   }
   async function execute() {
     if (!plan || !preview || !accepted || txLock.current) return;
+    if (!DEMO && submissionState().state !== 'empty') {
+      setSubmission(submissionState());
+      setError(lang === 'zh' ? '存在未解决的提交，请先核对待处理交易。' : 'Resolve the pending submission before sending.');
+      return;
+    }
     if (!DEMO && (!RELEASE_APPROVED || !wallet || !['local', 'tape-client'].includes(runtime.mode))) {
       setError(t.readOnlyHint); return;
     }
@@ -270,7 +299,8 @@ export default function App() {
       if (id !== generation.current) throw new ExitError('STALE', 'Wallet or entry changed during preflight');
       if (Date.now() - plan.createdAt > 30000) throw new ExitError('STALE', 'Preview expired');
       setStage('wallet'); requested = true;
-      const transactionHash = await send(wallet!.provider, plan, checked.gas);
+      const transactionHash = await sendGuarded(wallet!.provider, plan, checked.gas);
+      setSubmission(submissionState());
       submittedPlan.current = plan;
       submittedNonce.current = undefined;
       setHash(transactionHash); setStage('submitted');
@@ -280,10 +310,11 @@ export default function App() {
     } catch (e) {
       showError(e);
       if (requested && (e as { code?: number })?.code !== 4001 &&
-          !(e instanceof ExitError && ['WALLET_CHANGED', 'STALE'].includes(e.code))) {
+          !(e instanceof ExitError && ['WALLET_CHANGED', 'STALE', 'SUBMISSION_LOCK',
+            'SUBMISSION_BLOCKED', 'SUBMISSION_STORAGE'].includes(e.code))) {
         setStage('unknown');
       } else { setStage('ready'); txLock.current = false; }
-    }
+    } finally { if (!DEMO) setSubmission(submissionState()); }
   }
   useEffect(() => {
     if (DEMO || !hash || !submittedPlan.current || !['submitted', 'done'].includes(stage)) return;
@@ -294,6 +325,25 @@ export default function App() {
     setError('');
     try { setAccount(await connect(w.provider, CHAIN_ID)); setWallet(w); setWalletPicker(false); invalidate(); }
     catch (e) { showError(e); }
+  }
+  async function checkSubmission() {
+    if (submissionCheckLock.current) return;
+    submissionCheckLock.current = true; setCheckingSubmission(true); setError('');
+    try {
+      const check = await reconcileSubmission(adapter.rpc, hash);
+      setSubmissionMessage(check.state === 'pending' ?
+        (lang === 'zh' ? '交易仍未确认，保持发送锁定。' : 'Transaction pending; sending remains blocked.') :
+        check.state === 'confirming' ?
+          (lang === 'zh' ? '交易已纳入区块，等待最终确认。' : 'Included; waiting for finality.') : '');
+      if (check.state === 'resolved' || check.state === 'empty') {
+        txLock.current = false;
+        setPlan(undefined); setPreview(undefined); setAccepted(false);
+        setStage(snapshot ? 'ready' : 'idle');
+      }
+    } catch (error) { showError(error); }
+    finally {
+      setSubmission(submissionState()); setCheckingSubmission(false); submissionCheckLock.current = false;
+    }
   }
   async function verifyHistory(item: HistoryItem) {
     if (historyLocks.current.has(item.hash)) return;
@@ -362,6 +412,21 @@ export default function App() {
         <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{tab === 'exit' ? t.exit : tab === 'history' ? t.history : t.recovery}</h1><p>{tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
           <button className="secondary-button save-button" onClick={() => void saveCard()}><Download size={15} />{t.saveCard}</button></div>
         {error && <div className="error-notice" role="alert"><XCircle size={18} /><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
+        {submissionBlocked && <section className="pending-submission" aria-label={lang === 'zh' ? '待处理提交' : 'Pending submission'}>
+          <div><LockKeyhole size={18} /><strong>{lang === 'zh' ? '存在未解决的提交，已锁定发送' : 'Unresolved submission; sending blocked'}</strong></div>
+          <p>{submission.state === 'unavailable' ?
+            (lang === 'zh' ? '待处理记录无法读取，请检查当前浏览器的存储状态。' : 'Pending record unreadable. Check browser storage.') :
+            (lang === 'zh' ? `仓位 #${submission.submission.tokenId} · ${submission.submission.account}` :
+              `Position #${submission.submission.tokenId} · ${submission.submission.account}`)}</p>
+          {submission.state === 'blocked' && submission.submission.hash && <AddressValue value={submission.submission.hash} />}
+          {submission.state === 'blocked' && !submission.submission.hash && !hash && <p>{lang === 'zh' ?
+            '未保存交易哈希，请先检查钱包交易记录；不会自动解除锁定。' :
+            'No saved transaction hash. Inspect wallet activity; the block will remain.'}</p>}
+          <button className="secondary-button" disabled={checkingSubmission || submission.state === 'unavailable' ||
+            (submission.state === 'blocked' && !submission.submission.hash && !hash)} onClick={() => void checkSubmission()}>
+            <RefreshCw size={15} className={checkingSubmission ? 'spin' : ''} />{lang === 'zh' ? '核对待处理交易' : 'Check pending transaction'}</button>
+          {submissionMessage && <p role="status">{submissionMessage}</p>}
+        </section>}
         {tab === 'exit' && <>
           <div className="workspace-grid">
             <section className="position-section" aria-labelledby="workspace-title">
@@ -383,7 +448,7 @@ export default function App() {
             <aside className="preview-section" aria-labelledby="preview-title"><div className="section-top"><h2 id="preview-title">{t.output}</h2><FileCheck2 size={17} className="muted" /></div>
               {preview && plan && snapshot ? <><div className="output-assets">{[snapshot.token0, snapshot.token1].map((asset, i) => <div className="output-asset" key={asset.address}><AssetBadge symbol={asset.symbol} index={i} /><div><span>{asset.symbol}</span><strong>{units(i === 0 ? preview.amount0 : preview.amount1, asset.decimals)}</strong></div><CheckCircle2 size={16} className="green" /></div>)}</div>
                 <p className="preview-footnote">{t.feeNote}</p><div className="preview-lines"><div><span>{t.minimum}</span><strong>{units(plan.amount0Min, snapshot.token0.decimals)} / {units(plan.amount1Min, snapshot.token1.decimals)}</strong></div><div><span>{t.gas}</span><strong>{formatUnits(preview.gas * preview.gasPrice, 18)} OKB</strong></div><div><span>{t.deadline}</span><strong>{plan.deadline ? new Date(Number(plan.deadline) * 1000).toLocaleTimeString() : '—'}</strong></div></div>
-                <button className="primary-button review-button" disabled={busy || stage === 'unknown' || stage === 'done'} onClick={() => { setAccepted(false); setStage('review'); setDetailsOpen(true); }}>{t.review}<ArrowRight size={16} /></button>
+                <button className="primary-button review-button" disabled={busy || submissionBlocked || stage === 'unknown' || stage === 'done'} onClick={() => { setAccepted(false); setStage('review'); setDetailsOpen(true); }}>{t.review}<ArrowRight size={16} /></button>
               </> : <div className="preview-empty"><div className="receipt-illustration"><FileCheck2 size={36} strokeWidth={1.1} /><span><Check size={11} /></span></div><h3>{t.empty}</h3><p>{t.emptySub}</p></div>}
               <div className="recipient-preview"><LockKeyhole size={14} /><span>{t.recipient}</span><code>{account ? short(account) : '—'}</code></div>
             </aside>
