@@ -47,6 +47,7 @@ function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' 
     if (method === 'eth_chainId') return '0xc4';
     if (method === 'eth_getTransactionByHash') return fault === 'missing' ? null : {
       from: DEMO_OWNER, to: MANAGER, input: fault === 'mismatch' ? '0x1234' : data, value: '0x0',
+      hash, blockNumber: '0x10', blockHash, transactionIndex: '0x0',
     };
     if (method === 'eth_getTransactionReceipt') return { blockNumber: '0x10', blockHash,
       transactionHash: hash, transactionIndex: '0x0', from: DEMO_OWNER, to: MANAGER, status, logs: [] };
@@ -250,7 +251,7 @@ describe('durable same-origin submission guard', () => {
   });
   it.each([
     { transactionHash: blockHash }, { from: MANAGER }, { to: DEMO_OWNER }, { status: '0x0' },
-    { status: '0x2' }, { transactionIndex: '0x00' },
+    { status: '0x2' }, { transactionIndex: '0x00' }, { transactionIndex: '0x1' },
   ])('retains the durable marker when the last receipt changes identity or status %j', async change => {
     const p = await sent(); checked();
     const source = rpc(p.data);

@@ -81,4 +81,4 @@ recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer h
 
 ## 收据证据与最终解锁
 
-`tests/chain-evidence.test.ts` 和 `tests/receipt.test.ts` 覆盖状态、交易及日志身份、规范字段、重复/倒序/removed 日志及回滚检查顺序；官方本地 V3 集成对实际成功及回滚收据执行同一检查。`tests/submission.test.ts` 验证最终收据身份或状态改变时保留持久记录。生产浏览器另用明确 RPC 夹具验证最终回滚正常解锁、最后回读改变状态/交易哈希时保持锁；这些测试不证明真实主网重组或真钱包验收。
+`tests/chain-evidence.test.ts` 和 `tests/receipt.test.ts` 覆盖状态、交易及日志身份、规范字段、重复/倒序/removed 日志及回滚检查顺序；官方本地 V3 集成对实际成功及回滚收据执行同一检查。`tests/submission.test.ts` 验证最终收据身份、索引或状态改变时保留持久记录；最终实际交易再次与完整收据及原调用摘要绑定。生产浏览器另用明确 RPC 夹具验证最终回滚正常解锁、最后回读改变状态/交易哈希时保持锁；这些测试不证明真实主网重组或真钱包验收。

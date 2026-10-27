@@ -4,7 +4,7 @@ import { parseTokenId, type Plan } from './protocol';
 import { recheckHistory } from './history';
 import { ExitError, type StrictRpc } from './rpc';
 import { send, type Provider } from './wallet';
-import { receiptEvidence } from './chain-evidence';
+import { assertTransactionIdentity, minedTransaction, receiptEvidence } from './chain-evidence';
 
 export const SUBMISSION_KEY = 'tapeexit:submission:v1';
 const LOCK = 'tapeexit:submission:v1';
@@ -116,6 +116,10 @@ export async function reconcileSubmission(rpc: StrictRpc, knownHash?: Hex) {
     if (receipt.transactionHash !== hash.toLowerCase() || receipt.from !== entry.account || receipt.to !== MANAGER ||
         receipt.status !== (verification.state === 'reverted' ? '0x0' : '0x1'))
       throw new ExitError('SUBMISSION_MISMATCH', 'Final receipt differs from the checked transaction');
+    const finalTx = minedTransaction(await rpc.request<unknown>('eth_getTransactionByHash', [hash], minedTransaction));
+    assertTransactionIdentity(finalTx, receipt);
+    if (BigInt(finalTx.value) !== 0n || keccak256(finalTx.input) !== entry.inputHash)
+      throw new ExitError('SUBMISSION_MISMATCH', 'Final transaction differs from the pending intent');
     await rpc.assertBlock(finalized);
     await rpc.assertBlock(canonical);
     const current = submissionState();
