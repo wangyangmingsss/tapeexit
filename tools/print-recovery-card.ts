@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import QRCode from 'qrcode';
 import { CHAIN_ID, MANAGER } from '../src/config';
 import { importRecoveryCard } from '../src/core/storage';
@@ -17,6 +17,7 @@ const qr = await QRCode.toDataURL(payload, { errorCorrectionLevel: 'M', width: 8
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const dir = 'release-artifacts/recovery-card';
+await rm(dir, { recursive: true, force: true });
 await mkdir(dir, { recursive: true });
 await writeFile(`${dir}/card.json`, JSON.stringify(card, null, 2) + '\n');
 await writeFile(`${dir}/card.html`, `<!doctype html>
