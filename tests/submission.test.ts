@@ -170,4 +170,64 @@ describe('durable same-origin submission guard', () => {
       state: 'resolved', verification: { state: 'reverted' },
     });
   });
+  it('recovers an unknown submission with a matching wallet hash after refresh', async () => {
+    const p = await sent();
+    const state = submissionState();
+    if (state.state !== 'blocked') throw new Error();
+    const { hash: _savedHash, ...unknown } = state.submission;
+    localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+    checked();
+    await expect(reconcileSubmission(rpc(p.data), hash)).resolves.toMatchObject({
+      state: 'resolved', submission: { ...unknown, hash },
+    });
+    expect(submissionState().state).toBe('empty');
+  });
+  it.each([false, true])('retains the block for an unconfirmed candidate, transaction missing=%s', async missing => {
+    const p = await sent();
+    const state = submissionState();
+    if (state.state !== 'blocked') throw new Error();
+    const { hash: _savedHash, ...unknown } = state.submission;
+    localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+    vi.mocked(recheckHistory).mockResolvedValue({ state: 'pending' });
+    await expect(reconcileSubmission(rpc(p.data, missing ? 'missing' : undefined), hash))
+      .resolves.toEqual({ state: 'pending' });
+    expect(submissionState()).toEqual({
+      state: 'blocked', submission: missing ? unknown : { ...unknown, hash },
+    });
+  });
+  it.each([
+    { from: '0x2000000000000000000000000000000000000002' },
+    { to: '0x2000000000000000000000000000000000000002' },
+    { value: '0x1' },
+    { input: '0x1234' },
+  ])('rejects a candidate hash whose transaction differs by %j', async change => {
+    const p = await sent();
+    const state = submissionState();
+    if (state.state !== 'blocked') throw new Error();
+    const { hash: _savedHash, ...unknown } = state.submission;
+    localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+    const source = rpc(p.data);
+    vi.spyOn(source, 'request').mockImplementation(async method => {
+      if (method === 'eth_chainId') return '0xc4' as never;
+      if (method === 'eth_getTransactionByHash') return {
+        from: DEMO_OWNER, to: MANAGER, input: p.data, value: '0x0', ...change,
+      } as never;
+      throw new Error(`Unexpected ${method}`);
+    });
+    await expect(reconcileSubmission(source, hash)).rejects.toMatchObject({ code: 'SUBMISSION_MISMATCH' });
+    expect(submissionState()).toEqual({ state: 'blocked', submission: unknown });
+    expect(recheckHistory).not.toHaveBeenCalled();
+  });
+  it('rejects malformed recovery hashes before any RPC access', async () => {
+    const p = await sent();
+    const state = submissionState();
+    if (state.state !== 'blocked') throw new Error();
+    const { hash: _savedHash, ...unknown } = state.submission;
+    localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+    const source = rpc(p.data);
+    const request = vi.spyOn(source, 'request');
+    await expect(reconcileSubmission(source, '0x1234')).rejects.toMatchObject({ code: 'SUBMISSION_UNKNOWN' });
+    expect(request).not.toHaveBeenCalled();
+    expect(submissionState()).toEqual({ state: 'blocked', submission: unknown });
+  });
 });

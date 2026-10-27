@@ -120,8 +120,12 @@ export default function App() {
   const [submission, setSubmission] = useState<SubmissionState>(() => DEMO ? { state: 'empty' } : submissionState());
   const [checkingSubmission, setCheckingSubmission] = useState(false);
   const [submissionMessage, setSubmissionMessage] = useState('');
+  const [recoveryHash, setRecoveryHash] = useState({ id: '', value: '' });
   const submissionCheckLock = useRef(false);
   const submissionBlocked = !DEMO && submission.state !== 'empty';
+  const candidateHash = submission.state === 'blocked' && recoveryHash.id === submission.submission.id ?
+    recoveryHash.value.trim() : '';
+  const validCandidateHash = /^0x[0-9a-f]{64}$/i.test(candidateHash);
   const [fault, setFault] = useState<Fault>('none');
   const [accepted, setAccepted] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -352,8 +356,11 @@ export default function App() {
     submissionCheckLock.current = true; setCheckingSubmission(true); setError('');
     try {
       const saved = submissionState();
+      const candidate = saved.state === 'blocked' && recoveryHash.id === saved.submission.id ?
+        recoveryHash.value.trim() : '';
       const check = await reconcileSubmission(adapter.rpc,
-        saved.state === 'blocked' && saved.submission.hash ? undefined : hash);
+        saved.state === 'blocked' && saved.submission.hash ? undefined :
+          /^0x[0-9a-f]{64}$/i.test(candidate) ? candidate as Hex : hash);
       setSubmissionMessage(check.state === 'pending' ?
         (lang === 'zh' ? '交易仍未确认，保持发送锁定。' : 'Transaction pending; sending remains blocked.') :
         check.state === 'confirming' ?
@@ -380,6 +387,7 @@ export default function App() {
         txLock.current = false;
         submittedPlan.current = undefined; submittedNonce.current = undefined;
         setSnapshot(undefined); setResult(undefined); setHash(undefined);
+        setRecoveryHash({ id: '', value: '' });
         setPlan(undefined); setPreview(undefined); setAccepted(false);
         setStage('idle');
       }
@@ -466,8 +474,18 @@ export default function App() {
           {submission.state === 'blocked' && !submission.submission.hash && !hash && <p>{lang === 'zh' ?
             '未保存交易哈希，请先检查钱包交易记录；不会自动解除锁定。' :
             'No saved transaction hash. Inspect wallet activity; the block will remain.'}</p>}
+          {submission.state === 'blocked' && !submission.submission.hash && <div className="submission-hash">
+            <label htmlFor="submission-hash">{lang === 'zh' ? '钱包交易哈希' : 'Wallet transaction hash'}</label>
+            <input id="submission-hash" value={candidateHash} maxLength={66} autoComplete="off" spellCheck={false}
+              placeholder="0x..." disabled={checkingSubmission} aria-describedby="submission-hash-hint"
+              aria-invalid={candidateHash.length > 0 && !validCandidateHash}
+              onChange={event => setRecoveryHash({ id: submission.submission.id, value: event.target.value })} />
+            <p id="submission-hash-hint">{lang === 'zh' ? '交易须匹配原提交并最终确认，才能解除锁定。' :
+              'The transaction must match the original submission and be finalized to clear the block.'}</p>
+          </div>}
           <button className="secondary-button" disabled={checkingSubmission || submission.state === 'unavailable' ||
-            (submission.state === 'blocked' && !submission.submission.hash && !hash)} onClick={() => void checkSubmission()}>
+            (submission.state === 'blocked' && !submission.submission.hash &&
+              (candidateHash ? !validCandidateHash : !hash))} onClick={() => void checkSubmission()}>
             <RefreshCw size={15} className={checkingSubmission ? 'spin' : ''} />{lang === 'zh' ? '核对待处理交易' : 'Check pending transaction'}</button>
           {submissionMessage && <p role="status">{submissionMessage}</p>}
         </section>}

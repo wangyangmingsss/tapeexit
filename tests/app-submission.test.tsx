@@ -54,6 +54,57 @@ it('updates pending recovery when another tab changes the durable marker', async
   await screen.findByText('交易已纳入区块，等待最终确认。');
   expect(localStorage.getItem(SUBMISSION_KEY)).not.toBeNull();
 });
+it('accepts a well-formed wallet hash for an unknown submission without clearing the block on failure', async () => {
+  const { hash: _hash, ...unknown } = entry;
+  localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+  vi.mocked(reconcileSubmission).mockRejectedValue(new Error('Actual transaction does not match the pending intent'));
+  const user = userEvent.setup();
+  render(<App />);
+  const input = screen.getByLabelText('钱包交易哈希');
+  const check = screen.getByRole('button', { name: '核对待处理交易' });
+  await user.type(input, '0x1234');
+  expect(input.getAttribute('aria-invalid')).toBe('true');
+  expect(check.hasAttribute('disabled')).toBe(true);
+  expect(reconcileSubmission).not.toHaveBeenCalled();
+  await user.clear(input);
+  await user.type(input, hash);
+  expect(check.hasAttribute('disabled')).toBe(false);
+  await user.click(check);
+  await screen.findByRole('alert');
+  expect(reconcileSubmission).toHaveBeenCalledWith(expect.anything(), hash);
+  expect(JSON.parse(localStorage.getItem(SUBMISSION_KEY)!)).toEqual(unknown);
+  expect(screen.getByText('存在未解决的提交，已锁定发送')).toBeTruthy();
+});
+it('does not reuse a candidate hash when another tab replaces the pending intent', async () => {
+  const { hash: _hash, ...unknown } = entry;
+  localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+  const user = userEvent.setup();
+  render(<App />);
+  await user.type(screen.getByLabelText('钱包交易哈希'), hash);
+  localStorage.setItem(SUBMISSION_KEY, JSON.stringify({ ...unknown, id: '22222222-2222-2222-2222-222222222222' }));
+  window.dispatchEvent(new StorageEvent('storage', { key: SUBMISSION_KEY }));
+  await vi.waitFor(() => expect((screen.getByLabelText('钱包交易哈希') as HTMLInputElement).value).toBe(''));
+  expect(screen.getByRole('button', { name: '核对待处理交易' }).hasAttribute('disabled')).toBe(true);
+  expect(reconcileSubmission).not.toHaveBeenCalled();
+});
+it('saves the verified outcome when a manually supplied wallet hash resolves an unknown intent', async () => {
+  const { hash: _hash, ...unknown } = entry;
+  localStorage.setItem(SUBMISSION_KEY, JSON.stringify(unknown));
+  vi.mocked(reconcileSubmission).mockImplementation(async () => {
+    localStorage.removeItem(SUBMISSION_KEY);
+    return { state: 'resolved', submission: entry, verification: {
+      state: 'reverted', blockNumber: '16', blockHash: hash,
+    } };
+  });
+  const user = userEvent.setup();
+  render(<App />);
+  await user.type(screen.getByLabelText('钱包交易哈希'), hash);
+  await user.click(screen.getByRole('button', { name: '核对待处理交易' }));
+  await screen.findByText(/交易已回滚并最终确认/);
+  expect(reconcileSubmission).toHaveBeenCalledWith(expect.anything(), hash);
+  expect(screen.queryByLabelText('钱包交易哈希')).toBeNull();
+  expect(loadHistory()[0]).toMatchObject({ hash, tokenId: '12', state: 'reverted' });
+});
 it('blocks when the durable marker is unreadable', () => {
   localStorage.setItem(SUBMISSION_KEY, 'invalid');
   render(<App />);

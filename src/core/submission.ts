@@ -80,7 +80,8 @@ export async function reconcileSubmission(rpc: StrictRpc, knownHash?: Hex) {
     if (state.state !== 'blocked') throw new ExitError('SUBMISSION_STORAGE', 'Pending submission storage is unreadable');
     const entry = state.submission;
     const hash = entry.hash ?? knownHash;
-    if (!hash || (entry.hash && knownHash && entry.hash.toLowerCase() !== knownHash.toLowerCase()))
+    if (!hash || !/^0x[0-9a-f]{64}$/i.test(hash) ||
+        (entry.hash && knownHash && entry.hash.toLowerCase() !== knownHash.toLowerCase()))
       throw new ExitError('SUBMISSION_UNKNOWN', 'No matching transaction hash; inspect wallet activity before recovery');
     await rpc.checkChain(entry.chainId);
     const tx = await rpc.request<{ from: Address; to: Address; input: Hex; value: Hex } | null>(
