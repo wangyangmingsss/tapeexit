@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TapeExit 钱包接入验收</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header><strong>TapeExit</strong><span>钱包接入验收 · 不签名、不发送交易</span></header>
+    <h1>钱包接入记录</h1>
+    <dl><dt>源码提交</dt><dd id="commit">读取中</dd><dt>发行清单 SHA-256</dt><dd id="digest">读取中</dd></dl>
+    <label for="wallet">钱包</label><select id="wallet"><option value="">尚未发现扩展钱包</option></select>
+    <div class="commands"><button id="connect" disabled>连接钱包</button><button id="refresh" disabled>刷新状态</button><button id="switch" disabled>切换到 X Layer</button></div>
+    <p id="status" role="status">等待钱包</p>
+    <dl><dt>Chain ID</dt><dd id="chain">—</dd><dt>当前账户</dt><dd id="account">—</dd></dl>
+    <h2>事件记录</h2>
+    <ol id="events" aria-live="polite"></ol>
+    <label class="consent"><input id="consent" type="checkbox">允许将本次公开地址、钱包标识和事件记录导出为验收证据</label>
+    <button id="export" disabled>导出接入记录</button>
+    <p class="scope">此记录只覆盖当前本地入口的接入。交易签名、真实 TapeOut 来源、账户变更后的退出流程和资金结果仍需另行验收。</p>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -15,12 +15,20 @@
     "test:tapekit": "tsx --test tests/tapekit-compat.test.mjs",
     "verify:deployment": "tsx tools/verify-deployment.ts",
     "verify:publication": "tsx tools/verify-publication.ts",
+    "inspect:publication": "tsx tools/inspect-publication.ts",
+    "inspect:assets": "tsx tools/inspect-assets.ts",
+    "accept:wallet": "node tools/wallet-acceptance.mjs",
+    "report:users": "node tools/user-validation.mjs",
+    "record:demo": "node tools/record-demo.mjs",
+    "report:readiness": "tsx tools/report-readiness.ts",
+    "package:entry": "tsx tools/package-entry.ts",
     "verify:fork": "tsx tools/verify-fork.ts",
     "recovery": "node tools/local-server.mjs",
     "gateway": "node tools/gateway.mjs",
     "vendor:tapekit": "node tools/vendor-tapekit.mjs",
     "build:gateway": "node tools/build-gateway.mjs",
     "plan:publish": "tsx tools/publish-plan.ts",
+    "plan:resume": "tsx tools/resume-publication.ts",
     "report:dependencies": "node tools/dependency-report.mjs",
     "report:dependency-scope": "node tools/dependency-scope.mjs",
     "verify:reproducibility": "node tools/verify-reproducibility.mjs",
@@ -28,6 +36,11 @@
   },
   "engines": {
     "node": ">=22.12"
+  },
+  "overrides": {
+    "tmp": "0.2.7",
+    "diff": "8.0.3",
+    "serialize-javascript": "7.1.3"
   },
   "dependencies": {
     "@uniswap/sdk-core": "7.20.0",

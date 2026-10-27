@@ -28,7 +28,12 @@ No clean-security conclusion follows from these classifications. The `--omit=dev
 
 ## Current Decisions
 
-The observed installed graph still contains 22 findings: 9 high, 2 moderate and 11 low. A compatible `npm audit fix --dry-run --omit=dev --ignore-scripts` did not resolve them. The offered force operation would downgrade the approved mathematical dependency to a different SDK release; it has not been applied.
+The previous graph contained 22 findings: 9 high, 2 moderate and 11 low. Compatible automatic fixes did not resolve them.
+Targeted overrides now pin `tmp@0.2.7`, `diff@8.0.3` and `serialize-javascript@7.1.3`; the initial install scan reports
+17 remaining findings (7 high, 1 moderate, 9 low). Regenerate the audit/context and graph report for the current lockfile
+before using that count as release evidence. Compatibility probes cover solc temporary files, Mocha patch application
+and serialization; the full contract suite must also pass. The offered force operation would downgrade the official
+mathematical dependency and has not been applied.
 
 Keep the official SDK and integer mathematics until a compatible, reviewed migration exists. Do not remove event, ownership or transaction checks to reduce bundle size.
 

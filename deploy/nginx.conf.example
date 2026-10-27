@@ -1,0 +1,29 @@
+# Replace gateway.example, certificate paths and root before nginx -t.
+# Deploy separate copies to each actual gateway; this is not infrastructure independence.
+server {
+    listen 443 ssl;
+    server_name ~^[0-9]+-2-[0-9]+\.gateway\.example$;
+    ssl_certificate /etc/ssl/tapeexit/fullchain.pem;
+    ssl_certificate_key /etc/ssl/tapeexit/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    root /srv/tapeexit/dist-gateway;
+    server_tokens off;
+    if ($request_method !~ ^(GET|HEAD)$) { return 405; }
+    add_header Cache-Control "no-store" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Service-Worker-Allowed "/" always;
+    location = /sw.js {
+        try_files $uri =404;
+        default_type application/javascript;
+    }
+    location ^~ /.tape/ {
+        try_files $uri =404;
+    }
+    location / {
+        try_files /index.html =404;
+    }
+    # Nginx http{} must include mime.types for module scripts, CSS and JSON.
+    # Keep upstream SW/kernel paths unchanged. Container verification happens in the client.
+}

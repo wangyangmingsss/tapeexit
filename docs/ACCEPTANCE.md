@@ -34,16 +34,16 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The configuration starts the demo at port 4174 and the actual production recovery server at 4175. Test both 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
+The configuration starts the demo at port 4174, production recovery at 4175, a second local copy at 4176 and the wallet connectivity harness at 4180. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
 
-The 16 prepared cases cover the simulated task, disagreement, recovery import, review/focus and production read-only/pending recovery. They do not exercise a real wallet or actual TapeOut Service Worker. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; changing the test assertions cannot resolve that external restriction.
+The previous 16 cases passed on commit `7219c8a` in GitHub Actions run `40516216450`. The expanded 20-case suite adds a controlled loopback network outage and fixture-provider harness checks. It does not exercise a real wallet or actual TapeOut Service Worker. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify each new commit through its actual remote result.
 
 ## Remaining Gates
 
 | Gate | Status | Required Input Or Evidence |
 | --- | --- | --- |
-| Correct GitHub publication | Blocked | Supported authentication for the user's intended account; `/user` must match before creating/pushing a repository |
-| Browser and layouts | Blocked locally | Environment that can launch Chromium, screenshots and complete 16-case result |
+| Correct GitHub publication | Completed for prior candidate | Public `wangyangmingsss/tapeexit`; verify each new pushed commit matches local |
+| Browser and layouts | Prior 16 cases passed remotely; expanded suite needs current result | Match screenshots and test output to the exact commit |
 | Actual TapeOut origin and target wallet | Not accepted | Real origin, target extension, wallet request/response trace, controller changes, cancellation, account/chain changes and refresh |
 | Supported assets | Not approved | Exact token contracts and nonstandard-behavior review; do not simply change the allowlist |
 | Independent transaction/security review | Not completed | Independent reviewer, reviewed commit, findings and retest |
@@ -57,8 +57,11 @@ The 16 prepared cases cover the simulated task, disagreement, recovery import, r
 
 ## Safe Continuation
 
-Credentials belong in supported client authentication, not source, a script or a report. Verify only the account login before repository writes. The configured account last checked is explicitly not the user's target account; no remote has been created.
+Credentials belong in supported client authentication, not source, a script or a report. Verify account login before repository writes. The user's intended account is `wangyangmingsss`; the public repository exists and prior candidate history has been pushed.
 
 External funds and publication are separate from development permission. Do not create a circuit, activate a container, upload paid files or submit a mainnet exit without concrete wallet/container and bounded-fee inputs.
 
 Keep the production gate closed while the required acceptance remains incomplete. A local test count, a file digest or the module-graph report cannot waive these gates.
+
+Read `OPERATIONS.md` for read-only publication/asset probes, safe unsigned resume, wallet connectivity collection,
+recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer handoff, not a review result.

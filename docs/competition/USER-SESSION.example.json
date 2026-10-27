@@ -1,0 +1,18 @@
+{
+  "sessionId": null,
+  "observedAt": null,
+  "participantId": null,
+  "scenarioId": null,
+  "sourceCommit": null,
+  "manifestSha256": null,
+  "environment": null,
+  "method": null,
+  "consentToParticipate": false,
+  "taskCompleted": null,
+  "durationSeconds": null,
+  "assistanceCount": null,
+  "errors": null,
+  "recognizedEnvironment": null,
+  "quote": null,
+  "quoteConsent": false
+}

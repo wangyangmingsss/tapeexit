@@ -23,7 +23,9 @@ Today the fixed TapeKit build, upload encoder, actual path-resolver compatibilit
 - Strict two-operator reads, exact SDK integer math, calldata checks, receipt evidence, durable pending-submission recovery and entry invalidation.
 - A local recovery server, hashed file manifest and offline file verification.
 
-No mainnet transaction was broadcast. Production signing is disabled and the approved asset list is empty. Browser tests are prepared but blocked locally before Chromium launches.
+No mainnet transaction was broadcast. Production signing is disabled and the approved asset list is empty.
+The prior candidate's 16 browser tests passed remotely. The expanded suite and new tools need their exact commit's results.
+Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, simulation recording and consented-session aggregation are implemented.
 
 ## Scope And Limits
 
@@ -43,8 +45,8 @@ The base exit tool is open source and free. Protocol-funded adapter review, depl
 
 ## Required Before Submission
 
-1. Verify the current official activity rules and actual submission form. The activity page could not be fetched during the latest check; do not infer current eligibility or deadline from this draft.
-2. Publish the approved source to the user's correct GitHub account and record the public commit.
+1. Verify the current official activity rules and actual submission form; do not infer current eligibility or deadline from this draft.
+2. Keep the public `wangyangmingsss/tapeexit` repository updated and record the final public commit.
 3. Complete target-wallet/browser tests, supported-asset review and independent transaction-path review.
 4. Obtain a real circuit/container, approved publisher wallet, explicit maximum OKB budget and hosting access.
 5. Publish, read back exact files, verify live status, load the actual origin and rehearse alternate/local entry.

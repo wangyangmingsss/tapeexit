@@ -2,6 +2,17 @@
 
 No participants have been recruited or contacted. This template is for later permissioned sessions.
 
+`USER-SESSION.example.json` is an intentionally invalid blank record, not a participant.
+Create a private JSON array of actual consented sessions and run `npm run report:users -- <sessions.json>`.
+Use pseudonymous participant/session/scenario IDs. `environment` is `isolation-demo`, `local-fork` or `mainnet`;
+`method` is `tapeexit`, `explorer` or `official-local`. Record measured seconds, assistance/errors and whether
+the participant recognized the environment. Record source commit and manifest digest for every method so comparisons
+remain bound to the release under evaluation. Mainnet claims require an actual transaction hash and later verification.
+
+The summarizer rejects unconsented or duplicate sessions, counts unique participants separately, groups by version,
+scenario and environment, and excludes quotations without separate publication consent. Do not commit participant records.
+With no input it explicitly reports `NO_USER_EVIDENCE`. Self-reported records do not authenticate consent or observations.
+
 ## Session
 
 Record participant code, consent to participate, separate consent for quotation/publication, date, environment, source commit and task starting condition. Avoid collecting wallet secrets, private keys or unnecessary personal information.

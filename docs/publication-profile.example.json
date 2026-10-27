@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "publisher": null,
+  "container": null,
+  "processorIndex": null,
+  "circuitId": null,
+  "maxGasPerTransaction": null,
+  "maxFeePerGasWei": null,
+  "maxUploadCostWei": null,
+  "expectedCodeHashes": {
+    "processor": null,
+    "container": null,
+    "opener": null,
+    "registry": null,
+    "binding": null,
+    "factory": null
+  }
+}
