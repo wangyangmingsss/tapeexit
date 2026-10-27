@@ -4,6 +4,7 @@ import { parseTokenId, V3Adapter } from './protocol';
 import { inspectReceipt, type Result } from './receipt';
 import { ExitError, type StrictRpc } from './rpc';
 import type { HistoryItem } from './storage';
+import { assertTransactionIdentity, minedTransaction, receiptEvidence } from './chain-evidence';
 
 export type HistoryVerification =
   | { state: 'pending' }
@@ -39,21 +40,17 @@ Promise<HistoryVerification> {
   const tokenId = parseTokenId(item.tokenId);
   await rpc.checkChain(deployment.chainId);
   const hash = item.hash as Hex;
-  const receipt = await rpc.request<{ status: Hex; blockNumber: Hex; blockHash: Hex; transactionHash: Hex; from: Address; to: Address } | null>(
-    'eth_getTransactionReceipt', [hash], value => value ? {
-      status: value.status, blockNumber: value.blockNumber, blockHash: value.blockHash,
-      transactionHash: value.transactionHash, from: value.from, to: value.to,
-    } : null);
-  if (!receipt) return { state: 'pending' };
+  const raw = await rpc.request<unknown>('eth_getTransactionReceipt', [hash],
+    value => value === null ? null : receiptEvidence(value));
+  if (raw === null) return { state: 'pending' };
+  const receipt = receiptEvidence(raw);
   if (receipt.transactionHash.toLowerCase() !== hash.toLowerCase() || getAddress(receipt.to) !== getAddress(deployment.manager))
     throw new ExitError('HISTORY', 'Receipt does not match the configured manager');
   const block = await rpc.block(receipt.blockNumber);
   if (block.hash.toLowerCase() !== receipt.blockHash.toLowerCase()) throw new ExitError('REORG', 'Receipt block changed');
-  const tx = await rpc.request<{ from: Address; to: Address; input: Hex; value: Hex } | null>(
-    'eth_getTransactionByHash', [hash], value => value ? {
-      from: value.from, to: value.to, input: value.input, value: value.value,
-    } : null);
-  if (!tx || getAddress(tx.to) !== getAddress(deployment.manager) ||
+  const tx = minedTransaction(await rpc.request<unknown>('eth_getTransactionByHash', [hash], minedTransaction));
+  assertTransactionIdentity(tx, receipt);
+  if (getAddress(tx.to) !== getAddress(deployment.manager) ||
       getAddress(tx.from) !== getAddress(receipt.from) || BigInt(tx.value) !== 0n ||
       historicalExitToken(tx.input, tx.from) !== tokenId)
     throw new ExitError('HISTORY', 'Stored position hint does not match the actual direct exit');

@@ -42,7 +42,7 @@ describe('historical direct exit verification', () => {
     await expect(recheckHistory(wrongChain, item)).rejects.toThrow();
     const rpc = new StrictRpc(sources, async (_source, method) => method === 'eth_chainId' ? '0xc4' : {
       status: '0x1', blockNumber: '0x1', blockHash: item.hash, transactionHash: item.hash,
-      from: DEMO_OWNER, to: '0x0000000000000000000000000000000000000001',
+      transactionIndex: '0x0', logs: [], from: DEMO_OWNER, to: '0x0000000000000000000000000000000000000001',
     });
     expect(DEPLOYMENT.chainId).toBe(196);
     await expect(recheckHistory(rpc, item)).rejects.toMatchObject({ code: 'HISTORY' });

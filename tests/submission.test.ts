@@ -39,7 +39,8 @@ async function sent() {
   await sendGuarded(provider(async () => hash), p, 100000n);
   return p;
 }
-function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' | 'reorg' | 'finality' | 'height') {
+function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' | 'reorg' | 'finality' | 'height',
+  status = '0x1') {
   return new StrictRpc([
     { url: 'https://a.example', operator: 'a' }, { url: 'https://b.example', operator: 'b' },
   ], async (_source, method, params) => {
@@ -47,7 +48,8 @@ function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' 
     if (method === 'eth_getTransactionByHash') return fault === 'missing' ? null : {
       from: DEMO_OWNER, to: MANAGER, input: fault === 'mismatch' ? '0x1234' : data, value: '0x0',
     };
-    if (method === 'eth_getTransactionReceipt') return { blockNumber: '0x10', blockHash };
+    if (method === 'eth_getTransactionReceipt') return { blockNumber: '0x10', blockHash,
+      transactionHash: hash, transactionIndex: '0x0', from: DEMO_OWNER, to: MANAGER, status, logs: [] };
     if (method === 'eth_getBlockByNumber') {
       if (fault === 'finality') throw new Error('Unsupported');
       const finalized = params[0] === 'finalized';
@@ -182,7 +184,7 @@ describe('durable same-origin submission guard', () => {
   it('can resolve a finalized reverted transaction without treating it as collection success', async () => {
     const p = await sent();
     vi.mocked(recheckHistory).mockResolvedValue({ state: 'reverted', blockNumber: '16', blockHash });
-    await expect(reconcileSubmission(rpc(p.data))).resolves.toMatchObject({
+    await expect(reconcileSubmission(rpc(p.data, undefined, '0x0'))).resolves.toMatchObject({
       state: 'resolved', verification: { state: 'reverted' },
     });
   });
@@ -245,5 +247,22 @@ describe('durable same-origin submission guard', () => {
     await expect(reconcileSubmission(source, '0x1234')).rejects.toMatchObject({ code: 'SUBMISSION_UNKNOWN' });
     expect(request).not.toHaveBeenCalled();
     expect(submissionState()).toEqual({ state: 'blocked', submission: unknown });
+  });
+  it.each([
+    { transactionHash: blockHash }, { from: MANAGER }, { to: DEMO_OWNER }, { status: '0x0' },
+    { status: '0x2' }, { transactionIndex: '0x00' },
+  ])('retains the durable marker when the last receipt changes identity or status %j', async change => {
+    const p = await sent(); checked();
+    const source = rpc(p.data);
+    const original = source.request.bind(source);
+    vi.spyOn(source, 'request').mockImplementation(async (method, params, normalize) => {
+      if (method === 'eth_getTransactionReceipt') return {
+        blockNumber: '0x10', blockHash, transactionHash: hash, transactionIndex: '0x0',
+        from: DEMO_OWNER, to: MANAGER, status: '0x1', logs: [], ...change,
+      } as never;
+      return original(method, params, normalize) as never;
+    });
+    await expect(reconcileSubmission(source)).rejects.toThrow();
+    expect(submissionState().state).toBe('blocked');
   });
 });

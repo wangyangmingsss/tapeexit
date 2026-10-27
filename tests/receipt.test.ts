@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { encodeAbiParameters, encodeEventTopics, parseAbiParameters, type Hex } from 'viem';
 import { poolAbi, tokenAbi } from '../src/config';
 import { makePlan } from '../src/core/protocol';
@@ -23,9 +23,11 @@ async function context() {
       data: encodeAbiParameters(parseAbiParameters('uint256'), [i === 0 ? 10n : 20n]),
     })),
   ];
-  const receipt = { status: '0x1', blockNumber: '0x10', blockHash, transactionHash: hash,
-    from: DEMO_OWNER, to: plan.manager, logs };
-  const tx = { from: DEMO_OWNER, to: plan.manager, input: plan.data, value: '0x0' };
+  const identity = { blockNumber: '0x10', blockHash, transactionHash: hash, transactionIndex: '0x0' };
+  const receipt = { status: '0x1', ...identity, from: DEMO_OWNER, to: plan.manager,
+    logs: logs.map(log => ({ ...log, ...identity, removed: false })) };
+  const tx = { from: DEMO_OWNER, to: plan.manager, input: plan.data, value: '0x0',
+    hash, blockNumber: '0x10', blockHash, transactionIndex: '0x0' };
   const state = { receipt: receipt as typeof receipt | null, tx, canonicalHash: blockHash,
     canonicalNumber: '0x10', finality: false };
   const rpc = new StrictRpc([
@@ -63,6 +65,7 @@ describe('actual collection evidence', () => {
     await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'TRANSACTION_MISMATCH' });
     state.tx.input = plan.data;
     state.receipt!.transactionHash = blockHash;
+    state.receipt!.logs.forEach(log => { log.transactionHash = blockHash; });
     await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'TRANSACTION_MISMATCH' });
   });
   it('separates pending, revert, reorg and finality', async () => {
@@ -73,6 +76,7 @@ describe('actual collection evidence', () => {
     state.finality = true;
     expect(await inspectReceipt(rpc, hash, plan)).toMatchObject({ safe: true, finalized: true });
     state.receipt!.status = '0x0';
+    state.receipt!.logs = [];
     await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'REVERTED' });
     state.receipt = null;
     expect(await inspectReceipt(rpc, hash, plan)).toBeNull();
@@ -83,4 +87,33 @@ describe('actual collection evidence', () => {
     state.canonicalNumber = '0x11';
     await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'RPC_INVALID' });
   });
+  it('rejects duplicated logs instead of doubling matched Collect and Transfer amounts', async () => {
+    const { rpc, state, plan } = await context();
+    state.receipt!.logs.push(...state.receipt!.logs.map(log => ({ ...log })));
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'RPC_INVALID' });
+  });
+  it('rejects malformed status without claiming a revert', async () => {
+    const { rpc, state, plan } = await context();
+    state.receipt!.status = '0x2';
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'RPC_INVALID' });
+  });
+  it('checks actual calldata and canonical block before reporting a revert', async () => {
+    const { rpc, state, plan } = await context();
+    state.receipt!.status = '0x0'; state.receipt!.logs = [];
+    state.tx.input = '0x1234';
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'TRANSACTION_MISMATCH' });
+    state.tx.input = plan.data;
+    state.canonicalHash = hash;
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'REORG' });
+    state.canonicalHash = blockHash;
+    vi.spyOn(rpc, 'assertBlock').mockRejectedValueOnce(new Error('canonical block changed again'));
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toThrow('changed again');
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'REVERTED' });
+  });
+  it.each(['hash', 'blockHash', 'blockNumber', 'transactionIndex'] as const)(
+    'binds the fetched mined transaction %s to the receipt', async field => {
+      const { rpc, state, plan } = await context();
+      state.tx[field] = field === 'hash' || field === 'blockHash' ? `0x${'ef'.repeat(32)}` : '0x11';
+      await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'TRANSACTION_MISMATCH' });
+    });
 });

@@ -78,3 +78,7 @@ recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer h
 `tests/rpc-transport.test.ts` 覆盖响应版本/请求 ID、互斥结果与错误、结构化错误、非法 JSON/UTF-8、4 MiB 响应上限及中止读取；真实 loopback HTTP 测试核对重定向未访问目的地址、收到响应头后超时仍中断响应体。规范 uint256 quantity、单来源 gas 畸形值、零估算与合法零价格另有边界测试。
 
 生产浏览器恢复测试注入两个一致但协议无效的 RPC 响应：错误 ID、缺版本、result/error 共存；预期停止在链读取、保留原待处理记录和发送锁。均为明确 RPC 夹具，不代表真实主网故障或真钱包验收。
+
+## 收据证据与最终解锁
+
+`tests/chain-evidence.test.ts` 和 `tests/receipt.test.ts` 覆盖状态、交易及日志身份、规范字段、重复/倒序/removed 日志及回滚检查顺序；官方本地 V3 集成对实际成功及回滚收据执行同一检查。`tests/submission.test.ts` 验证最终收据身份或状态改变时保留持久记录。生产浏览器另用明确 RPC 夹具验证最终回滚正常解锁、最后回读改变状态/交易哈希时保持锁；这些测试不证明真实主网重组或真钱包验收。

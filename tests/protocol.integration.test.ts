@@ -124,6 +124,7 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(position[11]).toBe(0n);
   });
   it.each(['minimum', 'deadline'] as const)('reverts the entire exit on an invalid %s', async fault => {
+    const snapshot = await f.adapter.snapshot(f.tokenId);
     const position = await remaining();
     const before = await balances();
     const block = await f.client.getBlock();
@@ -142,6 +143,9 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(receipt.logs).toHaveLength(0);
     expect(await remaining()).toEqual(position);
     expect(await balances()).toEqual(before);
+    await expect(inspectReceipt(f.adapter.rpc, hash, {
+      account: f.account, manager: f.manager, data, snapshot,
+    })).rejects.toMatchObject({ code: 'REVERTED' });
     expect(await recheckHistory(f.adapter.rpc, { hash, tokenId: f.tokenId.toString(),
       time: new Date().toISOString(), environment: 'mainnet', state: 'submitted' }, f.deployment))
       .toMatchObject({ state: 'reverted' });

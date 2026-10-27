@@ -4,6 +4,7 @@ import { parseTokenId, type Plan } from './protocol';
 import { recheckHistory } from './history';
 import { ExitError, type StrictRpc } from './rpc';
 import { send, type Provider } from './wallet';
+import { receiptEvidence } from './chain-evidence';
 
 export const SUBMISSION_KEY = 'tapeexit:submission:v1';
 const LOCK = 'tapeexit:submission:v1';
@@ -101,15 +102,20 @@ export async function reconcileSubmission(rpc: StrictRpc, knownHash?: Hex) {
     const finalized = await rpc.block('finalized');
     const receiptBlock = verification.state === 'checked' ? verification.result.blockNumber : verification.blockNumber;
     if (BigInt(finalized.number) < BigInt(receiptBlock)) return { state: 'confirming' as const };
-    const receipt = await rpc.request<{ blockHash: Hex; blockNumber: Hex } | null>('eth_getTransactionReceipt', [hash],
-      value => value ? { blockHash: value.blockHash, blockNumber: value.blockNumber } : null);
-    if (!receipt || BigInt(receipt.blockNumber) !== BigInt(receiptBlock))
+    const rawReceipt = await rpc.request<unknown>('eth_getTransactionReceipt', [hash],
+      value => value === null ? null : receiptEvidence(value));
+    if (rawReceipt === null) throw new ExitError('REORG', 'Pending receipt disappeared during finalization check');
+    const receipt = receiptEvidence(rawReceipt);
+    if (BigInt(receipt.blockNumber) !== BigInt(receiptBlock))
       throw new ExitError('REORG', 'Pending receipt moved during finalization check');
     const canonical = await rpc.block(receipt.blockNumber);
     const verifiedHash = verification.state === 'checked' ? verification.result.blockHash : verification.blockHash;
     if (canonical.hash.toLowerCase() !== receipt.blockHash.toLowerCase() ||
         canonical.hash.toLowerCase() !== verifiedHash.toLowerCase())
       throw new ExitError('REORG', 'Pending receipt block changed');
+    if (receipt.transactionHash !== hash.toLowerCase() || receipt.from !== entry.account || receipt.to !== MANAGER ||
+        receipt.status !== (verification.state === 'reverted' ? '0x0' : '0x1'))
+      throw new ExitError('SUBMISSION_MISMATCH', 'Final receipt differs from the checked transaction');
     await rpc.assertBlock(finalized);
     await rpc.assertBlock(canonical);
     const current = submissionState();
