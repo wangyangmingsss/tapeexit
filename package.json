@@ -22,6 +22,8 @@
     "build:gateway": "node tools/build-gateway.mjs",
     "plan:publish": "tsx tools/publish-plan.ts",
     "report:dependencies": "node tools/dependency-report.mjs",
+    "report:dependency-scope": "node tools/dependency-scope.mjs",
+    "verify:reproducibility": "node tools/verify-reproducibility.mjs",
     "check:release": "node tools/check-release.mjs"
   },
   "engines": {

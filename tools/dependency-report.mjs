@@ -1,5 +1,6 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
 const packages = [];
 for (const [path, item] of Object.entries(lock.packages)) {
@@ -21,11 +22,25 @@ await writeFile('release-artifacts/THIRD-PARTY-NOTICES.txt', [
   ...packages.map(p => `${p.name}@${p.version} | ${typeof p.license === 'string' ? p.license : JSON.stringify(p.license)} | ${p.path}`),
 ].join('\n') + '\n');
 console.log(`Dependency inventory: ${packages.length} locked package paths.`);
+const auditPath = 'release-artifacts/npm-audit.json';
+const contextPath = 'release-artifacts/npm-audit-context.json';
+await rm(auditPath, { force: true });
+await rm(contextPath, { force: true });
 let audit;
 try { audit = execFileSync('npm', ['audit', '--omit=dev', '--json', '--cache', '../work/npm-cache'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
-catch (error) { audit = error.stdout; }
-if (audit) {
-  const report = JSON.parse(audit);
-  await writeFile('release-artifacts/npm-audit.json', JSON.stringify(report, null, 2) + '\n');
-  console.log(`Audit result: ${JSON.stringify(report.metadata?.vulnerabilities || report.error || 'unavailable')}`);
+catch (error) {
+  if (error.status !== 1 || !error.stdout) throw new Error('Dependency audit unavailable');
+  audit = error.stdout;
 }
+const report = JSON.parse(audit);
+if (report.error || !report.metadata?.vulnerabilities || !report.vulnerabilities)
+  throw new Error('Dependency audit did not return a complete result');
+const bytes = JSON.stringify(report, null, 2) + '\n';
+await writeFile(auditPath, bytes);
+await writeFile(contextPath, JSON.stringify({
+  schemaVersion: 1, scope: 'npm audit --omit=dev; installed dependency graph, not browser exploitability',
+  observedAt: new Date().toISOString(),
+  lockSha256: createHash('sha256').update(await readFile('package-lock.json')).digest('hex'),
+  auditSha256: createHash('sha256').update(bytes).digest('hex'),
+}, null, 2) + '\n');
+console.log(`Audit result: ${JSON.stringify(report.metadata.vulnerabilities)}`);

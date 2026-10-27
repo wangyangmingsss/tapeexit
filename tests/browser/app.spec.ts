@@ -34,14 +34,46 @@ test('recovery import rejects injected fields', async ({ page }) => {
   });
   await expect(page.getByRole('alert')).toBeVisible();
 });
-test('mobile task has no horizontal overflow or clipped controls', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+for (const width of [360, 390, 768, 1280, 1440]) test(`demo task and review at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: '读取仓位' }).click();
   await page.getByRole('button', { name: '预演退出' }).click();
   await expect(page.getByRole('button', { name: '核对交易', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: 'test-results/mobile-preview.png', fullPage: true });
-  await page.setViewportSize({ width: 360, height: 780 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('button', { name: '核对交易', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const checkbox = dialog.getByRole('checkbox');
+  await expect(checkbox).not.toBeChecked();
+  await expect(dialog.getByRole('button', { name: '确认模拟退出' })).toBeDisabled();
+  for (const control of await dialog.locator('input,button').all()) {
+    const bounds = await control.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+  }
+  await page.screenshot({ path: `test-results/demo-review-${width}.png`, fullPage: true });
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+});
+test('review dialog traps keyboard focus and restores the triggering control', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '读取仓位' }).click();
+  await page.getByRole('button', { name: '预演退出' }).click();
+  const review = page.getByRole('button', { name: '核对交易', exact: true });
+  await review.click();
+  const dialog = page.getByRole('dialog');
+  const first = dialog.getByRole('button', { name: 'Close' });
+  const checkbox = dialog.getByRole('checkbox');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(checkbox).toBeFocused();
+  await checkbox.check();
+  const last = dialog.getByRole('button', { name: '确认模拟退出' });
+  await last.focus();
+  await page.keyboard.press('Tab');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(review).toBeFocused();
 });
