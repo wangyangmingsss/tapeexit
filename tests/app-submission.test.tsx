@@ -4,6 +4,9 @@ import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SUBMISSION_KEY, reconcileSubmission } from '../src/core/submission';
+import { loadHistory } from '../src/core/storage';
+import { V3Adapter } from '../src/core/protocol';
+import { demoSnapshot } from '../src/demo/engine';
 vi.mock('../src/core/submission', async importOriginal => ({
   ...await importOriginal<typeof import('../src/core/submission')>(),
   reconcileSubmission: vi.fn(),
@@ -12,10 +15,10 @@ vi.mock('../src/core/runtime', () => ({
   runtimeStatus: async () => ({ mode: 'local', label: 'Local application', verified: false }),
 }));
 let App: typeof import('../src/App').default;
-const hash = `0x${'ab'.repeat(32)}`;
+const hash = `0x${'ab'.repeat(32)}` as const;
 const entry = { schemaVersion: 1, id: '11111111-1111-1111-1111-111111111111',
   chainId: 196, account: '0x1000000000000000000000000000000000000001', tokenId: '12',
-  inputHash: hash, hash, startedAt: '2026-10-27T12:00:00Z' };
+  inputHash: hash, hash, startedAt: '2026-10-27T12:00:00Z' } as const;
 beforeAll(async () => { vi.stubEnv('VITE_DEMO', 'false'); App = (await import('../src/App')).default; });
 beforeEach(() => {
   localStorage.clear();
@@ -56,4 +59,59 @@ it('blocks when the durable marker is unreadable', () => {
   render(<App />);
   expect(screen.getByText('待处理记录无法读取，请检查当前浏览器的存储状态。')).toBeTruthy();
   expect(screen.getByRole('button', { name: '核对待处理交易' }).hasAttribute('disabled')).toBe(true);
+});
+it.each(['received-checked', 'included-unverified', 'reverted'] as const)(
+  'saves finalized recovery as %s without showing stale position results', async state => {
+    const snapshot = await demoSnapshot(33n, 'none');
+    vi.spyOn(V3Adapter.prototype, 'snapshot').mockResolvedValue(snapshot);
+    localStorage.setItem(SUBMISSION_KEY, JSON.stringify(entry));
+    const verification = state === 'reverted' ? { state: 'reverted' as const, blockNumber: '16', blockHash: hash } :
+      { state: 'checked' as const, result: { hash, blockHash: hash, blockNumber: '16', amount0: '1', amount1: '2',
+        state, finalized: true, safe: true } };
+    vi.mocked(reconcileSubmission).mockImplementation(async () => {
+      localStorage.removeItem(SUBMISSION_KEY);
+      return { state: 'resolved', submission: entry, verification };
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByLabelText('仓位 Token ID'), '33');
+    await user.click(screen.getByRole('button', { name: '读取仓位' }));
+    await screen.findByText('TEST-USDC / TEST-USDT');
+    await user.click(screen.getByRole('button', { name: '核对待处理交易' }));
+    await screen.findByText(/已解除待处理锁定/);
+    expect(screen.queryByText('TEST-USDC / TEST-USDT')).toBeNull();
+    expect(screen.queryByText('领取证据已核对')).toBeNull();
+    expect(loadHistory()[0]).toMatchObject({ tokenId: '12', hash, state, time: entry.startedAt });
+    expect(screen.queryByText('存在未解决的提交，已锁定发送')).toBeNull();
+    expect(reconcileSubmission).toHaveBeenCalledWith(expect.anything(), undefined);
+    if (state === 'included-unverified') expect(screen.getByText(/领取证据仍待核对/)).toBeTruthy();
+    if (state === 'reverted') expect(screen.getByText(/交易已回滚并最终确认/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '操作记录' }));
+    expect(screen.queryByText('已保存，尚未重新核对')).toBeNull();
+  });
+it('rejects stale post-recovery snapshots repeatedly and accepts a sufficiently recent block', async () => {
+  const snapshot = await demoSnapshot(33n, 'none');
+  const read = vi.spyOn(V3Adapter.prototype, 'snapshot').mockResolvedValue({
+    ...snapshot, block: { ...snapshot.block, number: '0xf' },
+  });
+  localStorage.setItem(SUBMISSION_KEY, JSON.stringify(entry));
+  vi.mocked(reconcileSubmission).mockImplementation(async () => {
+    localStorage.removeItem(SUBMISSION_KEY);
+    return { state: 'resolved', submission: entry, verification: {
+      state: 'reverted', blockNumber: '16', blockHash: hash,
+    } };
+  });
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: '核对待处理交易' }));
+  await screen.findByText(/已解除待处理锁定/);
+  await user.type(screen.getByLabelText('仓位 Token ID'), '33');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await user.click(screen.getByRole('button', { name: '读取仓位' }));
+    await screen.findByText('快照或预览已过期，请重新读取。');
+    expect(screen.queryByText('TEST-USDC / TEST-USDT')).toBeNull();
+  }
+  read.mockResolvedValue({ ...snapshot, block: { ...snapshot.block, number: '0x10' } });
+  await user.click(screen.getByRole('button', { name: '读取仓位' }));
+  await screen.findByText('TEST-USDC / TEST-USDT');
 });

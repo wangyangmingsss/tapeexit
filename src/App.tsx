@@ -131,10 +131,15 @@ export default function App() {
   const receiptLock = useRef(false);
   const submittedPlan = useRef<Plan | undefined>(undefined);
   const submittedNonce = useRef<bigint | undefined>(undefined);
+  const receiptFloor = useRef(0n);
   const [demo, setDemo] = useState<DemoEngine>();
   const adapter = useRef(new V3Adapter(new StrictRpc(SOURCES), DEPLOYMENT, SUPPORTED_TOKENS)).current;
   const importInput = useRef<HTMLInputElement>(null);
   const busy = ['reading', 'simulating', 'preflight', 'wallet', 'submitted'].includes(stage);
+  function checkSnapshotFloor(s: Snapshot) {
+    if (BigInt(s.block.number) < receiptFloor.current)
+      throw new ExitError('STALE', 'Snapshot is older than the last checked receipt; wait for RPC heads to advance');
+  }
   function invalidate() {
     generation.current++; setPlan(undefined); setPreview(undefined); setAccepted(false);
     if (!txLock.current) setStage(snapshot ? 'ready' : 'idle');
@@ -213,8 +218,7 @@ export default function App() {
       const parsed = parseTokenId(tokenId);
       const s = DEMO ? await demo!.demoSnapshot(parsed, fault) : await adapter.snapshot(parsed);
       if (id !== generation.current) return;
-      if (result && BigInt(s.block.number) < BigInt(result.blockNumber))
-        throw new ExitError('STALE', 'Snapshot is older than the last receipt; retry after RPC heads advance');
+      checkSnapshotFloor(s);
       setSnapshot(s); setCollectOnly(s.liquidity === 0n); setStage('ready');
     } catch (e) { if (id === generation.current) { showError(e); setStage('idle'); setSnapshot(undefined); } }
   }
@@ -224,6 +228,7 @@ export default function App() {
     setError(''); setAccepted(false); setStage('simulating'); setPlan(undefined); setPreview(undefined);
     try {
       const fresh = DEMO ? await demo!.demoSnapshot(snapshot.tokenId, fault) : await adapter.snapshot(snapshot.tokenId);
+      checkSnapshotFloor(fresh);
       const next = makePlan(fresh, account, bps, slippage, collectOnly);
       const p = DEMO ? await demo!.demoPreview(next, fault) : await adapter.simulate(next);
       if (id !== generation.current) return;
@@ -254,12 +259,26 @@ export default function App() {
         return;
       }
       setResult(r); setStage('done'); txLock.current = false;
+      receiptFloor.current = BigInt(r.blockNumber) > receiptFloor.current ? BigInt(r.blockNumber) : receiptFloor.current;
       setHistory(saveHistory({ tokenId: currentPlan.tokenId.toString(), hash: transactionHash,
         time: new Date().toISOString(), environment: 'mainnet', state: r.state }));
       if (r.finalized) {
-        try { await reconcileSubmission(adapter.rpc, transactionHash); }
-        catch (error) { showError(error); }
-        setSubmission(submissionState());
+        try {
+          const recovery = await reconcileSubmission(adapter.rpc, transactionHash);
+          if (id !== generation.current) return;
+          if (recovery.state === 'resolved') {
+            if (recovery.verification.state === 'reverted') throw new ExitError('REVERTED', 'Transaction reverted');
+            const latest = { ...recovery.verification.result, safe: true, finalized: true };
+            setResult(latest);
+            receiptFloor.current = BigInt(latest.blockNumber) > receiptFloor.current ?
+              BigInt(latest.blockNumber) : receiptFloor.current;
+            setHistory(saveHistory({ tokenId: currentPlan.tokenId.toString(), hash: transactionHash,
+              time: recovery.submission.startedAt, environment: 'mainnet', state: latest.state }));
+          } else if (recovery.state === 'pending' || recovery.state === 'confirming') {
+            setResult(undefined); setStage('submitted'); txLock.current = true;
+            revokeHistory('verification-pending');
+          }
+        } finally { setSubmission(submissionState()); }
       }
     } catch (e) {
       if (id !== generation.current) return;
@@ -288,11 +307,13 @@ export default function App() {
         if (fault !== 'none') throw new ExitError('CONFLICT', 'Fault injected; no execution');
         const r = await demo!.demoExecute(plan, preview);
         setHash(r.hash); setResult(r); setStage('done'); txLock.current = false;
+        receiptFloor.current = BigInt(r.blockNumber) > receiptFloor.current ? BigInt(r.blockNumber) : receiptFloor.current;
         setHistory(saveHistory({ tokenId: plan.tokenId.toString(), hash: r.hash, time: new Date().toISOString(), environment: 'demo', state: r.state }));
         return;
       }
       await assertWallet(wallet!.provider, plan);
       const fresh = await adapter.snapshot(plan.tokenId);
+      checkSnapshotFloor(fresh);
       if (fresh.owner !== plan.account || fresh.liquidity !== plan.snapshot.liquidity)
         throw new ExitError('STALE', 'Position changed; read again');
       const checked = await adapter.simulate(plan, fresh.block);
@@ -330,15 +351,37 @@ export default function App() {
     if (submissionCheckLock.current) return;
     submissionCheckLock.current = true; setCheckingSubmission(true); setError('');
     try {
-      const check = await reconcileSubmission(adapter.rpc, hash);
+      const saved = submissionState();
+      const check = await reconcileSubmission(adapter.rpc,
+        saved.state === 'blocked' && saved.submission.hash ? undefined : hash);
       setSubmissionMessage(check.state === 'pending' ?
         (lang === 'zh' ? '交易仍未确认，保持发送锁定。' : 'Transaction pending; sending remains blocked.') :
         check.state === 'confirming' ?
           (lang === 'zh' ? '交易已纳入区块，等待最终确认。' : 'Included; waiting for finality.') : '');
-      if (check.state === 'resolved' || check.state === 'empty') {
+      if (check.state === 'resolved') {
+        const verification = check.verification;
+        const blockNumber = verification.state === 'checked' ? verification.result.blockNumber :
+          verification.state === 'reverted' ? verification.blockNumber : undefined;
+        if (blockNumber !== undefined) receiptFloor.current = BigInt(blockNumber) > receiptFloor.current ?
+          BigInt(blockNumber) : receiptFloor.current;
+        const state = verification.state === 'checked' ? verification.result.state : 'reverted';
+        setHistory(saveHistory({ tokenId: check.submission.tokenId, hash: check.submission.hash,
+          time: check.submission.startedAt, environment: 'mainnet', state }));
+        const message = verification.state === 'reverted' ?
+          (lang === 'zh' ? '交易已回滚并最终确认，已解除待处理锁定。' : 'Reverted and finalized; pending block cleared.') :
+          verification.state === 'checked' && verification.result.state === 'received-checked' ?
+            (lang === 'zh' ? '交易及领取证据已核对并最终确认，已解除待处理锁定。' :
+              'Collection checked and finalized; pending block cleared.') :
+            (lang === 'zh' ? '交易已最终确认，领取证据仍待核对；已解除待处理锁定。' :
+              'Transaction finalized; collection evidence unverified. Pending block cleared.');
+        setSubmissionMessage(message);
+        setHistoryChecks(current => ({ ...current, [check.submission.hash]: message }));
+        generation.current++;
         txLock.current = false;
+        submittedPlan.current = undefined; submittedNonce.current = undefined;
+        setSnapshot(undefined); setResult(undefined); setHash(undefined);
         setPlan(undefined); setPreview(undefined); setAccepted(false);
-        setStage(snapshot ? 'ready' : 'idle');
+        setStage('idle');
       }
     } catch (error) { showError(error); }
     finally {
@@ -412,6 +455,7 @@ export default function App() {
         <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{tab === 'exit' ? t.exit : tab === 'history' ? t.history : t.recovery}</h1><p>{tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
           <button className="secondary-button save-button" onClick={() => void saveCard()}><Download size={15} />{t.saveCard}</button></div>
         {error && <div className="error-notice" role="alert"><XCircle size={18} /><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
+        {!submissionBlocked && submissionMessage && <div className="transaction-status" role="status"><CheckCircle2 size={18} /><span>{submissionMessage}</span></div>}
         {submissionBlocked && <section className="pending-submission" aria-label={lang === 'zh' ? '待处理提交' : 'Pending submission'}>
           <div><LockKeyhole size={18} /><strong>{lang === 'zh' ? '存在未解决的提交，已锁定发送' : 'Unresolved submission; sending blocked'}</strong></div>
           <p>{submission.state === 'unavailable' ?

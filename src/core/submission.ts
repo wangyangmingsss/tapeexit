@@ -118,6 +118,6 @@ export async function reconcileSubmission(rpc: StrictRpc, knownHash?: Hex) {
       localStorage.removeItem(SUBMISSION_KEY);
       if (localStorage.getItem(SUBMISSION_KEY) !== null) throw new Error('Storage removal failed');
     } catch { throw new ExitError('SUBMISSION_STORAGE', 'Cannot clear the finalized pending marker'); }
-    return { state: 'resolved' as const, verification };
+    return { state: 'resolved' as const, submission: { ...entry, hash }, verification };
   });
 }
