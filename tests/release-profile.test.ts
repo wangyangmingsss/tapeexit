@@ -14,8 +14,8 @@ function fixture(change: Record<string, Record<string, unknown>> = {}) {
     publication: { status: 'published-bytes-checked', containerLive: true },
     assets: { status: 'REVIEWED', assets },
     wallet: { status: 'REAL_ORIGIN_ACCEPTED', synthetic: false, origin: identity.gateways[0].origin, chainObserved: 196 },
-    gateways: { status: 'TWO_GATEWAYS_CHECKED', primaryBlockedDuringRecovery: true,
-      gateways: identity.gateways.map(g => ({ ...g, releaseBytesChecked: true })) },
+    gateways: { status: 'TWO_GATEWAYS_CHECKED', primaryBlockedDuringRecovery: true, blockMechanism: 'HTTPS_CONNECT_PROXY',
+      gateways: identity.gateways.map((g, index) => ({ ...g, releaseBytesChecked: true, blockedPrimaryConnections: index })) },
     security: { status: 'REVIEW_COMPLETED', reviewer: 'Synthetic reviewer for unit tests', unresolvedCritical: 0, unresolvedHigh: 0 },
   };
   const inputs = Object.fromEntries(Object.entries(reports).map(([kind, report]) => [kind,
@@ -51,6 +51,8 @@ describe('formal release evidence binding', () => {
     ['wallet', { origin: 'http://127.0.0.1:4180' }], ['wallet', { chainObserved: 1 }],
     ['assets', { assets: [] }], ['security', { unresolvedHigh: 1 }],
     ['gateways', { primaryBlockedDuringRecovery: false }], ['gateways', { gateways: [identity.gateways[0]] }],
+    ['gateways', { blockMechanism: 'PAGE_ROUTE_ONLY' }],
+    ['gateways', { gateways: identity.gateways.map(g => ({ ...g, releaseBytesChecked: true, blockedPrimaryConnections: 0 })) }],
     ['security', { observedAt: new Date(now - 86400_001).toISOString() }],
     ['publication', { observedAt: new Date(now + 60_001).toISOString() }],
   ])('rejects unqualified %s evidence %j', (kind, change) => {

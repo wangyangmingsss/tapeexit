@@ -99,9 +99,12 @@ export function verifyReleaseEvidence(profile: ReleaseProfile, inputs: Record<st
     throw new Error('Actual origin wallet acceptance required; connectivity fixture is insufficient');
   const gatewayReport = reports.gateways;
   if (gatewayReport.status !== 'TWO_GATEWAYS_CHECKED' || gatewayReport.primaryBlockedDuringRecovery !== true ||
+      gatewayReport.blockMechanism !== 'HTTPS_CONNECT_PROXY' ||
       gatewayReport.gateways?.length !== 2 ||
       !profile.gateways.every(g => gatewayReport.gateways.some((r: any) =>
-        r.origin === g.origin && r.operator === g.operator && r.releaseBytesChecked === true)))
+        r.origin === g.origin && r.operator === g.operator && r.releaseBytesChecked === true)) ||
+      !gatewayReport.gateways.some((g: any) => g.origin === profile.gateways[1].origin &&
+        Number.isSafeInteger(g.blockedPrimaryConnections) && g.blockedPrimaryConnections > 0))
     throw new Error('Two real gateways and fault recovery evidence required');
   if (reports.security.status !== 'REVIEW_COMPLETED' || reports.security.unresolvedCritical !== 0 ||
       reports.security.unresolvedHigh !== 0 || typeof reports.security.reviewer !== 'string' ||

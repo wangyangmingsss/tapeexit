@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { createRecoveryProxy } from '../../tools/recovery-proxy';
 
 const fixture = '/tests/fixtures/runtime.html';
 async function ready(page: Page) {
@@ -56,4 +57,26 @@ test('a real Service Worker controller replacement changes identity and invalida
     try { window.harness.assertRuntime(original, current); return 'accepted'; }
     catch (error) { return (error as { code: string }).code; }
   }, { original, current })).toBe('ENTRY_CHANGED');
+});
+test('recovery proxy blocks a request issued inside an actual Service Worker', async ({ browser }) => {
+  const proxy = await createRecoveryProxy('primary.example');
+  let context: BrowserContext | undefined;
+  try {
+    context = await browser.newContext({ baseURL: 'http://127.0.0.1:4174',
+      serviceWorkers: 'allow', proxy: { server: proxy.url, bypass: '127.0.0.1' } });
+    const page = await context.newPage();
+    await ready(page);
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.register('/tests/fixtures/identity-sw.js?v=1', { scope: '/tests/fixtures/' });
+      await navigator.serviceWorker.ready;
+    });
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    const result = await page.evaluate(() => new Promise<string>(resolve => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = event => { channel.port1.close(); resolve(event.data); };
+      navigator.serviceWorker.controller!.postMessage('probe-primary', [channel.port2]);
+    }));
+    expect(result).toBe('blocked');
+    expect(proxy.blockedCount()).toBeGreaterThan(0);
+  } finally { await context?.close(); await proxy.close(); }
 });

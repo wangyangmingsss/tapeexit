@@ -85,7 +85,7 @@ RPC 区块读取除双来源一致外，还检查字段格式和请求高度；�
 
 从干净提交完成生产构建后，运行 `npm run verify:reproducibility`。工具创建临时 Git 副本，以 `npm ci --ignore-scripts` 安装固定依赖，在同一系统连续构建两次，再与当前 `dist/` 逐文件比较，保存 `release-artifacts/reproducibility.json`。这不等于另一台独立设备复现，也不代替测试或审阅。
 
-Playwright 已配置演示、生产恢复、备用恢复和只读钱包接入台，共 24 项用例，包含 360/390/768/1280/1440 px、键盘焦点、未知提交恢复、受控网络故障与显式钱包夹具。本轮增加真实 Web Locks 跨标签页竞争、关闭标签页后的持久阻止、取消后的跨标签页恢复，以及真实 Service Worker 更新时的身份变化检查。SW 身份响应和钱包 provider 仍是明确的测试夹具。先从干净提交运行生产构建，再执行 `npm run test:e2e`；本机 Chromium 的限制仍在，使用 GitHub Ubuntu 环境执行并保留截图。夹具测试不证明真实 OKX Wallet 或 TapeOut 链上入口已验收。
+Playwright 已配置演示、生产恢复、备用恢复和只读钱包接入台，共 25 项用例，包含 360/390/768/1280/1440 px、键盘焦点、未知提交恢复、受控网络故障与显式钱包夹具。本轮增加真实 Web Locks 跨标签页竞争、关闭标签页后的持久阻止、取消后的跨标签页恢复，以及真实 Service Worker 更新时的身份变化检查。另验证 HTTPS 代理确实阻断 SW 内发起的主入口请求。SW 身份响应和钱包 provider 仍是明确的测试夹具。先从干净提交运行生产构建，再执行 `npm run test:e2e`；本机 Chromium 的限制仍在，使用 GitHub Ubuntu 环境执行并保留截图。夹具测试不证明真实 OKX Wallet 或 TapeOut 链上入口已验收。
 
 参赛项目说明、2 分 50 秒录制脚本及用户任务记录模板位于 `docs/competition/`。`record:demo` 可在允许 Chromium 的环境录制短静音隔离演示，`package:entry` 生成带真实源码/清单/视频身份的草稿包。公开源码已推送至 `wangyangmingsss/tapeexit`；正式提交仍需实际发布、目标钱包验收、独立审阅、团队信息及用户证据。
 

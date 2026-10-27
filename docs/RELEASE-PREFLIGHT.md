@@ -17,9 +17,12 @@ Run `npm run verify:gateways -- release-artifacts/release-profile.json` after
 installing Chromium with Playwright. Each gateway gets a fresh browser context.
 The tool waits for the actual client controller and TapeExit entry, checks every
 release file's full bytes, MIME type and client identity headers, and checks the
-reserved status route. The backup context blocks the primary origin and first
-proves that a request to it fails, before loading the backup. Failed runs remove
-the old success report.
+reserved status route. The backup context uses a loopback CONNECT proxy that
+refuses primary-host HTTPS tunnels, including requests from Service Workers.
+It first proves that a primary connection was blocked before loading the backup.
+The proxy passes other HTTPS tunnels without decrypting TLS, rejects other
+ports and credentials, and closes sockets at shutdown. Failed runs remove the
+old success report. Ordinary page routing is insufficient for SW-originated traffic.
 
 This is an actual-origin test, not a fixture result. It checks observable client
 behavior, not the authenticity of an arbitrary gateway's worker code. Compare
