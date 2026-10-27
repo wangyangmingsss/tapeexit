@@ -72,3 +72,9 @@ Keep the production gate closed while the required acceptance remains incomplete
 
 Read `OPERATIONS.md` for read-only publication/asset probes, safe unsigned resume, wallet connectivity collection,
 recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer handoff, not a review result.
+
+## RPC 传输边界回归
+
+`tests/rpc-transport.test.ts` 覆盖响应版本/请求 ID、互斥结果与错误、结构化错误、非法 JSON/UTF-8、4 MiB 响应上限及中止读取；真实 loopback HTTP 测试核对重定向未访问目的地址、收到响应头后超时仍中断响应体。规范 uint256 quantity、单来源 gas 畸形值、零估算与合法零价格另有边界测试。
+
+生产浏览器恢复测试注入两个一致但协议无效的 RPC 响应：错误 ID、缺版本、result/error 共存；预期停止在链读取、保留原待处理记录和发送锁。均为明确 RPC 夹具，不代表真实主网故障或真钱包验收。

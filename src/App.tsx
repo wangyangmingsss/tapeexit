@@ -242,6 +242,7 @@ export default function App() {
     const code = err instanceof ExitError ? err.code : (err as { code?: number })?.code;
     const map: Record<string, string> = lang === 'zh' ? {
       CONFLICT: '读取结果不一致，已停止生成交易。', QUORUM: '独立读取来源不足，请稍后重试。',
+      RPC_INVALID: '读取来源返回的数据无效，已停止处理，请稍后重试。',
       OWNER: '当前钱包不是该仓位的直接持有人。', STALE: '快照或预览已过期，请重新读取。',
       UNSUPPORTED: '该资产尚未通过当前发行验证，暂时只读。', 4001: '你已取消钱包确认。',
       4100: '钱包尚未授权此站点，请在钱包中检查连接权限。',

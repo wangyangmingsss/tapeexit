@@ -42,6 +42,27 @@ test('unknown submission survives reload and rejects a mismatching supplied tran
   await expect(page.getByLabel('钱包交易哈希')).toHaveValue('');
   expect(methods.every(method => ['eth_chainId', 'eth_getTransactionByHash'].includes(method))).toBe(true);
 });
+for (const invalid of ['wrong-id', 'missing-version', 'ambiguous-result'] as const)
+  test(`production preserves submission lock when both RPC envelopes are invalid: ${invalid}`, async ({ page }) => {
+    await page.addInitScript(({ key, entry }) => localStorage.setItem(key, JSON.stringify(entry)), { key, entry });
+    const methods: string[] = [];
+    await page.route(/^https:\/\/(?:rpc\.xlayer\.tech|xlayer\.drpc\.org)\/?$/, async route => {
+      const request = route.request().postDataJSON();
+      methods.push(request.method);
+      const body = invalid === 'wrong-id' ? { jsonrpc: '2.0', id: request.id + 1, result: '0xc4' } :
+        invalid === 'missing-version' ? { id: request.id, result: '0xc4' } :
+        { jsonrpc: '2.0', id: request.id, result: '0xc4', error: { code: -32000, message: 'fixture' } };
+      await route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': origin },
+        body: JSON.stringify(body) });
+    });
+    await page.goto(origin);
+    await page.getByLabel('钱包交易哈希').fill(hash);
+    await page.getByRole('button', { name: '核对待处理交易' }).click();
+    await expect(page.getByRole('alert')).toContainText('独立读取来源不足');
+    expect(methods).toEqual(['eth_chainId', 'eth_chainId']);
+    expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key)).toEqual(entry);
+    await expect(page.getByText('存在未解决的提交，已锁定发送')).toBeVisible();
+  });
 for (const width of [360, 390, 768, 1280, 1440]) test(`production recovery at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(({ key, entry }) => localStorage.setItem(key, JSON.stringify(entry)), { key, entry });

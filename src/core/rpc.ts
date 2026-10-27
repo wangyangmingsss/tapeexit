@@ -5,6 +5,50 @@ export class ExitError extends Error {
 }
 export interface Source { url: string; operator: string }
 export type Requester = (source: Source, method: string, params: unknown[]) => Promise<unknown>;
+const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+async function responseJson(response: Response): Promise<unknown> {
+  const length = response.headers.get('content-length');
+  if (length && /^\d+$/.test(length) && BigInt(length) > BigInt(MAX_RESPONSE_BYTES)) {
+    await response.body?.cancel();
+    throw new ExitError('RPC_INVALID', 'RPC response exceeds the size limit');
+  }
+  if (!response.body) throw new ExitError('RPC_INVALID', 'Missing RPC response body');
+  const reader = response.body.getReader(), chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new ExitError('RPC_INVALID', 'RPC response exceeds the size limit');
+      }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
+  catch { throw new ExitError('RPC_INVALID', 'Invalid RPC JSON response'); }
+}
+function rpcResult(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new ExitError('RPC_INVALID', 'Invalid RPC response envelope');
+  const body = value as Record<string, unknown>;
+  const result = Object.hasOwn(body, 'result'), error = Object.hasOwn(body, 'error');
+  if (body.jsonrpc !== '2.0' || body.id !== 1 || result === error)
+    throw new ExitError('RPC_INVALID', 'RPC response version, ID or result is invalid');
+  if (error) {
+    const detail = body.error as Record<string, unknown> | null;
+    if (!detail || typeof detail !== 'object' || Array.isArray(detail) ||
+        !Number.isSafeInteger(detail.code) || typeof detail.message !== 'string')
+      throw new ExitError('RPC_INVALID', 'Invalid RPC error response');
+    throw new ExitError('RPC_REVERT', detail.message.slice(0, 180));
+  }
+  return body.result;
+}
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(',')}}`;
@@ -15,13 +59,13 @@ export const httpRequest: Requester = async (source, method, params) => {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     signal: AbortSignal.timeout(8000),
-    credentials: 'omit', referrerPolicy: 'no-referrer',
+    credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error',
   });
-  if (!response.ok) throw new ExitError('RPC_UNAVAILABLE', `RPC HTTP ${response.status}`);
-  const body = await response.json();
-  if (body.error) throw new ExitError('RPC_REVERT', String(body.error.message).slice(0, 180));
-  if (!Object.hasOwn(body, 'result')) throw new ExitError('RPC_INVALID', 'Missing RPC result');
-  return body.result;
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new ExitError('RPC_UNAVAILABLE', `RPC HTTP ${response.status}`);
+  }
+  return rpcResult(await responseJson(response));
 };
 export interface Block { number: Hex; hash: Hex; timestamp: Hex }
 function isQuantity(value: unknown): value is Hex {
@@ -50,6 +94,7 @@ export class StrictRpc {
   }
   async checkChain(chainId: number) {
     const id = await this.request<Hex>('eth_chainId', []);
+    if (!isQuantity(id)) throw new ExitError('RPC_INVALID', 'Invalid RPC chain ID');
     if (BigInt(id) !== BigInt(chainId)) throw new ExitError('WRONG_CHAIN', 'RPC chain mismatch');
   }
   async pin(): Promise<Block> {
@@ -86,10 +131,13 @@ export class StrictRpc {
   }
   async estimate(tx: object): Promise<bigint> {
     const estimates = await Promise.all(this.sources.map(s => this.requestOne(s, 'eth_estimateGas', [tx])));
-    return estimates.map(e => BigInt(e as string)).reduce((a, b) => a > b ? a : b);
+    if (!estimates.every(isQuantity) || estimates.some(e => BigInt(e) === 0n))
+      throw new ExitError('RPC_INVALID', 'Invalid RPC gas estimate');
+    return estimates.map(e => BigInt(e)).reduce((a, b) => a > b ? a : b);
   }
   async gasPrice(): Promise<bigint> {
     const prices = await Promise.all(this.sources.map(s => this.requestOne(s, 'eth_gasPrice', [])));
-    return prices.map(price => BigInt(price as string)).reduce((a, b) => a > b ? a : b);
+    if (!prices.every(isQuantity)) throw new ExitError('RPC_INVALID', 'Invalid RPC gas price');
+    return prices.map(price => BigInt(price)).reduce((a, b) => a > b ? a : b);
   }
 }
