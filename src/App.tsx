@@ -10,6 +10,7 @@ import { StrictRpc, ExitError } from './core/rpc';
 import { makePlan, parseTokenId, V3Adapter, type Plan, type Preview, type Snapshot } from './core/protocol';
 import { assertWallet, connect, discoverWallets, observeWallet, send, type Wallet } from './core/wallet';
 import { inspectReceipt, pendingState, type Result } from './core/receipt';
+import { recheckHistory } from './core/history';
 import { clearHistory, downloadJson, importRecoveryCard, loadHistory, recoveryCard, saveHistory, type HistoryItem } from './core/storage';
 import { manifestDigest, runtimeStatus, type RuntimeStatus } from './core/runtime';
 import type { DemoEngine, Fault } from './demo/engine';
@@ -112,6 +113,9 @@ export default function App() {
   const [hash, setHash] = useState<Hex>();
   const [runtime, setRuntime] = useState<RuntimeStatus>({ mode: 'web', label: 'Checking entry', verified: false });
   const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
+  const [historyChecks, setHistoryChecks] = useState<Record<string, string>>({});
+  const historyLocks = useRef(new Set<string>());
+  const historyGeneration = useRef(0);
   const [fault, setFault] = useState<Fault>('none');
   const [accepted, setAccepted] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -270,6 +274,8 @@ export default function App() {
       submittedPlan.current = plan;
       submittedNonce.current = undefined;
       setHash(transactionHash); setStage('submitted');
+      setHistory(saveHistory({ tokenId: plan.tokenId.toString(), hash: transactionHash,
+        time: new Date().toISOString(), environment: 'mainnet', state: 'submitted' }));
       await refreshReceipt(transactionHash, plan);
     } catch (e) {
       showError(e);
@@ -288,6 +294,31 @@ export default function App() {
     setError('');
     try { setAccount(await connect(w.provider, CHAIN_ID)); setWallet(w); setWalletPicker(false); invalidate(); }
     catch (e) { showError(e); }
+  }
+  async function verifyHistory(item: HistoryItem) {
+    if (historyLocks.current.has(item.hash)) return;
+    historyLocks.current.add(item.hash);
+    const id = historyGeneration.current;
+    setHistoryChecks(current => ({ ...current, [item.hash]: lang === 'zh' ? '正在重新核对' : 'Rechecking' }));
+    try {
+      const verification = await recheckHistory(adapter.rpc, item);
+      if (id !== historyGeneration.current) return;
+      const state = verification.state === 'checked' ? verification.result.state :
+        verification.state === 'reverted' ? 'reverted' : 'pending-recheck';
+      const message = verification.state === 'pending' ? (lang === 'zh' ? '暂无收据，结果未确认' : 'No receipt; outcome unconfirmed') :
+        verification.state === 'reverted' ? (lang === 'zh' ? '链上执行已回滚' : 'Reverted on chain') :
+        verification.result.state === 'received-checked' ?
+          (lang === 'zh' ? `领取已复核 · ${verification.result.finalized ? 'Finalized' : verification.result.safe ? 'Safe' : '等待最终确认'}` :
+            `Collection rechecked · ${verification.result.finalized ? 'Finalized' : verification.result.safe ? 'Safe' : 'Finality pending'}`) :
+          (lang === 'zh' ? '已执行，领取证据仍待核对' : 'Included; collection evidence unverified');
+      setHistory(saveHistory({ ...item, state }));
+      setHistoryChecks(current => ({ ...current, [item.hash]: message }));
+    } catch (err) {
+      if (id !== historyGeneration.current) return;
+      setHistory(saveHistory({ ...item, state: 'verification-pending' }));
+      setHistoryChecks(current => ({ ...current, [item.hash]: lang === 'zh' ? '复核失败，结果未确认' : 'Verification failed; outcome unconfirmed' }));
+      showError(err);
+    } finally { historyLocks.current.delete(item.hash); }
   }
   async function saveCard() {
     let digest: string | undefined;
@@ -362,7 +393,7 @@ export default function App() {
           <section className="dependency-section"><div className="section-top"><h2>{t.dependencies}</h2><button className="text-link" onClick={() => { setDetailsOpen(true); }}>{t.details}<ArrowRight size={13} /></button></div><div className="dependency-grid"><div><span className="dependency-icon"><FileCheck2 size={17} /></span><div><strong>{t.origin}</strong><span>{DEMO ? 'Isolated local demo' : runtime.label}</span></div><span className={`status-dot ${runtime.verified || DEMO ? 'healthy' : ''}`} /></div><div><span className="dependency-icon"><Radio size={17} /></span><div><strong>{t.sources}</strong><span>{DEMO ? 'Simulated A + B' : 'OKX + dRPC'}</span></div><span className={`status-dot ${fault === 'none' && snapshot ? 'healthy' : ''}`} /></div><div><span className="dependency-icon"><LockKeyhole size={17} /></span><div><strong>{t.original}</strong><span>{t.notRequired}</span></div><Check size={16} className="green" /></div></div></section>
           {DEMO && <section className="fault-section"><span><Radio size={15} />{t.fault}</span><select aria-label={t.fault} value={fault} disabled={busy || stage === 'unknown'} onChange={e => { setFault(e.target.value as Fault); invalidate(); }}><option value="none">{t.none}</option><option value="conflict">{t.conflict}</option><option value="unavailable">{t.unavailable}</option></select></section>}
         </>}
-        {tab === 'history' && <section className="history-section"><div className="section-top"><h2>{t.history}</h2><button className="text-link" onClick={() => { clearHistory(); setHistory([]); }}>{t.clear}</button></div>{history.length ? <div className="history-list">{history.map(h => <div key={h.hash}><span className="history-icon"><ArrowDownLeft size={18} /></span><div><strong>#{h.tokenId}</strong><span>{new Date(h.time).toLocaleString()} · {h.environment}</span></div><code title={h.hash}>{short(h.hash)}</code><span className="neutral-tag">{h.state}</span><button className="icon-button" title={t.export} onClick={() => downloadJson('tapeexit-history.json', h)}><Download size={16} /></button></div>)}</div> : <div className="empty-history"><History size={28} /><p>{t.nothing}</p></div>}</section>}
+        {tab === 'history' && <section className="history-section"><div className="section-top"><h2>{t.history}</h2><button className="text-link" onClick={() => { historyGeneration.current++; clearHistory(); setHistory([]); setHistoryChecks({}); }}>{t.clear}</button></div>{history.length ? <div className="history-list">{history.map(h => <div key={h.hash}><span className="history-icon"><ArrowDownLeft size={18} /></span><div><strong>#{h.tokenId}</strong><span>{new Date(h.time).toLocaleString()} · {h.environment}</span><span className="history-verification" role="status">{historyChecks[h.hash] || (h.environment === 'demo' ? (lang === 'zh' ? '模拟记录' : 'Simulated record') : (lang === 'zh' ? '已保存，尚未重新核对' : 'Saved; not rechecked'))}</span></div><code title={h.hash}>{short(h.hash)}</code><span className="neutral-tag">{h.state}</span><div className="history-actions">{h.environment === 'mainnet' && <button className="icon-button" title={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} aria-label={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} disabled={historyLocks.current.has(h.hash)} onClick={() => void verifyHistory(h)}><RefreshCw size={16} /></button>}<button className="icon-button" title={t.export} aria-label={t.export} onClick={() => downloadJson('tapeexit-history.json', h)}><Download size={16} /></button></div></div>)}</div> : <div className="empty-history"><History size={28} /><p>{t.nothing}</p></div>}</section>}
         {tab === 'recovery' && <section className="recovery-section"><div className="recovery-header"><LockKeyhole size={27} /><div><h2>{t.recoveryTitle}</h2><p>{t.recoverySub}</p></div></div><div className="recovery-facts"><div><span>{t.version}</span><code>{RELEASE}</code></div><div><span>{t.target}</span><AddressValue value={MANAGER} /></div><div><span>{t.origin}</span><strong>{runtime.label}</strong></div></div><div className="recovery-actions"><button className="primary-button" onClick={() => void saveCard()}><Download size={16} />{t.saveCard}</button><button className="secondary-button" onClick={() => importInput.current?.click()}><Upload size={16} />{t.importCard}</button></div><div className="local-bundle"><h3>{t.local}</h3><p>{t.localSub}</p><code>node tools/local-server.mjs</code></div></section>}
         <footer><span><ShieldCheck size={15} />{t.scope}</span><code>{RELEASE}</code></footer>
       </main>

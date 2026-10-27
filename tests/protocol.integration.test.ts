@@ -4,6 +4,7 @@ import { fixture, type Fixture } from './fixture';
 import { makePlan } from '../src/core/protocol';
 import { managerAbi } from '../src/config';
 import { inspectReceipt } from '../src/core/receipt';
+import { recheckHistory } from '../src/core/history';
 describe('official V3 contracts on isolated local EVM', () => {
   let f: Fixture;
   beforeAll(async () => { f = await fixture(); });
@@ -26,6 +27,13 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(await inspectReceipt(f.adapter.rpc, hash, plan)).toMatchObject({
       state: 'received-checked',
     });
+    const item = { hash, tokenId: f.tokenId.toString(), time: new Date().toISOString(),
+      environment: 'mainnet' as const, state: 'submitted' };
+    expect(await recheckHistory(f.adapter.rpc, item, f.deployment)).toMatchObject({
+      state: 'checked', result: { state: 'received-checked' },
+    });
+    await expect(recheckHistory(f.adapter.rpc, { ...item, tokenId: '999' }, f.deployment))
+      .rejects.toMatchObject({ code: 'HISTORY' });
     const p = await f.client.readContract({ address: f.manager, abi: managerAbi, functionName: 'positions', args: [1n] });
     expect(p[7]).toBe(snapshot.liquidity - plan.liquidity);
   });
@@ -49,6 +57,9 @@ describe('official V3 contracts on isolated local EVM', () => {
     await f.client.waitForTransactionReceipt({ hash: blockedHash });
     const hash = await f.wallet.sendTransaction({ account: f.account, chain: f.wallet.chain, to: f.manager, data, gas: 600000n });
     expect((await f.client.waitForTransactionReceipt({ hash })).status).toBe('reverted');
+    expect(await recheckHistory(f.adapter.rpc, { hash, tokenId: f.tokenId.toString(),
+      time: new Date().toISOString(), environment: 'mainnet', state: 'submitted' }, f.deployment))
+      .toMatchObject({ state: 'reverted' });
     const after = await f.client.readContract({ address: f.manager, abi: managerAbi, functionName: 'positions', args: [1n] });
     expect(after[7]).toBe(positions[7]);
   });

@@ -64,6 +64,9 @@ export class V3Adapter {
   }
   async snapshot(tokenId: bigint): Promise<Snapshot> {
     const block = await this.rpc.pin();
+    return this.snapshotAt(tokenId, block);
+  }
+  async snapshotAt(tokenId: bigint, block: Block): Promise<Snapshot> {
     await this.verifyDeployment(block);
     const [owner, p] = await Promise.all([
       this.read<Address>(managerAbi, this.deployment.manager, 'ownerOf', [tokenId], block),

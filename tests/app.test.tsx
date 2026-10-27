@@ -3,6 +3,9 @@ import React from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { recheckHistory, type HistoryVerification } from '../src/core/history';
+import { loadHistory } from '../src/core/storage';
+vi.mock('../src/core/history', () => ({ recheckHistory: vi.fn() }));
 vi.mock('../src/core/runtime', () => ({
   runtimeStatus: async () => ({ mode: 'local', label: 'Local application', verified: false }),
   manifestDigest: async () => { throw new Error('No manifest in DOM tests'); },
@@ -14,6 +17,7 @@ beforeAll(async () => {
 });
 beforeEach(() => {
   localStorage.clear();
+  vi.mocked(recheckHistory).mockReset();
   vi.spyOn(navigator, 'language', 'get').mockReturnValue('zh-CN');
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -29,6 +33,51 @@ async function readAndPreview() {
   return user;
 }
 describe('isolated demo DOM interactions (not browser rendering evidence)', () => {
+  const savedItem = { hash: `0x${'ab'.repeat(32)}`, tokenId: '12', time: '2026-10-26T12:00:00Z',
+    environment: 'mainnet', state: 'received-checked' };
+  it('rechecks saved history without trusting its previous success state', async () => {
+    localStorage.setItem('tapeexit:history:v1', JSON.stringify([savedItem]));
+    vi.mocked(recheckHistory).mockResolvedValue({ state: 'pending' });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '操作记录' }));
+    expect(screen.getByText('已保存，尚未重新核对')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '重新核对交易' }));
+    await screen.findByText('暂无收据，结果未确认');
+    expect(loadHistory()[0].state).toBe('pending-recheck');
+  });
+  it('does not resurrect cleared history when a pending recheck finishes', async () => {
+    localStorage.setItem('tapeexit:history:v1', JSON.stringify([savedItem]));
+    let finish!: (value: HistoryVerification) => void;
+    vi.mocked(recheckHistory).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '操作记录' }));
+    await user.click(screen.getByRole('button', { name: '重新核对交易' }));
+    await user.click(screen.getByRole('button', { name: '清除本地记录' }));
+    finish({ state: 'pending' });
+    await waitFor(() => expect(screen.queryByText('#12')).toBeNull());
+    expect(localStorage.getItem('tapeexit:history:v1')).toBeNull();
+  });
+  it('revokes saved success when historical verification fails', async () => {
+    localStorage.setItem('tapeexit:history:v1', JSON.stringify([savedItem]));
+    vi.mocked(recheckHistory).mockRejectedValue(new Error('Historical state unavailable'));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '操作记录' }));
+    await user.click(screen.getByRole('button', { name: '重新核对交易' }));
+    await screen.findByText('复核失败，结果未确认');
+    expect(loadHistory()[0].state).toBe('verification-pending');
+    expect(screen.queryByText('received-checked')).toBeNull();
+  });
+  it('loads only valid public history fields and uint256 position hints', () => {
+    localStorage.setItem('tapeexit:history:v1', JSON.stringify([
+      { ...savedItem, calldata: '0x1234', recipient: 'evil' },
+      { ...savedItem, state: 'invented' }, { ...savedItem, time: 'invalid' },
+      { ...savedItem, tokenId: (2n ** 256n).toString() },
+    ]));
+    expect(loadHistory()).toEqual([savedItem]);
+  });
   it('requires explicit review and persists only labelled history', async () => {
     const user = await readAndPreview();
     await user.click(screen.getByRole('button', { name: '核对交易' }));

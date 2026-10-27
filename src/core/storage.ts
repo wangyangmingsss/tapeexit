@@ -8,16 +8,23 @@ export interface HistoryItem {
 }
 export function loadHistory(): HistoryItem[] {
   try {
-    const value = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const text = localStorage.getItem(KEY) || '[]';
+    if (text.length > 128000) return [];
+    const value = JSON.parse(text);
     if (!Array.isArray(value)) return [];
-    return value.filter(v => v && typeof v.tokenId === 'string' && /^\d{1,78}$/.test(v.tokenId) &&
-      typeof v.hash === 'string' && /^0x[\da-f]{64}$/i.test(v.hash) &&
-      typeof v.time === 'string' && typeof v.state === 'string' &&
-      ['demo', 'mainnet'].includes(v.environment)).slice(0, 50);
+    const states = new Set(['submitted', 'received-checked', 'included-unverified', 'pending-recheck', 'verification-pending', 'reverted']);
+    return value.flatMap(v => {
+      if (!v || typeof v.tokenId !== 'string' || typeof v.hash !== 'string' || !/^0x[\da-f]{64}$/i.test(v.hash) ||
+          typeof v.time !== 'string' || v.time.length > 40 || !Number.isFinite(Date.parse(v.time)) ||
+          !states.has(v.state) || !['demo', 'mainnet'].includes(v.environment)) return [];
+      try { parseTokenId(v.tokenId); } catch { return []; }
+      return [{ tokenId: v.tokenId, hash: v.hash.toLowerCase(), time: v.time, state: v.state,
+        environment: v.environment } as HistoryItem];
+    }).slice(0, 50);
   } catch { return []; }
 }
 export function saveHistory(item: HistoryItem) {
-  const history = [item, ...loadHistory().filter(i => i.hash !== item.hash)].slice(0, 50);
+  const history = [{ ...item, hash: item.hash.toLowerCase() }, ...loadHistory().filter(i => i.hash !== item.hash.toLowerCase())].slice(0, 50);
   try { localStorage.setItem(KEY, JSON.stringify(history)); } catch { /* Storage failure must not alter transaction state. */ }
   return history;
 }
