@@ -121,6 +121,6 @@ describe('isolated demo DOM interactions (not browser rendering evidence)', () =
     await user.click(screen.getByRole('button', { name: '恢复入口' }));
     const input = document.querySelector<HTMLInputElement>('input[type=file]')!;
     await user.upload(input, new File(['{"app":"TapeExit","schemaVersion":1,"chainId":196,"calldata":"0x1234"}'], 'unsafe.json', { type: 'application/json' }));
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('invalid or unsafe'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('恢复卡格式或字段无效'));
   });
 });

@@ -105,6 +105,8 @@ export default function App() {
   const [connectingWallet, setConnectingWallet] = useState<string>();
   const walletConnection = useRef<{ controller: AbortController; id: string } | undefined>(undefined);
   const [tokenId, setTokenId] = useState(DEMO ? '28491' : '');
+  const [recoveryIds, setRecoveryIds] = useState<string[]>([]);
+  const recoveryImport = useRef(0);
   const [positionPage, setPositionPage] = useState<PositionPage>();
   const [discovering, setDiscovering] = useState(false);
   const discoveryController = useRef<AbortController | undefined>(undefined);
@@ -178,7 +180,7 @@ export default function App() {
     walletConnection.current = undefined;
     setConnectingWallet(undefined); setWalletPicker(false);
   }
-  useEffect(() => () => { walletConnection.current?.controller.abort(); }, []);
+  useEffect(() => () => { walletConnection.current?.controller.abort(); recoveryImport.current++; }, []);
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   }, [lang]);
@@ -243,6 +245,7 @@ export default function App() {
     const map: Record<string, string> = lang === 'zh' ? {
       CONFLICT: '读取结果不一致，已停止生成交易。', QUORUM: '独立读取来源不足，请稍后重试。',
       RPC_INVALID: '读取来源返回的数据无效，已停止处理，请稍后重试。',
+      IMPORT: '恢复卡格式或字段无效，请检查文件。',
       OWNER: '当前钱包不是该仓位的直接持有人。', STALE: '快照或预览已过期，请重新读取。',
       UNSUPPORTED: '该资产尚未通过当前发行验证，暂时只读。', 4001: '你已取消钱包确认。',
       4100: '钱包尚未授权此站点，请在钱包中检查连接权限。',
@@ -491,13 +494,34 @@ export default function App() {
     } finally { historyLocks.current.delete(item.hash); }
   }
   async function saveCard() {
-    let digest: string | undefined;
-    try { digest = await manifestDigest(); } catch { /* Development builds have no release manifest. */ }
-    downloadJson('tapeexit-recovery-card.json', recoveryCard(tokenId, {
+    const ids = recoveryIds.length && recoveryIds.includes(tokenId) ? recoveryIds : tokenId;
+    const identity = {
       ...(runtime.name ? { tapeName: runtime.name } : {}),
       ...(runtime.container ? { container: runtime.container } : {}),
-      ...(digest ? { manifestSha256: digest } : {}),
-    }));
+    };
+    let digest: string | undefined;
+    try { digest = await manifestDigest(); } catch { /* Development builds have no release manifest. */ }
+    try {
+      downloadJson('tapeexit-recovery-card.json', recoveryCard(ids, {
+        ...identity, ...(digest ? { manifestSha256: digest } : {}),
+      }));
+    } catch (err) { showError(err); }
+  }
+  async function importCard(file: File) {
+    const request = ++recoveryImport.current, current = generation.current;
+    if (txLock.current) { setError(t.unknown); return; }
+    try {
+      if (file.size > 16000) throw new ExitError('IMPORT', 'Recovery card too large');
+      const text = await file.text();
+      if (request !== recoveryImport.current || current !== generation.current || txLock.current) return;
+      const card = importRecoveryCard(text);
+      discoveryController.current?.abort(); setDiscovering(false); setPositionPage(undefined);
+      setRecoveryIds(card.tokenIds); setTokenId(card.tokenIds[0] ?? '');
+      setSnapshot(undefined); setResult(undefined); setHash(undefined); setError('');
+      invalidate(); setStage('idle'); setDetailsOpen(false); setTab('exit');
+    } catch (err) {
+      if (request === recoveryImport.current && current === generation.current && !txLock.current) showError(err);
+    }
   }
   function record() {
     downloadJson('tapeexit-operation.json', {
@@ -563,6 +587,16 @@ export default function App() {
             <section className="position-section" aria-labelledby="workspace-title">
               <div className="section-top"><h2 id="workspace-title">{t.workspace}</h2><span className="neutral-tag">UNISWAP V3</span></div>
               <div className="position-search"><label htmlFor="position-id">{t.id}</label><div className="input-row"><div className="token-input"><span>#</span><input id="position-id" inputMode="numeric" value={tokenId} placeholder="e.g. 28491" disabled={busy || stage === 'unknown'} onChange={e => { setTokenId(e.target.value); setSnapshot(undefined); invalidate(); }} onKeyDown={e => { if (e.key === 'Enter' && !busy) void readPosition(); }} /></div><button className="primary-button" disabled={busy || !tokenId || stage === 'unknown' || (DEMO && !demo)} onClick={() => void readPosition()}>{stage === 'reading' ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}{t.load}</button></div><p className="field-hint">{t.idHint}</p></div>
+              {recoveryIds.length > 1 && <div className="position-discovery">
+                <label htmlFor="recovery-position">{lang === 'zh' ? '恢复卡仓位' : 'Recovery card positions'}</label>
+                <div className="discovery-actions"><select id="recovery-position"
+                  value={recoveryIds.includes(tokenId) ? tokenId : ''}
+                  disabled={busy || stage === 'unknown' || submissionBlocked}
+                  onChange={event => { setTokenId(event.target.value); setSnapshot(undefined); setResult(undefined); invalidate(); }}>
+                  {!recoveryIds.includes(tokenId) && <option value="">{lang === 'zh' ? '选择仓位' : 'Select position'}</option>}
+                  {recoveryIds.map(id => <option key={id} value={id}>#{id}</option>)}
+                </select></div>
+              </div>}
               {!DEMO && account && <div className="position-discovery">
                 <div className="discovery-actions"><button className="text-link" disabled={busy || discovering} onClick={() => void findPositions()}><RefreshCw size={14} />{lang === 'zh' ? '查找我的仓位' : 'Find my positions'}</button>
                   {discovering && <button className="icon-button" title={lang === 'zh' ? '取消查询' : 'Cancel discovery'} aria-label={lang === 'zh' ? '取消查询' : 'Cancel discovery'} onClick={() => { discoveryController.current?.abort(); setDiscovering(false); }}><X size={16} /></button>}
@@ -609,10 +643,9 @@ export default function App() {
         <footer><span><ShieldCheck size={15} />{t.scope}</span><code>{RELEASE}</code></footer>
       </main>
     </div>
-    <input ref={importInput} type="file" accept=".json,application/json" hidden onChange={async e => {
+    <input ref={importInput} type="file" accept=".json,application/json" hidden onChange={e => {
       const file = e.target.files?.[0]; if (!file) return;
-      if (txLock.current) { setError(t.unknown); e.target.value = ''; return; }
-      try { if (file.size > 16000) throw new Error('Recovery card too large'); const card = importRecoveryCard(await file.text()); if (card.tokenIds[0]) { setTokenId(card.tokenIds[0]); setSnapshot(undefined); invalidate(); setTab('exit'); } } catch (err) { showError(err); } e.target.value = '';
+      e.target.value = ''; void importCard(file);
     }} />
     {walletPicker && <div className="modal-overlay" onClick={closeWalletPicker}><section className="modal wallet-modal" role="dialog" aria-modal="true" aria-label={t.connect} onClick={e => e.stopPropagation()}><div className="section-top"><h2>{t.connect}</h2><button className="icon-button" aria-label="Close" onClick={closeWalletPicker}><X size={20} /></button></div>{wallets.length ? wallets.map(w => <button key={w.id} className="wallet-choice" disabled={connectingWallet === w.id} aria-busy={connectingWallet === w.id} onClick={() => void chooseWallet(w)}><WalletIcon size={22} />{w.name}{connectingWallet === w.id ? <LoaderCircle className="spin" size={17} /> : <ArrowRight size={17} />}</button>) : <p>{lang === 'zh' ? '未发现注入钱包。请安装兼容的浏览器钱包后刷新。' : 'No injected wallet found. Install a compatible browser wallet, then refresh.'}</p>}</section></div>}
     {detailsOpen && <div className="modal-overlay" onClick={() => setDetailsOpen(false)}><section className="modal review-modal" role="dialog" aria-modal="true" aria-label={t.review} onClick={e => e.stopPropagation()}><div className="section-top"><h2>{plan && preview ? t.review : t.details}</h2><button className="icon-button" aria-label="Close" onClick={() => setDetailsOpen(false)}><X size={20} /></button></div><dl className="review-facts"><div><dt>{t.version}</dt><dd><code>{RELEASE}</code></dd></div><div><dt>Chain ID</dt><dd>196 · X Layer</dd></div><div><dt>{t.target}</dt><dd><AddressValue value={MANAGER} /></dd></div><div><dt>{t.recipient}</dt><dd>{account ? <AddressValue value={account} /> : '—'}</dd></div>{snapshot && <><div><dt>Token ID</dt><dd>#{snapshot.tokenId.toString()}</dd></div><div><dt>{t.amount}</dt><dd>{collectOnly ? t.onlyCollect : `${bps / 100}%`}</dd></div><div><dt>Token 0</dt><dd><AddressValue value={snapshot.token0.address} /></dd></div><div><dt>Token 1</dt><dd><AddressValue value={snapshot.token1.address} /></dd></div></>}{plan && <div><dt>Plan hash</dt><dd><AddressValue value={plan.hash} /></dd></div>}<div><dt>{t.origin}</dt><dd>{DEMO ? 'Isolated demo' : `${runtime.mode} · ${runtime.label}`}</dd></div></dl><p className="modal-note">{t.disclaimer}</p>{plan && preview && stage === 'review' && <><label className="confirm-label"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} />{lang === 'zh' ? '我已核对目标、仓位和收款地址；此操作由我确认。' : 'I checked the target, position and recipient, and approve this operation.'}</label><button className="primary-button full-width" disabled={!accepted || (!DEMO && !RELEASE_APPROVED)} onClick={() => { setDetailsOpen(false); void execute(); }}><LockKeyhole size={16} />{t.sign}</button></>}</section></div>}

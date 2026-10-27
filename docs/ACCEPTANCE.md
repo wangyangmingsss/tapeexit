@@ -82,3 +82,9 @@ recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer h
 ## 收据证据与最终解锁
 
 `tests/chain-evidence.test.ts` 和 `tests/receipt.test.ts` 覆盖状态、交易及日志身份、规范字段、重复/倒序/removed 日志及回滚检查顺序；官方本地 V3 集成对实际成功及回滚收据执行同一检查。`tests/submission.test.ts` 验证最终收据身份、索引或状态改变时保留持久记录；最终实际交易再次与完整收据及原调用摘要绑定。生产浏览器另用明确 RPC 夹具验证最终回滚正常解锁、最后回读改变状态/交易哈希时保持锁；这些测试不证明真实主网重组或真钱包验收。
+
+## 多仓位恢复卡
+
+`tests/recovery-card.test.ts` 和 `tests/app-recovery.test.tsx` 验证完整编号集、uint256 最大值、旧版最小卡、空草稿、重复/畸形 ID、元数据限制、身份不可覆盖、迟到读取及错误隔离、卸载与手动输入。可选网关只接受最多 4 个无凭据/fragment 的 HTTPS URL，不会从导入文件自动加载或导航；导入摘要本身不建立可信发行身份。
+
+生产浏览器在 360/1280 px 导入并切换大整数编号、下载 JSON 核对完整集合与当前清单摘要，断言不请求导入网关或链 RPC，并检查布局/截图；另验证错误卡不覆盖、空卡清除。卡片不触发读取或发送，真实钱包/干净设备恢复任务仍待验收。
