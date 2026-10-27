@@ -49,7 +49,7 @@ async function exclusive<T>(action: () => Promise<T>): Promise<T> {
     return action();
   });
 }
-export async function sendGuarded(provider: Provider, plan: Plan, gas: bigint): Promise<Hex> {
+export async function sendGuarded(provider: Provider, plan: Plan, gas: bigint, beforeRequest?: () => void): Promise<Hex> {
   return exclusive(async () => {
     if (submissionState().state !== 'empty')
       throw new ExitError('SUBMISSION_BLOCKED', 'An unresolved submission exists; check it before sending again');
@@ -60,7 +60,7 @@ export async function sendGuarded(provider: Provider, plan: Plan, gas: bigint): 
       startedAt: new Date().toISOString() };
     let preserved = false;
     try {
-      const hash = await send(provider, plan, gas, () => { persist(entry); preserved = true; });
+      const hash = await send(provider, plan, gas, () => { beforeRequest?.(); persist(entry); preserved = true; });
       // If this write fails, the pre-request unknown marker remains and still blocks a resend.
       try { persist({ ...entry, hash }); } catch { /* Hash is also returned to the active UI. */ }
       return hash;

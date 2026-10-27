@@ -13,7 +13,7 @@ import { reconcileSubmission, sendGuarded, submissionState, SUBMISSION_KEY, type
 import { inspectReceipt, pendingState, type Result } from './core/receipt';
 import { recheckHistory } from './core/history';
 import { clearHistory, downloadJson, importRecoveryCard, loadHistory, recoveryCard, saveHistory, type HistoryItem } from './core/storage';
-import { manifestDigest, runtimeStatus, type RuntimeStatus } from './core/runtime';
+import { assertSigningRuntime, canSignRuntime, manifestDigest, runtimeStatus, type RuntimeStatus } from './core/runtime';
 import type { DemoEngine, Fault } from './demo/engine';
 
 const DEMO = import.meta.env.VITE_DEMO === 'true';
@@ -158,7 +158,24 @@ export default function App() {
     }
     return discoverWallets(w => setWallets(current => current.some(v => v.id === w.id) ? current : [...current, w]));
   }, []);
-  useEffect(() => { void runtimeStatus().then(setRuntime); }, []);
+  useEffect(() => {
+    let version = 0;
+    const refresh = async () => {
+      const current = ++version;
+      const status = await runtimeStatus();
+      if (current === version) setRuntime(status);
+    };
+    const handler = () => {
+      generation.current++; setPlan(undefined); setPreview(undefined); setAccepted(false);
+      if (!txLock.current && !submittedPlan.current) setStage('idle');
+      setRuntime({ mode: 'web', label: 'Checking entry', verified: false });
+      setError(lang === 'zh' ? '入口控制器已更新，请重新读取。' : 'Entry controller changed. Read again.');
+      void refresh();
+    };
+    void refresh();
+    navigator.serviceWorker?.addEventListener('controllerchange', handler);
+    return () => { version++; navigator.serviceWorker?.removeEventListener('controllerchange', handler); };
+  }, [lang]);
   useEffect(() => {
     if (DEMO) return;
     const update = () => { setSubmission(submissionState()); setSubmissionMessage(''); };
@@ -189,11 +206,6 @@ export default function App() {
     if (!txLock.current && !submittedPlan.current) setStage('idle');
     setError(lang === 'zh' ? '钱包账户、网络或连接发生变化，请重新连接和核对。' : 'Wallet changed. Reconnect and review again.');
   }) : undefined, [wallet, lang]);
-  useEffect(() => {
-    const handler = () => { invalidate(); setError(lang === 'zh' ? '入口控制器已更新，请重新读取。' : 'Entry controller changed. Read again.'); };
-    navigator.serviceWorker?.addEventListener('controllerchange', handler);
-    return () => navigator.serviceWorker?.removeEventListener('controllerchange', handler);
-  });
   const showError = (err: unknown) => {
     const code = err instanceof ExitError ? err.code : (err as { code?: number })?.code;
     const map: Record<string, string> = lang === 'zh' ? {
@@ -210,6 +222,7 @@ export default function App() {
       SUBMISSION_BLOCKED: '存在未解决的提交，请先核对待处理交易。',
       SUBMISSION_UNKNOWN: '未保存匹配的交易哈希，请检查钱包记录，勿重复发送。',
       SUBMISSION_MISMATCH: '实际交易与待处理记录不匹配，保持发送锁定。',
+      ENTRY_CHANGED: '入口已变化或未通过验证，请重新读取和核对。',
     } : {};
     setError(map[String(code)] || String(err instanceof Error ? err.message : err).slice(0, 240));
   };
@@ -300,11 +313,12 @@ export default function App() {
       setError(lang === 'zh' ? '存在未解决的提交，请先核对待处理交易。' : 'Resolve the pending submission before sending.');
       return;
     }
-    if (!DEMO && (!RELEASE_APPROVED || !wallet || !['local', 'tape-client'].includes(runtime.mode))) {
+    if (!DEMO && (!RELEASE_APPROVED || !wallet || !canSignRuntime(runtime))) {
       setError(t.readOnlyHint); return;
     }
     txLock.current = true; setError(''); setStage('preflight');
     const id = generation.current;
+    const controller = navigator.serviceWorker?.controller;
     let requested = false;
     try {
       if (DEMO) {
@@ -321,10 +335,17 @@ export default function App() {
       if (fresh.owner !== plan.account || fresh.liquidity !== plan.snapshot.liquidity)
         throw new ExitError('STALE', 'Position changed; read again');
       const checked = await adapter.simulate(plan, fresh.block);
-      if (id !== generation.current) throw new ExitError('STALE', 'Wallet or entry changed during preflight');
+      const entry = await runtimeStatus();
+      if (id !== generation.current || controller !== navigator.serviceWorker?.controller)
+        throw new ExitError('STALE', 'Wallet or entry changed during preflight');
+      setRuntime(entry);
+      assertSigningRuntime(runtime, entry);
       if (Date.now() - plan.createdAt > 30000) throw new ExitError('STALE', 'Preview expired');
       setStage('wallet'); requested = true;
-      const transactionHash = await sendGuarded(wallet!.provider, plan, checked.gas);
+      const transactionHash = await sendGuarded(wallet!.provider, plan, checked.gas, () => {
+        if (id !== generation.current || controller !== navigator.serviceWorker?.controller)
+          throw new ExitError('STALE', 'Wallet or entry changed before the wallet request');
+      });
       setSubmission(submissionState());
       submittedPlan.current = plan;
       submittedNonce.current = undefined;
@@ -336,7 +357,7 @@ export default function App() {
       showError(e);
       if (requested && (e as { code?: number })?.code !== 4001 &&
           !(e instanceof ExitError && ['WALLET_CHANGED', 'STALE', 'SUBMISSION_LOCK',
-            'SUBMISSION_BLOCKED', 'SUBMISSION_STORAGE'].includes(e.code))) {
+            'SUBMISSION_BLOCKED', 'SUBMISSION_STORAGE', 'ENTRY_CHANGED'].includes(e.code))) {
         setStage('unknown');
       } else { setStage('ready'); txLock.current = false; }
     } finally { if (!DEMO) setSubmission(submissionState()); }

@@ -6,7 +6,8 @@ import userEvent from '@testing-library/user-event';
 import { recheckHistory, type HistoryVerification } from '../src/core/history';
 import { loadHistory } from '../src/core/storage';
 vi.mock('../src/core/history', () => ({ recheckHistory: vi.fn() }));
-vi.mock('../src/core/runtime', () => ({
+vi.mock('../src/core/runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/core/runtime')>(),
   runtimeStatus: async () => ({ mode: 'local', label: 'Local application', verified: false }),
   manifestDigest: async () => { throw new Error('No manifest in DOM tests'); },
 }));

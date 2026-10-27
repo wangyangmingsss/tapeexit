@@ -136,6 +136,22 @@ describe('durable same-origin submission guard', () => {
     expect(submissionState().state).toBe('empty');
     expect(wallet.request.mock.calls.some(([call]) => call.method === 'eth_sendTransaction')).toBe(false);
   });
+  it('checks the active workspace after asynchronous wallet checks and before persisting or sending', async () => {
+    const p = await plan();
+    let invalidated = false;
+    const wallet = provider(async () => hash);
+    const original = wallet.request.getMockImplementation()!;
+    wallet.request.mockImplementation(async args => {
+      const response = await original(args);
+      if (args.method === 'eth_accounts') invalidated = true;
+      return response;
+    });
+    await expect(sendGuarded(wallet, p, 100000n, () => {
+      if (invalidated) throw new Error('Workspace changed');
+    })).rejects.toThrow('Workspace changed');
+    expect(submissionState().state).toBe('empty');
+    expect(wallet.request.mock.calls.some(([call]) => call.method === 'eth_sendTransaction')).toBe(false);
+  });
   it('keeps the marker when the wallet returns an invalid submission response', async () => {
     await expect(sendGuarded(provider(async () => undefined), await plan(), 100000n))
       .rejects.toMatchObject({ code: 'SUBMISSION_UNKNOWN' });

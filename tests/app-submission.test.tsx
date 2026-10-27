@@ -11,7 +11,8 @@ vi.mock('../src/core/submission', async importOriginal => ({
   ...await importOriginal<typeof import('../src/core/submission')>(),
   reconcileSubmission: vi.fn(),
 }));
-vi.mock('../src/core/runtime', () => ({
+vi.mock('../src/core/runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/core/runtime')>(),
   runtimeStatus: async () => ({ mode: 'local', label: 'Local application', verified: false }),
 }));
 let App: typeof import('../src/App').default;

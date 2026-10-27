@@ -10,6 +10,7 @@ import { inspectReceipt } from '../src/core/receipt';
 import { reconcileSubmission, sendGuarded, SUBMISSION_KEY } from '../src/core/submission';
 import { loadHistory } from '../src/core/storage';
 import { DEMO_OWNER, demoSnapshot } from '../src/demo/engine';
+import { runtimeStatus, type RuntimeStatus } from '../src/core/runtime';
 vi.mock('../src/config', async importOriginal => ({
   ...await importOriginal<typeof import('../src/config')>(), RELEASE_APPROVED: true,
 }));
@@ -22,8 +23,9 @@ vi.mock('../src/core/wallet', async importOriginal => ({
   connect: async () => '0x1000000000000000000000000000000000000001',
   assertWallet: async () => {},
 }));
-vi.mock('../src/core/runtime', () => ({
-  runtimeStatus: async () => ({ mode: 'local', label: 'Test local runtime', verified: false }),
+vi.mock('../src/core/runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/core/runtime')>(),
+  runtimeStatus: vi.fn(),
 }));
 vi.mock('../src/core/receipt', async importOriginal => ({
   ...await importOriginal<typeof import('../src/core/receipt')>(), inspectReceipt: vi.fn(),
@@ -43,6 +45,7 @@ beforeAll(async () => { vi.stubEnv('VITE_DEMO', 'false'); App = (await import('.
 beforeEach(async () => {
   localStorage.clear();
   vi.spyOn(navigator, 'language', 'get').mockReturnValue('zh-CN');
+  vi.mocked(runtimeStatus).mockReset().mockResolvedValue({ mode: 'local', label: 'Test local runtime', verified: false });
   vi.mocked(inspectReceipt).mockReset().mockResolvedValue(result);
   vi.mocked(reconcileSubmission).mockReset();
   vi.mocked(sendGuarded).mockReset().mockImplementation(async () => {
@@ -55,7 +58,7 @@ beforeEach(async () => {
     amount0: plan.amount0Min + 1n, amount1: plan.amount1Min + 1n, gas: 100000n, gasPrice: 1n,
   }));
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 async function confirm() {
   const user = userEvent.setup();
   render(<App />);
@@ -123,4 +126,56 @@ it('does not restore an old result if a finality response arrives after another 
   });
   expect(screen.queryByText('领取证据已核对')).toBeNull();
   expect(screen.getByText(/#33/)).toBeTruthy();
+});
+it.each([
+  { mode: 'tape-client', verified: false },
+  { mode: 'tape-server', verified: true },
+  { mode: 'web', verified: false },
+] as const)('does not send from an unapproved entry %j', async entry => {
+  vi.mocked(runtimeStatus).mockResolvedValue({ ...entry, label: 'Unapproved entry' });
+  await confirm();
+  await screen.findByRole('alert');
+  expect(sendGuarded).not.toHaveBeenCalled();
+  expect(localStorage.getItem(SUBMISSION_KEY)).toBeNull();
+});
+it('invalidates the workspace at the last wallet boundary when the controller changes', async () => {
+  const worker = Object.assign(new EventTarget(), { controller: {} });
+  vi.stubGlobal('navigator', Object.create(navigator, { serviceWorker: { value: worker } }));
+  vi.mocked(sendGuarded).mockImplementation(async (_provider, _plan, _gas, beforeRequest) => {
+    worker.controller = {};
+    worker.dispatchEvent(new Event('controllerchange'));
+    beforeRequest?.();
+    throw new Error('The stale workspace must stop before this point');
+  });
+  await confirm();
+  await screen.findByText('快照或预览已过期，请重新读取。');
+  expect(localStorage.getItem(SUBMISSION_KEY)).toBeNull();
+  expect(inspectReceipt).not.toHaveBeenCalled();
+});
+it('does not restore an old runtime result after a controller refresh', async () => {
+  const worker = Object.assign(new EventTarget(), { controller: {} });
+  vi.stubGlobal('navigator', Object.create(navigator, { serviceWorker: { value: worker } }));
+  let finish!: (entry: RuntimeStatus) => void;
+  vi.mocked(runtimeStatus).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+    .mockResolvedValue({ mode: 'tape-server', label: 'Latest server entry', verified: false });
+  render(<App />);
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  await act(async () => { worker.controller = {}; worker.dispatchEvent(new Event('controllerchange')); });
+  await screen.findByText('Latest server entry');
+  await act(async () => { finish({ mode: 'local', label: 'Outdated local entry', verified: false }); });
+  expect(screen.queryByText('Outdated local entry')).toBeNull();
+  expect(screen.getByText('Latest server entry')).toBeTruthy();
+});
+it.each([
+  { mode: 'tape-client', verified: false, container: '0x1000000000000000000000000000000000000001' },
+  { mode: 'tape-server', verified: false, container: '0x1000000000000000000000000000000000000001' },
+  { mode: 'tape-client', verified: true, container: '0x2000000000000000000000000000000000000002' },
+] as const)('stops before sending when preflight entry changes to %j', async change => {
+  const initial: RuntimeStatus = { mode: 'tape-client', label: '1.2.0.tape', name: '1.2.0.tape',
+    container: '0x1000000000000000000000000000000000000001', verified: true };
+  vi.mocked(runtimeStatus).mockResolvedValueOnce(initial).mockResolvedValue({ ...initial, ...change });
+  await confirm();
+  await screen.findByText('入口已变化或未通过验证，请重新读取和核对。');
+  expect(sendGuarded).not.toHaveBeenCalled();
+  expect(localStorage.getItem(SUBMISSION_KEY)).toBeNull();
 });
