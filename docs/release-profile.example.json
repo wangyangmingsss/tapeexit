@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "sourceCommit": null,
+  "manifestSha256": null,
+  "container": null,
+  "tapeName": null,
+  "gateways": [
+    { "origin": null, "operator": null },
+    { "origin": null, "operator": null }
+  ],
+  "assets": [],
+  "evidence": {
+    "publication": { "path": "release-artifacts/publication-verification.json", "sha256": null },
+    "assets": { "path": "release-artifacts/asset-review.json", "sha256": null },
+    "wallet": { "path": "release-artifacts/real-wallet-acceptance.json", "sha256": null },
+    "gateways": { "path": "release-artifacts/gateway-verification.json", "sha256": null },
+    "security": { "path": "release-artifacts/security-review.json", "sha256": null }
+  }
+}

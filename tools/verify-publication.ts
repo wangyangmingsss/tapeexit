@@ -15,7 +15,9 @@ await rm(output, { force: true });
 const publication = await loadPublication('dist');
 const evidence = await verifyPublication(new StrictRpc(SOURCES), getAddress(container), publication, expectedDigest);
 await mkdir('release-artifacts', { recursive: true });
-await writeFile(output, JSON.stringify({ ...evidence, checkedAt: new Date().toISOString() }, null, 2) + '\n');
+const manifest = JSON.parse(publication.contents.find(c => c.file.path === 'release-manifest.json')!.bytes.toString());
+await writeFile(output, JSON.stringify({ ...evidence, sourceCommit: manifest.sourceCommit,
+  observedAt: new Date().toISOString() }, null, 2) + '\n');
 console.log(JSON.stringify({ status: evidence.status, files: evidence.files.length,
   manifestSha256: evidence.manifestSha256, containerLive: evidence.containerLive,
   block: evidence.block, output }, null, 2));

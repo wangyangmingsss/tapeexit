@@ -16,6 +16,7 @@ jobs:
       - run: npm test -- --reporter=default --reporter=json --outputFile=release-artifacts/unit-tests.json
       - run: npm run vendor:tapekit
       - run: npm run test:tapekit
+      - run: npm run build:gateway
       - run: npm run build
       - run: npm run check:release
       - run: npm run report:dependencies

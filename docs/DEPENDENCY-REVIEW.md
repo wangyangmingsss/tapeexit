@@ -28,12 +28,25 @@ No clean-security conclusion follows from these classifications. The `--omit=dev
 
 ## Current Decisions
 
-The previous graph contained 22 findings: 9 high, 2 moderate and 11 low. Compatible automatic fixes did not resolve them.
-Targeted overrides now pin `tmp@0.2.7`, `diff@8.0.3` and `serialize-javascript@7.1.3`; the initial install scan reports
-17 remaining findings (7 high, 1 moderate, 9 low). Regenerate the audit/context and graph report for the current lockfile
-before using that count as release evidence. Compatibility probes cover solc temporary files, Mocha patch application
-and serialization; the full contract suite must also pass. The offered force operation would downgrade the official
-mathematical dependency and has not been applied.
+The previous graph contained 22 findings, then 17 after the first targeted fixes.
+Overrides pin `tmp@0.2.7`, `diff@8.0.3` and `serialize-javascript@7.1.3`.
+This revision also scopes `undici@6.29.1`, `adm-zip@0.6.1` and `uuid@11.1.1`
+to Hardhat, and `cookie@0.7.2` to Sentry. The installed audit now reports
+9 low findings, with no moderate, high or critical findings. Regenerate the
+audit/context and graph report against the exact lockfile before release.
+
+These include major-version overrides, so version ranges alone do not establish
+compatibility. Tests execute the actual Hardhat HttpProvider against a local HTTP
+server, the compiler ZIP extraction API, UUID generation, Sentry cookie
+parse/serialization, solc temporary files and Mocha patch/serialization APIs.
+The full official V3 contract suite also runs. This does not validate every
+unused Hardhat feature. The official SDK remains at 3.31.8; no mathematical
+dependency downgrade or forced audit fix was used.
+
+The registry currently offers elliptic 6.6.1, still inside the advisory range.
+The remaining nine low findings include its propagated dependency paths; they
+are retained for review rather than suppressed or described as nine separate
+direct vulnerabilities. Future updates require fresh registry and audit evidence.
 
 Keep the official SDK and integer mathematics until a compatible, reviewed migration exists. Do not remove event, ownership or transaction checks to reduce bundle size.
 
