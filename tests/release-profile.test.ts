@@ -47,6 +47,7 @@ describe('formal release evidence binding', () => {
   });
   it.each([
     ['publication', { containerLive: false }], ['publication', { manifestSha256: 'e'.repeat(64) }],
+    ['publication', { status: 'ISOLATED_FORK_REHEARSAL_PASSED', containerLive: true }],
     ['wallet', { status: 'OBSERVATIONS_ONLY' }], ['wallet', { synthetic: true }],
     ['wallet', { origin: 'http://127.0.0.1:4180' }], ['wallet', { chainObserved: 1 }],
     ['assets', { assets: [] }], ['security', { unresolvedHigh: 1 }],

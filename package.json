@@ -18,6 +18,7 @@
     "verify:gateways": "tsx tools/verify-gateways.ts",
     "preflight:release": "tsx tools/release-preflight.ts",
     "inspect:publication": "tsx tools/inspect-publication.ts",
+    "rehearse:publication": "tsx tools/rehearse-publication.ts",
     "inspect:assets": "tsx tools/inspect-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",
     "report:users": "node tools/user-validation.mjs",
