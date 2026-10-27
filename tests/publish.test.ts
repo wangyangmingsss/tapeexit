@@ -17,6 +17,7 @@ describe('unsigned publication boundaries', () => {
     }
     for (const patch of [{ sourceDirty: true }, { sourceCommit: 'uncommitted' }, { files: [file, file] },
       { signingApproved: true }, { files: [{ ...file, size: -1 }] },
+      { files: [{ ...file, size: 8_400_001 }] },
       { files: [{ ...file, contentType: 'text/html\r\ninjected' }] }]) {
       expect(() => validatePublishManifest({ ...manifest, ...patch })).toThrow();
     }
@@ -31,7 +32,7 @@ describe('unsigned publication boundaries', () => {
         expect(tx).toMatchObject({ to: REGISTRY, value: '0', chunk: i });
         const call = decodeFunctionData({ abi: publishAbi, data: tx.data });
         expect(call.args[0]).toBe(container);
-        expect(call.args[1]).toBe('/index.html');
+        expect(call.args[1]).toBe('index.html');
         if (call.functionName === 'putFile') {
           expect(i).toBe(0);
           expect(call.args[3]).toBe(`0x${digest(bytes)}`);
@@ -51,7 +52,7 @@ describe('unsigned publication boundaries', () => {
     const tx = fallbackTransaction(container);
     expect(tx).toMatchObject({ to: REGISTRY, value: '0' });
     expect(decodeFunctionData({ abi: publishAbi, data: tx.data })).toMatchObject({
-      functionName: 'setFallback', args: [container, '/index.html'],
+      functionName: 'setFallback', args: [container, 'index.html'],
     });
   });
   it('prepares a complete release with index and fallback last and rejects extra files/links', async () => {

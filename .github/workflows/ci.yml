@@ -14,6 +14,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run vendor:tapekit
+      - run: npm run test:tapekit
       - run: npm run build
       - run: npm run check:release
       - run: npm run report:dependencies

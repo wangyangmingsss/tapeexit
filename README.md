@@ -33,6 +33,8 @@ npm test
 npm run build
 npm run check:release
 npm run build:demo
+npm run vendor:tapekit
+npm run test:tapekit
 npx playwright install chromium
 npm run test:e2e
 npm run verify:deployment
@@ -43,6 +45,8 @@ npm run report:dependencies
 `npm test` 包含 SDK/整数边界、双来源冲突、钱包失效、收据转账证据、恢复包完整性、服务器边界、DOM 交互，以及 Anvil 上官方 V3 工厂和管理器字节码的实际执行。测试夹具的两个来源标签连接同一个本地 EVM，不是两个独立运营方。
 
 DOM 测试不验证视觉布局。Playwright 必须能启动真实浏览器；受限 macOS 沙箱可能在 Mach IPC 初始化阶段阻止启动。本次环境尚未完成截图和浏览器断言，不能将 CI 配置等同于已经通过 CI。
+
+`test:tapekit` 在校验过的固定上游源码上运行发布路径兼容测试，检查实际编码生成的入口、资源、清单与 fallback 能被客户端解析。它不启动浏览器，也不证明链上部署成功。
 
 `verify:deployment` 仅执行读取，核对链 ID、固定区块、管理器/工厂代码摘要与 getter。摘要匹配不是安全审计，也没有证明所有运行行为。
 
@@ -86,6 +90,8 @@ npm run plan:publish -- <容器地址>
 ```
 
 该命令只接受带干净源提交的发行清单，拒绝重复/保留路径、缺失/额外文件、符号链接及摘要不符，按 24,000 字节分块编码 `putFile` / `appendChunk`，读取当前激活费用和容器状态，输出 `release-artifacts/publish-plan.json`。它不签名、不上传、不付费；生成的数据不能跳过所有权、实现版本、预算及逐文件回读验收。详见 [发布手册](docs/PUBLISHING.md)。
+
+上传后用 `npm run verify:publication -- <容器地址> <此前独立保存的清单SHA256>` 执行只读验收。它在固定区块用两来源核对完整路径、fallback、元数据和每个文件的全部字节，单独记录激活状态；尚无真实容器的成功回读证据。生成的报告不能替代钱包、网关和独立安全验收。
 
 ## 结构
 

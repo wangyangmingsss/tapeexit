@@ -1,14 +1,14 @@
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { encodeFunctionData, getAddress, parseAbi, zeroAddress, type Hex } from 'viem';
 import { StrictRpc } from '../src/core/rpc';
 import { SOURCES } from '../src/config';
-import { preparePublication, REGISTRY as registry } from './publish-core';
+import { BINDING as binding, preparePublication, REGISTRY as registry } from './publish-core';
 
 const containerInput = process.argv[2];
 if (!containerInput) throw new Error('Usage: npm run plan:publish -- <existing-container-address>');
 const container = getAddress(containerInput);
 if (container === zeroAddress) throw new Error('Zero container');
-const binding = getAddress('0x68809fd2fb343aa57d0aeb7f33defe477c9666f9');
+await rm('release-artifacts/publish-plan.json', { force: true });
 const abi = parseAbi([
   'function monthlyFee() view returns (uint256)',
   'function isContainerLive(address container) view returns (bool)',
