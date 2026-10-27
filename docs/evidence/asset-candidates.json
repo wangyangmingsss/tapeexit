@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-metadata-only",
+  "observedAt": "2026-10-27T14:40:02.127Z",
+  "chainId": 196,
+  "block": {
+    "number": "0x46e6229",
+    "hash": "0x89111ea2b28d5668dd6b222f6203201fffc9e8c22b8e2926539fefd4567d1356",
+    "timestamp": "0x6ae0b7b5"
+  },
+  "assets": [
+    {
+      "address": "0x4ae46a509F6b1D9056937BA4500cb143933D2dc8",
+      "symbol": "USDG",
+      "decimals": 6,
+      "codeHash": "0x5e4dcb0bb1910f6429e5fe91678990088a51c6d1cfe1b31d05fb9d948cc7867c",
+      "slots": {
+        "implementation": "0x50607322Caa9CE5C27B8Cc403C476838CAAa9202",
+        "beacon": null
+      },
+      "implementationHashes": {
+        "implementation": "0x1817911a4edde54a1ec32fdc3d5b354670520e839ad7bf53575b872b36db1cb4"
+      },
+      "approval": "NOT_APPROVED",
+      "behavior": "NOT_ASSESSED"
+    },
+    {
+      "address": "0xe840946FfEBCd66B7C4E95095effaFaDfa0D0e56",
+      "symbol": "wMETAx",
+      "decimals": 18,
+      "codeHash": "0x22c711b98473b782f9d8863b9033148c180d6d4d8e3e3bce129ff566352500e8",
+      "slots": {
+        "implementation": "0x76C6851ea0B2741EeDcBBED240715E8817E85583",
+        "beacon": null
+      },
+      "implementationHashes": {
+        "implementation": "0x65fbe0111d1e611f05aaab7a4e80f5b883e996037bb58fcddb1043534a5e9a61"
+      },
+      "approval": "NOT_APPROVED",
+      "behavior": "NOT_ASSESSED"
+    }
+  ],
+  "operators": [
+    {
+      "url": "https://rpc.xlayer.tech",
+      "operator": "okx"
+    },
+    {
+      "url": "https://xlayer.drpc.org",
+      "operator": "drpc"
+    }
+  ],
+  "limitations": [
+    "No token is added to SUPPORTED_TOKENS",
+    "Empty EIP-1967 slots do not prove absence of a proxy or upgradeability",
+    "Beacon code is recorded; its implementation and governance are not resolved",
+    "No proof of standard transfer behavior, tax, rebase, blacklist, pause, issuer identity or safety"
+  ]
+}

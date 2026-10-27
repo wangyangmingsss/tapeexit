@@ -51,7 +51,7 @@ export function parsePublishProfile(input: unknown): PublishProfile {
   for (const name of ['maxGasPerTransaction', 'maxFeePerGasWei', 'maxUploadCostWei'] as const)
     if (uint(p[name], name) === 0n) throw new Error(`Explicit positive ${name} required`);
   for (const name of ['processor', 'container', 'opener', 'registry', 'binding', 'factory'] as const)
-    if (!p.expectedCodeHashes || !hashPattern.test(p.expectedCodeHashes[name]) ||
+    if (!p.expectedCodeHashes || typeof p.expectedCodeHashes[name] !== 'string' || !hashPattern.test(p.expectedCodeHashes[name]) ||
         /^0x0{64}$/i.test(p.expectedCodeHashes[name])) throw new Error(`Reviewed ${name} code hash required`);
   return { ...p, publisher: address(p.publisher), container: address(p.container) };
 }

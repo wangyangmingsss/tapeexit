@@ -53,9 +53,11 @@ Web Locks 使用同源排他锁；不支持该 API 时拒绝正式发送。普�
 
 ## 依赖告警
 
-本次 `npm audit --omit=dev` 返回 22 项：9 high、2 moderate、11 low。包括官方 SDK 依赖链上的 ethers/elliptic，以及合约包拉入的 Hardhat、watcher、undici、压缩与序列化工具。它们属于安装图；不能据此认定全部进入浏览器，也不能由打包体积小反推没有漏洞。
+此前 `npm audit --omit=dev` 返回 22 项。定向更新 tmp、diff 和 serialize-javascript 后，当前观察为 17 项：7 high、1 moderate、9 low，具体以同一 lockfile 的审计报告为准。剩余项包括官方 SDK 的 ethers/elliptic 依赖链和合约包拉入的 Hardhat、watcher、undici、压缩等工具。它们属于安装图；不能据此认定全部进入浏览器，也不能由打包体积小反推没有漏洞。
 
 本产品通过注入钱包发送交易，不使用 ethers/elliptic 持有私钥或本地签名。本地服务器使用 Node 标准库，不使用上述 HTTP 工具。不过安装/构建过程与供应链仍有风险；完整可达性审阅尚未完成。未使用 `audit fix --force` 将官方 SDK 降级或盲目覆盖不兼容依赖。主网签名继续关闭。
+
+发行辅助工具只生成未签名计划和观察记录。候选代币的代码/代理槽不是行为批准；容器预检只模拟第一步，实施版本的代码摘要仅观察、不独立批准。续传只针对固定区块验证过的原始分块前缀，不锁住可变容器。只读钱包接入台仅覆盖本地 provider 连接；受控 loopback 网络故障和公开 Pages 演示不证明真实 TapeOut 网关或真钱包退出成功。外部验收要求不能由工具输出替代。
 
 `report:dependency-scope` 将扫描结果按安装路径对应到生产模块图，验证 lockfile、审计摘要、实际 chunk 与发行清单，失败时删除旧报告。它只输出 `present` / `not-observed` 与 `exploitability: not-assessed`；模块图可能包含被 tree-shaking 删除的内容，未出现的包仍可能影响安装或构建。不能据此关闭告警。详见 `DEPENDENCY-REVIEW.md`。
 

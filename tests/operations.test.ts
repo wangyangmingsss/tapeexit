@@ -77,6 +77,11 @@ describe('read-only operational preflight', () => {
       .rejects.toThrow('budget');
     await expect(inspectPublication(fixture().rpc, profile, [{ ...transactions[0], value: '1' as '0' }]))
       .rejects.toThrow('target or value');
+    const wrong = encodePublishFile(processor, { path: 'index.html', size: 0,
+      sha256: digest(Buffer.alloc(0)), contentType: 'text/html' }, Buffer.alloc(0));
+    await expect(inspectPublication(fixture().rpc, profile, wrong)).rejects.toThrow('another container');
+    await expect(inspectPublication(fixture().rpc, { ...profile, maxGasPerTransaction: '21000' }, transactions))
+      .rejects.toThrow('intrinsic cost');
   });
   it('refuses changed or missing code rather than accepting only an address pin', async () => {
     await expect(inspectPublication(fixture({ code: '0x6001' }).rpc, profile, transactions)).rejects.toThrow('differs');
