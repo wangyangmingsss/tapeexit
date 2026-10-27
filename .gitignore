@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-demo/
+dist-gateway/
+recovery/
+release-artifacts/
+test-results/
+playwright-report/
+coverage/
+.env*
+!.env.demo
+*.log
+.DS_Store
+vendor/tapekit/

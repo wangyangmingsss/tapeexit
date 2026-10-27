@@ -1,0 +1,58 @@
+{
+  "status": "isolated-xlayer-fork-passed",
+  "pinned": {
+    "number": "0x46debd8",
+    "hash": "0xe94179c4caa5ee551c4844c667d1482a1cad99b1d497e263dddc02f9754e76cc",
+    "timestamp": "0x6ae04164"
+  },
+  "tokenId": "65466",
+  "owner": "0x814b594659134A2329D3c3aDfDb7cdF9859A517b",
+  "manager": "0x315e413A11AB0df498eF83873012430ca36638Ae",
+  "token0": {
+    "address": "0x4ae46a509F6b1D9056937BA4500cb143933D2dc8",
+    "decimals": 6,
+    "symbol": "USDG",
+    "verified": true
+  },
+  "token1": {
+    "address": "0xe840946FfEBCd66B7C4E95095effaFaDfa0D0e56",
+    "decimals": 18,
+    "symbol": "wMETAx",
+    "verified": true
+  },
+  "result": {
+    "hash": "0x9427400cc039a522f30665f4cae19073e322f0518d40ed62970c496a4fdc4b2d",
+    "blockNumber": "74312667",
+    "blockHash": "0x47bace9d01c184ce7770cf6a755cf2406253094076f102ed9f908cb082cde55e",
+    "amount0": "296358811",
+    "amount1": "719698701764734828",
+    "state": "received-checked",
+    "safe": false,
+    "finalized": false
+  },
+  "balanceDeltas": [
+    "296358811",
+    "719698701764734828"
+  ],
+  "remainingLiquidity": "593975391317200",
+  "candidateFailures": [
+    {
+      "tokenId": "65472",
+      "error": "Error: Minimum output rounds to zero"
+    },
+    {
+      "tokenId": "65471",
+      "error": "Error: Minimum output rounds to zero"
+    },
+    {
+      "tokenId": "65468",
+      "error": "Error: Minimum output rounds to zero"
+    }
+  ],
+  "limitations": [
+    "Local fork only; no mainnet transaction",
+    "Owner impersonated on local Anvil only",
+    "Both test source labels target the same local EVM",
+    "Test assets are not approved production assets"
+  ]
+}

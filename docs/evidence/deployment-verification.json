@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-10-27T06:17:22.519Z",
+  "deployment": {
+    "chainId": 196,
+    "manager": "0x315e413A11AB0df498eF83873012430ca36638Ae",
+    "factory": "0x4B2ab38DBF28D31D467aA8993f6c2585981D6804",
+    "wrappedNative": "0xe538905cf8410324e03A5A23C1c177a474D59b2b",
+    "managerCodeHash": "0xd8339465f5c45afef4319fde20bb35cb5c5e17cf861c73b669d07ca615e3213c",
+    "factoryCodeHash": "0x98cde3564f540d7529feb2c697e2d79b85e3bc864d088ebe09fd5dcfc60a5c0e"
+  },
+  "block": {
+    "number": "0x46dec5d",
+    "hash": "0x79911f0ec39dbb28b0ba270940320ad034afd4865cc11a1d46f7d2a093852bf4",
+    "timestamp": "0x6ae041e9"
+  },
+  "codes": [
+    {
+      "address": "0x315e413A11AB0df498eF83873012430ca36638Ae",
+      "codeHash": "0xd8339465f5c45afef4319fde20bb35cb5c5e17cf861c73b669d07ca615e3213c"
+    },
+    {
+      "address": "0x4B2ab38DBF28D31D467aA8993f6c2585981D6804",
+      "codeHash": "0x98cde3564f540d7529feb2c697e2d79b85e3bc864d088ebe09fd5dcfc60a5c0e"
+    }
+  ],
+  "operators": [
+    {
+      "url": "https://rpc.xlayer.tech",
+      "operator": "okx"
+    },
+    {
+      "url": "https://xlayer.drpc.org",
+      "operator": "drpc"
+    }
+  ],
+  "scope": "RPC agreement, non-empty code and manager factory/WETH9 getters. Not bytecode equivalence or security audit."
+}
