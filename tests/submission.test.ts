@@ -39,7 +39,7 @@ async function sent() {
   await sendGuarded(provider(async () => hash), p, 100000n);
   return p;
 }
-function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' | 'reorg' | 'finality') {
+function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' | 'reorg' | 'finality' | 'height') {
   return new StrictRpc([
     { url: 'https://a.example', operator: 'a' }, { url: 'https://b.example', operator: 'b' },
   ], async (_source, method, params) => {
@@ -51,7 +51,7 @@ function rpc(data: `0x${string}`, fault?: 'mismatch' | 'missing' | 'confirming' 
     if (method === 'eth_getBlockByNumber') {
       if (fault === 'finality') throw new Error('Unsupported');
       const finalized = params[0] === 'finalized';
-      return { number: finalized && fault === 'confirming' ? '0xf' : '0x10',
+      return { number: fault === 'height' ? '0x11' : finalized && fault === 'confirming' ? '0xf' : '0x10',
         hash: fault === 'reorg' ? hash : blockHash, timestamp: '0x1' };
     }
     throw new Error(`Unexpected ${method}`);
@@ -174,7 +174,7 @@ describe('durable same-origin submission guard', () => {
     await expect(reconcileSubmission(rpc(p.data))).resolves.toMatchObject({ state: 'resolved' });
     expect(submissionState().state).toBe('empty');
   });
-  it.each(['mismatch', 'missing', 'confirming', 'reorg', 'finality'] as const)('retains the durable block for %s', async fault => {
+  it.each(['mismatch', 'missing', 'confirming', 'reorg', 'finality', 'height'] as const)('retains the durable block for %s', async fault => {
     const p = await sent(); checked();
     try { await reconcileSubmission(rpc(p.data, fault)); } catch { /* Failure must preserve the marker. */ }
     expect(submissionState().state).toBe('blocked');

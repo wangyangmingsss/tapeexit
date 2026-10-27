@@ -24,6 +24,9 @@ export const httpRequest: Requester = async (source, method, params) => {
   return body.result;
 };
 export interface Block { number: Hex; hash: Hex; timestamp: Hex }
+function isQuantity(value: unknown): value is Hex {
+  return typeof value === 'string' && /^0x(?:0|[1-9a-f][0-9a-f]{0,63})$/i.test(value);
+}
 export class StrictRpc {
   constructor(public sources: readonly Source[], private requestOne: Requester = httpRequest) {
     if (new Set(sources.map(s => s.operator)).size < 2)
@@ -51,22 +54,30 @@ export class StrictRpc {
   }
   async pin(): Promise<Block> {
     const heads = await Promise.all(this.sources.map(s => this.requestOne(s, 'eth_blockNumber', [])));
-    const heights = heads.map(h => BigInt(h as string));
+    if (!heads.every(isQuantity)) throw new ExitError('RPC_INVALID', 'Invalid RPC head height');
+    const heights = heads.map(h => BigInt(h));
     const min = heights.reduce((a, b) => a < b ? a : b);
     const max = heights.reduce((a, b) => a > b ? a : b);
     if (max - min > 300n) throw new ExitError('STALE', 'RPC heads are too far apart');
     const height = min > 2n ? min - 2n : min;
     const block = await this.block(`0x${height.toString(16)}`);
-    if (Date.now() / 1000 - Number(BigInt(block.timestamp)) > 300)
-      throw new ExitError('STALE', 'Chain snapshot is stale');
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const timestamp = BigInt(block.timestamp);
+    if (now - timestamp > 300n || timestamp - now > 30n)
+      throw new ExitError('STALE', 'Chain snapshot timestamp is stale or ahead of the local clock');
     return { number: block.number, hash: block.hash, timestamp: block.timestamp };
   }
   async block(tag: Hex | 'safe' | 'finalized'): Promise<Block> {
+    if (tag !== 'safe' && tag !== 'finalized' && !isQuantity(tag))
+      throw new ExitError('RPC_INVALID', 'Invalid requested block height');
     const block = await this.request<Block>('eth_getBlockByNumber', [tag, false],
       b => b ? ({ number: b.number, hash: b.hash, timestamp: b.timestamp }) : null);
-    if (!block?.hash || !block.number || !block.timestamp)
-      throw new ExitError('RPC_INVALID', 'Block unavailable');
-    return block;
+    if (!block || !isQuantity(block.number) || !isQuantity(block.timestamp) ||
+        typeof block.hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(block.hash))
+      throw new ExitError('RPC_INVALID', 'Invalid or unavailable block');
+    if (tag !== 'safe' && tag !== 'finalized' && BigInt(block.number) !== BigInt(tag))
+      throw new ExitError('RPC_INVALID', 'RPC returned a different block height');
+    return { number: block.number, hash: block.hash, timestamp: block.timestamp };
   }
   async assertBlock(block: Block) {
     const current = await this.block(block.number);

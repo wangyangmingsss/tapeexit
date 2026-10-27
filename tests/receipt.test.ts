@@ -26,7 +26,8 @@ async function context() {
   const receipt = { status: '0x1', blockNumber: '0x10', blockHash, transactionHash: hash,
     from: DEMO_OWNER, to: plan.manager, logs };
   const tx = { from: DEMO_OWNER, to: plan.manager, input: plan.data, value: '0x0' };
-  const state = { receipt: receipt as typeof receipt | null, tx, canonicalHash: blockHash, finality: false };
+  const state = { receipt: receipt as typeof receipt | null, tx, canonicalHash: blockHash,
+    canonicalNumber: '0x10', finality: false };
   const rpc = new StrictRpc([
     { url: 'https://a.example', operator: 'a' }, { url: 'https://b.example', operator: 'b' },
   ], async (_source, method, params) => {
@@ -36,7 +37,7 @@ async function context() {
       if (params[0] === 'safe' || params[0] === 'finalized') {
         if (!state.finality) throw new Error('Unsupported');
       }
-      return { number: '0x10', hash: state.canonicalHash, timestamp: '0x1' };
+      return { number: state.canonicalNumber, hash: state.canonicalHash, timestamp: '0x1' };
     }
     throw new Error(method);
   });
@@ -75,5 +76,11 @@ describe('actual collection evidence', () => {
     await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'REVERTED' });
     state.receipt = null;
     expect(await inspectReceipt(rpc, hash, plan)).toBeNull();
+  });
+  it('does not confirm collection when both sources substitute the requested receipt height', async () => {
+    const { rpc, state, plan } = await context();
+    state.finality = true;
+    state.canonicalNumber = '0x11';
+    await expect(inspectReceipt(rpc, hash, plan)).rejects.toMatchObject({ code: 'RPC_INVALID' });
   });
 });
