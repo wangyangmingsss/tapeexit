@@ -33,7 +33,7 @@ child.on('error', error => { stderr = error.message; });
 const source = { url: localUrl, operator: 'isolated-xlayer-fork' };
 const local: Requester = async (_source, method, params) => httpRequest(source, method, params);
 const writeLocal = async (method: string, params: unknown[]) => {
-  if (!['anvil_setBalance', 'anvil_impersonateAccount', 'eth_sendTransaction', 'evm_mine'].includes(method))
+  if (!['anvil_setBalance', 'anvil_impersonateAccount', 'eth_sendTransaction', 'evm_mine', 'evm_setNextBlockTimestamp'].includes(method))
     throw new Error('Local write method is not allowed');
   return local(source, method, params);
 };
@@ -53,7 +53,10 @@ try {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   if (!ready) throw new Error(`Anvil fork did not become ready: ${stderr}`);
-  await writeLocal('evm_mine', []); await writeLocal('evm_mine', []);
+  // Advance only local block time so the application's freshness guard also
+  // works when replaying an older fixed source block.
+  await writeLocal('evm_setNextBlockTimestamp', [Math.max(Math.floor(Date.now() / 1000), Number(BigInt(pinned.timestamp)) + 1)]);
+  await writeLocal('evm_mine', []); await writeLocal('evm_mine', []); await writeLocal('evm_mine', []);
   const reader = new V3Adapter(rpc, DEPLOYMENT);
   let snapshot: Snapshot | undefined;
   const candidateFailures: { tokenId: string; error: string }[] = [];
@@ -89,8 +92,12 @@ try {
   const hash = await writeLocal('eth_sendTransaction', [{
     from: plan.account, to: plan.manager, data: plan.data, value: '0x0', gas: `0x${preview.gas.toString(16)}`,
   }]) as Hex;
-  const result = await inspectReceipt(rpc, hash, plan);
-  if (result?.state !== 'received-checked') throw new Error('Local fork collection evidence not checked');
+  let result = await inspectReceipt(rpc, hash, plan);
+  for (let attempt = 0; !result && attempt < 20; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    result = await inspectReceipt(rpc, hash, plan);
+  }
+  if (result?.state !== 'received-checked') throw new Error(`Local fork collection evidence not checked: ${JSON.stringify({ hash, result })}`);
   const after = await Promise.all([balance(snapshot.token0.address), balance(snapshot.token1.address)]);
   if (after[0] - before[0] !== BigInt(result.amount0) || after[1] - before[1] !== BigInt(result.amount1))
     throw new Error('Local fork balance changes differ from transfer evidence');
