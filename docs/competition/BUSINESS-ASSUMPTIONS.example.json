@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "currency": "USD",
+  "scenario": "unpriced-pilot",
+  "setupCostCents": null,
+  "hostingMonthlyCents": null,
+  "rpcMonthlyCents": null,
+  "monitoringMonthlyCents": null,
+  "loadedHourlyCostCents": null,
+  "maintenanceMinutesMonthly": null,
+  "supportMinutesPerCustomerMonthly": null,
+  "pricePerCustomerMonthlyCents": null,
+  "onboardingFeeCents": null,
+  "onboardingMinutesPerCustomer": null,
+  "externalReviewPerCustomerCents": null,
+  "paymentFeeBps": null,
+  "targetCustomers": null
+}

@@ -1,6 +1,7 @@
 import { getAddress, zeroAddress, type Address, type Hex } from 'viem';
 import { ExitError } from './rpc';
-import { validatePlan, type Plan } from './protocol';
+import type { Plan } from './protocol';
+import { loadPlan } from './plan-loader';
 
 export interface Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -121,6 +122,7 @@ export async function assertWallet(provider: Provider, plan: Plan) {
     throw new ExitError('STALE', 'Preview expired; refresh before signing');
 }
 export async function send(provider: Provider, plan: Plan, gas: bigint, beforeRequest?: () => void): Promise<Hex> {
+  const { validatePlan } = await loadPlan();
   validatePlan(plan);
   await assertWallet(provider, plan);
   beforeRequest?.();

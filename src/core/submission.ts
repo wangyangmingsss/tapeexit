@@ -1,6 +1,7 @@
 import { getAddress, keccak256, type Address, type Hex } from 'viem';
 import { CHAIN_ID, MANAGER } from '../config';
-import { parseTokenId, type Plan } from './protocol';
+import type { Plan } from './protocol';
+import { parseTokenId } from './token-id';
 import { recheckHistory } from './history';
 import { ExitError, type StrictRpc } from './rpc';
 import { send, type Provider } from './wallet';

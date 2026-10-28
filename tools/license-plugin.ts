@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { Plugin } from 'vite';
+import { gzipSync } from 'node:zlib';
 
 export function licensePlugin(mode: string): Plugin {
   return {
@@ -38,6 +39,9 @@ export function licensePlugin(mode: string): Plugin {
       const portableModules = [...modules].map(id => id.replaceAll(resolve('.'), '<project>')).sort();
       const chunks = Object.values(bundle).filter(output => output.type === 'chunk').map(output => ({
         path: output.fileName, sha256: createHash('sha256').update(output.code).digest('hex'),
+        bytes: Buffer.byteLength(output.code), gzipBytes: gzipSync(output.code, { level: 9 }).length,
+        entry: output.isEntry, imports: output.imports, dynamicImports: output.dynamicImports,
+        modules: Object.keys(output.modules).map(id => id.replaceAll(resolve('.'), '<project>')).sort(),
       })).sort((a, b) => a.path.localeCompare(b.path));
       writeFileSync(`release-artifacts/bundled-modules-${mode}.json`, JSON.stringify({
         schemaVersion: 1, mode, lockSha256: createHash('sha256').update(readFileSync('package-lock.json')).digest('hex'),

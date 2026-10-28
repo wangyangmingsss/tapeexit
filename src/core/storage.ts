@@ -1,7 +1,7 @@
 import { getAddress, zeroAddress } from 'viem';
 import { CHAIN_ID, MANAGER, RELEASE } from '../config';
 import { ExitError } from './rpc';
-import { parseTokenId } from './protocol';
+import { parseTokenId } from './token-id';
 const KEY = 'tapeexit:history:v1';
 export interface HistoryItem {
   tokenId: string; hash: string; time: string; environment: 'demo' | 'mainnet'; state: string;

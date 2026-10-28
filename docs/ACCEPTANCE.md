@@ -12,6 +12,7 @@ npm run vendor:tapekit
 npm run test:tapekit
 npm run build
 npm run check:release
+npm run report:performance
 npm run report:dependencies
 npm run report:dependency-scope
 npm run verify:reproducibility
@@ -41,16 +42,16 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The configuration starts the demo at port 4174, production recovery at 4175, a second local copy at 4176 and the wallet connectivity harness at 4180. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
+The configuration starts the development demo at port 4174, production recovery at 4175, a second local copy at 4176, the built demo at 4177 and the wallet connectivity harness at 4180. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
 
-The previous 16 cases passed on commit `7219c8a` in GitHub Actions run `40516216450`. The expanded 20-case suite adds a controlled loopback network outage and fixture-provider harness checks. It does not exercise a real wallet or actual TapeOut Service Worker. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify each new commit through its actual remote result.
+The delivered baseline passed 40 cases on commit `3dbff19f477439ed1d153a394baa786658299f5a` in GitHub Actions run `40612819980`. New cases require their own commit's results. The suite includes controlled loopback network outages and explicit provider/RPC/SW identity fixtures. It does not exercise a real extension wallet or actual TapeOut container. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify each new commit through its actual remote result.
 
 ## Remaining Gates
 
 | Gate | Status | Required Input Or Evidence |
 | --- | --- | --- |
 | Correct GitHub publication | Completed for prior candidate | Public `wangyangmingsss/tapeexit`; verify each new pushed commit matches local |
-| Browser and layouts | Prior 16 cases passed remotely; expanded suite needs current result | Match screenshots and test output to the exact commit |
+| Browser and layouts | Baseline 40 cases passed remotely; new changes need current result | Match screenshots and test output to the exact commit |
 | Actual TapeOut origin and target wallet | Not accepted | Real origin, target extension, wallet request/response trace, controller changes, cancellation, account/chain changes and refresh |
 | Supported assets | Not approved | Exact token contracts and nonstandard-behavior review; do not simply change the allowlist |
 | Independent transaction/security review | Not completed | Independent reviewer, reviewed commit, findings and retest |
@@ -72,6 +73,16 @@ Keep the production gate closed while the required acceptance remains incomplete
 
 Read `OPERATIONS.md` for read-only publication/asset probes, safe unsigned resume, wallet connectivity collection,
 recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer handoff, not a review result.
+`REAL-ACCEPTANCE.md` specifies the public inputs and actual tasks for items 2-5.
+`competition/PILOT-PLAN.md` and `model:business` prepare item 7 without asserting a completed pilot.
+
+## Calculation Loading And Performance
+
+The official SDK loads on demand for preview and validation, and remains in the complete hashed recovery release.
+Read-only position discovery and recovery-card views do not statically import it. Loading failure blocks preview
+and wallet submission. The static graph report verifies exact production bytes and gzip estimates against
+400,000 initial bytes, 130,000 initial gzip bytes and 600,000 total JavaScript bytes. This is not a device
+benchmark or a measured chain publication cost. Built-demo browser tests check deferred loading and failure behavior.
 
 ## RPC 传输边界回归
 

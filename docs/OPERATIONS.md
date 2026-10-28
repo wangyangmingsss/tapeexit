@@ -26,6 +26,15 @@ npm run verify:assets -- <保存的候选报告.json> <独立保存的报告SHA2
 
 ## 2. 容器身份与预算
 
+先观察公共环境，无需钱包：
+
+```sh
+npm run inspect:tapeout
+npm run inspect:tapeout -- 5
+```
+
+输出 `release-artifacts/tapeout-environment.json`；每次先删除旧结果，双来源固定区块记录 factory/registry/binding/opener 的代码和已固定实现、处理器总数、最多 5 个登记条目及当时月费。可用返回的下一偏移继续分页；列出不等于选择或批准处理器，代码摘要不证明封印与治理安全。月费为零也不等于上传、容器获取和未来费用为零。下一步的真实输入及任务见 `REAL-ACCEPTANCE.md`。
+
 将 `docs/publication-profile.example.json` 作为填写模板。所有 `null` 必须替换成真实公开身份、独立核对过的代码摘要或明确预算。不得填写私钥。金额使用最小单位十进制字符串；预算上限不代表预估成本。
 
 ```sh
@@ -118,3 +127,15 @@ npm run package:entry
 `report:readiness` 将发行绑定到干净提交、清单摘要和当前 lockfile 的审计结果。报告保持 `NOT_MAINNET_APPROVED`，不会把人工填写的检查项视作独立审阅，不修改签名开关。`--require-approved` 会以失败退出，供正式流水线阻止误发布。
 
 只有实际身份、支持资产、独立审阅、目标钱包、活跃容器和故障证据齐全后，才能另行审阅正式发送发行。
+
+## 9. 性能与商业假设
+
+```sh
+npm run report:performance
+npm run model:business
+npm run model:business -- <私有假设.json>
+```
+
+性能报告要求干净提交与同版本生产构建，核对初始/延后加载 chunk、文件摘要、gzip 估计和预算；官方 SDK 仅在预演/验证时加载，仍包含在完整发行中。模块缺失会停止操作。报告不测网速或设备时间，也不提供链上费用结论。
+
+商业示例的 13 个数值均为 null；未获得报价、测量或明确假设前不填零。输入金额为 USD 整数美分，时间为整数分钟，成本计算使用精确整数。输出保留 `ASSUMPTIONS_ONLY`，不能作为客户、收入或市场验证。实际试点及比较方法见 `competition/PILOT-PLAN.md`；需要指定联系人和明确发送授权后才联系第三方。

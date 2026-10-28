@@ -24,7 +24,7 @@ Today the fixed TapeKit build, upload encoder, actual path-resolver compatibilit
 - A local recovery server, hashed file manifest and offline file verification.
 
 No mainnet transaction was broadcast. Production signing is disabled and the approved asset list is empty.
-The prior candidate's 16 browser tests passed remotely. The expanded 21-test suite and new tools need their exact commit's results.
+The delivered baseline passed 40 browser tests remotely on commit `3dbff19f477439ed1d153a394baa786658299f5a`; new changes require their exact commit's results.
 Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, bounded owner-checked position discovery,
 printable public recovery cards, simulation recording and consented-session aggregation are implemented.
 
@@ -43,6 +43,11 @@ This has not been established by a controlled comparison or user study. There ar
 ## Business Hypothesis
 
 The base exit tool is open source and free. Protocol-funded adapter review, deployment, periodic fault rehearsals and maintenance are potential services, subject to user research and actual customer evidence. No emergency-exit fee is implemented.
+
+`PILOT-PLAN.md` specifies consented incident research, a bounded protocol pilot, matched outage-task comparison
+and stop conditions. `BUSINESS-ASSUMPTIONS.example.json` deliberately leaves numeric assumptions unset.
+`npm run model:business` computes explicit-assumption costs and break-even; it is not customer or revenue evidence.
+`REAL-ACCEPTANCE.md` in the preparation archive lists the real publication, wallet, review and hosting inputs.
 
 ## Required Before Submission
 

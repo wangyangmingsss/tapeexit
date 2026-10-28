@@ -1,6 +1,6 @@
 import { getAddress, type Address } from 'viem';
 import { managerAbi } from '../config';
-import { V3Adapter } from './protocol';
+import { V3Adapter } from './adapter';
 import { ExitError, type Block } from './rpc';
 
 export interface PositionPage {

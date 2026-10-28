@@ -30,7 +30,8 @@ async function readAndPreview() {
   await user.click(read);
   await screen.findByText('TEST-USDC / TEST-USDT');
   await user.click(screen.getByRole('button', { name: '预演退出' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: '核对交易' }).hasAttribute('disabled')).toBe(false));
+  const review = await screen.findByRole('button', { name: '核对交易' }, { timeout: 3000 });
+  expect(review.hasAttribute('disabled')).toBe(false);
   return user;
 }
 describe('isolated demo DOM interactions (not browser rendering evidence)', () => {

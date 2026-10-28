@@ -7,7 +7,10 @@ import {
 import { formatUnits, getAddress, type Address, type Hex } from 'viem';
 import { CHAIN_ID, DEPLOYMENT, MANAGER, RELEASE, RELEASE_APPROVED, SOURCES, SUPPORTED_TOKENS } from './config';
 import { StrictRpc, ExitError } from './core/rpc';
-import { makePlan, parseTokenId, V3Adapter, type Plan, type Preview, type Snapshot } from './core/protocol';
+import type { Plan, Preview, Snapshot } from './core/protocol';
+import { V3Adapter } from './core/adapter';
+import { parseTokenId } from './core/token-id';
+import { loadPlan } from './core/plan-loader';
 import { assertWallet, connect, discoverWallets, observeWallet, type Wallet } from './core/wallet';
 import { reconcileSubmission, sendGuarded, submissionState, SUBMISSION_KEY, type SubmissionState } from './core/submission';
 import { inspectReceipt, pendingState, type Result } from './core/receipt';
@@ -250,6 +253,7 @@ export default function App() {
       RPC_INVALID: '读取来源返回的数据无效，已停止处理，请稍后重试。',
       IMPORT: '恢复卡格式或字段无效，请检查文件。',
       MANIFEST: '发行清单读取失败，未保存恢复卡，请检查入口后重试。',
+      CALCULATION: '计算模块加载失败，请核对恢复包或入口并刷新后重试。',
       OWNER: '当前钱包不是该仓位的直接持有人。', STALE: '快照或预览已过期，请重新读取。',
       UNSUPPORTED: '该资产尚未通过当前发行验证，暂时只读。', 4001: '你已取消钱包确认。',
       4100: '钱包尚未授权此站点，请在钱包中检查连接权限。',
@@ -288,6 +292,8 @@ export default function App() {
     try {
       const fresh = DEMO ? await demo!.demoSnapshot(snapshot.tokenId, fault) : await adapter.snapshot(snapshot.tokenId);
       checkSnapshotFloor(fresh);
+      const { makePlan } = await loadPlan();
+      if (id !== generation.current) return;
       const next = makePlan(fresh, account, bps, slippage, collectOnly);
       const p = DEMO ? await demo!.demoPreview(next, fault) : await adapter.simulate(next);
       if (id !== generation.current) return;

@@ -19,6 +19,7 @@ jobs:
       - run: npm run build:gateway
       - run: npm run build
       - run: npm run check:release
+      - run: npm run report:performance
       - run: npm run report:dependencies
       - run: npm run report:dependency-scope
       - run: npm run verify:reproducibility
@@ -28,6 +29,7 @@ jobs:
       - run: npm run test:e2e
       - run: npm run record:demo
       - run: npm run report:users
+      - run: npm run model:business
       - run: npm run report:readiness
       - run: npm run package:entry
       - uses: actions/upload-artifact@v4

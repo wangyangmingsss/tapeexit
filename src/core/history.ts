@@ -1,6 +1,7 @@
 import { decodeFunctionData, getAddress, maxUint128, type Address, type Hex } from 'viem';
 import { DEPLOYMENT, managerAbi, type Deployment } from '../config';
-import { parseTokenId, V3Adapter } from './protocol';
+import { parseTokenId } from './token-id';
+import { V3Adapter } from './adapter';
 import { inspectReceipt, type Result } from './receipt';
 import { ExitError, type StrictRpc } from './rpc';
 import type { HistoryItem } from './storage';
