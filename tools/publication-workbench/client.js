@@ -192,6 +192,7 @@ $('attach').addEventListener('click', () => run(async () => {
   status('交易哈希已保存，等待链上核验');
 }));
 $('reconcile').addEventListener('click', () => run(async () => {
+  status('正在核对两个 RPC 的交易回执、区块和文件字节，请等待；不会重新发送交易');
   await api('reconcile', {}); status('交易与当前发行文件已核验，请准备下一笔');
 }));
 $('cancel-consent').addEventListener('change', controls);

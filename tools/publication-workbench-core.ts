@@ -15,6 +15,7 @@ export interface UploadAttempt {
   id: string; operation: number; createdAt: number; transaction: UploadTransaction;
   status: 'reserved' | 'confirmed' | 'reverted' | 'cancelled-by-user'; hash?: Hex; cancellationAcknowledgedAt?: number;
   block?: Block; gasUsed?: string; effectiveGasPriceWei?: string;
+  minedEnvelope?: { gas: string; maximumGasPriceWei: string };
 }
 export interface UploadJournal {
   schemaVersion: 1; contextId: string;
@@ -37,6 +38,8 @@ function hash(value: unknown): asserts value is Hex {
     throw new Error('Invalid transaction hash');
 }
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const fields = (keys: string[]) => (value: Record<string, unknown> | null) =>
+  value === null ? null : Object.fromEntries(keys.map(key => [key, value[key] ?? null]));
 
 // The server is a read-only RPC client. Only the user's browser holds a provider.
 export class PublicationWorkbench {
@@ -102,17 +105,29 @@ export class PublicationWorkbench {
             quantity(attempt.block.number) < 0n || quantity(attempt.block.timestamp) < 0n ||
             typeof attempt.gasUsed !== 'string' || !/^[1-9][0-9]*$/.test(attempt.gasUsed) ||
             BigInt(attempt.gasUsed) < 21_000n ||
-            BigInt(attempt.gasUsed) > quantity(tx.gas) ||
-            attempt.effectiveGasPriceWei !== quantity(tx.gasPrice).toString())
+            BigInt(attempt.gasUsed) > BigInt(attempt.minedEnvelope?.gas ?? quantity(tx.gas)) ||
+            !attempt.effectiveGasPriceWei || !/^[0-9]+$/.test(attempt.effectiveGasPriceWei) ||
+            BigInt(attempt.effectiveGasPriceWei) > BigInt(attempt.minedEnvelope?.maximumGasPriceWei ?? quantity(tx.gasPrice)))
           throw new Error('Missing checked transaction evidence');
+      }
+      if (attempt.minedEnvelope) {
+        const e = attempt.minedEnvelope;
+        if (!['confirmed', 'reverted'].includes(attempt.status) ||
+            !/^[1-9][0-9]*$/.test(e.gas) || !/^[0-9]+$/.test(e.maximumGasPriceWei) ||
+            BigInt(e.gas) > BigInt(p.maxGasPerTransaction) ||
+            BigInt(e.maximumGasPriceWei) > BigInt(p.maxFeePerGasWei))
+          throw new Error('Invalid mined fee envelope');
       }
     }
     if (this.reservedCost() > BigInt(p.maxUploadCostWei)) throw new Error('Persisted upload budget exceeded');
   }
   private reservedCost() {
     // Never refund a reservation, even after a revert. This remains conservative across restarts.
-    return this.journal.attempts.reduce((sum, a) =>
-      sum + quantity(a.transaction.gas) * quantity(a.transaction.gasPrice), 0n);
+    return this.journal.attempts.reduce((sum, a) => {
+      const reserved = quantity(a.transaction.gas) * quantity(a.transaction.gasPrice);
+      const mined = a.minedEnvelope ? BigInt(a.minedEnvelope.gas) * BigInt(a.minedEnvelope.maximumGasPriceWei) : 0n;
+      return sum + (mined > reserved ? mined : reserved);
+    }, 0n);
   }
   private unresolved() { return this.journal.attempts.find(a => a.status === 'reserved'); }
   private async exclusive<T>(run: () => Promise<T>): Promise<T> {
@@ -261,21 +276,35 @@ export class PublicationWorkbench {
       if (!a?.hash) throw new Error('Supply the wallet transaction hash for the unresolved request');
       await this.rpc.checkChain(196);
       const [receipt, actual] = await Promise.all([
-        this.rpc.request<Record<string, unknown> | null>('eth_getTransactionReceipt', [a.hash]),
-        this.rpc.request<Record<string, unknown> | null>('eth_getTransactionByHash', [a.hash]),
+        this.rpc.request<Record<string, unknown> | null>('eth_getTransactionReceipt', [a.hash],
+          fields(['status', 'transactionHash', 'blockNumber', 'blockHash', 'gasUsed', 'effectiveGasPrice'])),
+        this.rpc.request<Record<string, unknown> | null>('eth_getTransactionByHash', [a.hash],
+          fields(['hash', 'from', 'to', 'input', 'value', 'nonce', 'chainId', 'gas', 'gasPrice',
+            'type', 'maxFeePerGas', 'maxPriorityFeePerGas', 'blockNumber', 'blockHash'])),
       ]);
       if (!receipt || !actual) throw new Error('Transaction not confirmed by both RPC sources; keep waiting');
       const tx = a.transaction;
+      // Extension wallets may convert a legacy request to EIP-1559 and re-estimate gas.
+      // Check the mined envelope against consent and account for its full liability.
+      const gas = quantity(actual.gas), price = quantity(actual.gasPrice);
+      const maximumPrice = actual.type === '0x2' ? quantity(actual.maxFeePerGas) : price;
+      const originalCost = quantity(tx.gas) * quantity(tx.gasPrice);
+      const minedCost = gas * maximumPrice;
+      if (![undefined, '0x0', '0x1', '0x2'].includes(actual.type as string | undefined) ||
+          gas > BigInt(this.profile.maxGasPerTransaction) ||
+          maximumPrice > BigInt(this.profile.maxFeePerGasWei) || price > maximumPrice ||
+          (actual.type === '0x2' && quantity(actual.maxPriorityFeePerGas) > maximumPrice) ||
+          this.reservedCost() + (minedCost > originalCost ? minedCost - originalCost : 0n) > BigInt(this.profile.maxUploadCostWei))
+        throw new Error('Mined wallet fee envelope exceeds authorized upload budget; stopped');
       if (!['0x0', '0x1'].includes(String(receipt.status)) || receipt.transactionHash !== a.hash ||
           actual.hash !== a.hash || typeof actual.from !== 'string' || getAddress(actual.from) !== tx.from ||
           typeof actual.to !== 'string' || getAddress(actual.to) !== tx.to || actual.input !== tx.data ||
           quantity(actual.value) !== 0n || quantity(actual.nonce) !== quantity(tx.nonce) ||
           quantity(actual.chainId) !== 196n ||
-          quantity(actual.gas) !== quantity(tx.gas) || quantity(actual.gasPrice) !== quantity(tx.gasPrice) ||
           actual.blockNumber !== receipt.blockNumber || actual.blockHash !== receipt.blockHash ||
           typeof receipt.blockNumber !== 'string' || !/^0x[0-9a-f]+$/i.test(receipt.blockNumber) ||
-          quantity(receipt.gasUsed) < 21_000n || quantity(receipt.gasUsed) > quantity(tx.gas) ||
-          quantity(receipt.effectiveGasPrice) !== quantity(tx.gasPrice))
+          quantity(receipt.gasUsed) < 21_000n || quantity(receipt.gasUsed) > gas ||
+          quantity(receipt.effectiveGasPrice) !== price)
         throw new Error('Mined wallet transaction differs from reserved upload; stopped');
       const block = await this.rpc.block(receipt.blockNumber as Hex);
       const stable = await this.rpc.pin();
@@ -290,6 +319,7 @@ export class PublicationWorkbench {
       a.status = receipt.status === '0x1' ? 'confirmed' : 'reverted';
       a.block = block; a.gasUsed = quantity(receipt.gasUsed).toString();
       a.effectiveGasPriceWei = quantity(receipt.effectiveGasPrice).toString();
+      a.minedEnvelope = { gas: gas.toString(), maximumGasPriceWei: maximumPrice.toString() };
       await this.persist();
       return this.context();
     });

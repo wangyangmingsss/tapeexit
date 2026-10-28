@@ -129,6 +129,59 @@ describe('bounded browser-wallet publication coordinator', () => {
     expect(f.bench.context().reservedWei).toBe(reserved);
     expect((await f.prepare()).operation).toBe(0);
   });
+  it('accepts wallet EIP-1559 gas adjustments within consent and persists conservative costs across restart', async () => {
+    const f = fixture(); await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual, receipt } = f.mine(a);
+    Object.assign(actual, { type: '0x2', gas: '0xd743e', gasPrice: '0x1312d01',
+      maxFeePerGas: '0x19bfcc1', maxPriorityFeePerGas: '0x1' });
+    Object.assign(receipt, { gasUsed: '0x83e09', effectiveGasPrice: actual.gasPrice });
+    await f.bench.reconcile();
+    expect(f.bench.context().unresolved).toBeNull();
+    expect(f.bench.context().attempts[0].transaction).toEqual(a.transaction);
+    expect(f.bench.context().reservedWei).toBe((0xd743en * 0x19bfcc1n).toString());
+    const restarted = fixture(structuredClone(f.writes.at(-1)!));
+    expect(restarted.bench.context().reservedWei).toBe(f.bench.context().reservedWei);
+    expect(restarted.bench.context().attempts[0].status).toBe('confirmed');
+  });
+  it.each([
+    { gas: '0x6acfc1' },
+    { maxFeePerGas: '0x1c9c381' },
+    { maxPriorityFeePerGas: '0x1c9c381' },
+  ])('keeps wallet fee adjustments outside consent unresolved: %j', async patch => {
+    const f = fixture(); await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual } = f.mine(a);
+    Object.assign(actual, { type: '0x2', maxFeePerGas: a.transaction.gasPrice,
+      maxPriorityFeePerGas: '0x1', ...patch });
+    await expect(f.bench.reconcile()).rejects.toThrow('budget');
+    expect(f.bench.context().unresolved).toBe(a.id);
+    expect(f.journal.attempts[0].minedEnvelope).toBeUndefined();
+  });
+  it.each([false, true])('compares critical RPC fields despite operator metadata differences (conflict=%s)', async conflict => {
+    const f = fixture(); await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual, receipt } = f.mine(a);
+    const rpc = new StrictRpc(f.rpc.sources, async (source, method) => {
+      const result = { ...(method === 'eth_getTransactionByHash' ? actual : receipt) };
+      if (source.operator === 'b') {
+        result.operatorMetadata = 'extra fields from another node implementation';
+        if (conflict && method === 'eth_getTransactionByHash') result.input = '0x00';
+      }
+      return result;
+    });
+    vi.mocked(f.rpc.request).mockImplementation(rpc.request.bind(rpc));
+    if (conflict) {
+      await expect(f.bench.reconcile()).rejects.toThrow('disagree');
+      expect(f.bench.context().unresolved).toBe(a.id);
+    } else {
+      await f.bench.reconcile();
+      expect(f.bench.context().unresolved).toBeNull();
+    }
+  });
   it.each(['input', 'from', 'to', 'value', 'nonce', 'gas', 'gasPrice', 'chainId', 'blockHash'])(
     'rejects changed mined %s and keeps the request unresolved', async key => {
       const f = fixture(); await f.authorize();
