@@ -43,7 +43,7 @@ npm run test:e2e
 npm run report:compatibility
 ```
 
-The configuration starts the development demo at port 4174, production recovery at 4175, a second local copy at 4176, the built demo at 4177 and the wallet connectivity harness at 4180. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
+The configuration starts the development demo at port 4174, production recovery at 4175, a second local copy at 4176, the built demo at 4177 and the wallet connectivity harness at 4180. Test-only redirect HTTP servers use 4181/4182; their real 302/307 responses avoid WebKit's interception limitation and are absent from release distributions. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
 
 The delivered baseline passed 40 cases on commit `3dbff19f477439ed1d153a394baa786658299f5a` in GitHub Actions run `40612819980`. New cases require their own commit's results. The suite includes controlled loopback network outages and explicit provider/RPC/SW identity fixtures. It does not exercise a real extension wallet or actual TapeOut container. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify each new commit through its actual remote result.
 

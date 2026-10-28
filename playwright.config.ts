@@ -30,5 +30,6 @@ export default defineConfig({
     { command: 'node tools/local-server.mjs dist-demo', env: { TAPEEXIT_PORT: '4177' },
       url: 'http://127.0.0.1:4177', reuseExistingServer: !process.env.CI },
     { command: 'npm run accept:wallet', url: 'http://127.0.0.1:4180', reuseExistingServer: !process.env.CI },
+    { command: 'node tests/fixtures/fault-server.mjs', url: 'http://127.0.0.1:4181', reuseExistingServer: !process.env.CI },
   ],
 });

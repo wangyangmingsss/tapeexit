@@ -22,12 +22,11 @@ test('gateway verification reader enforces actual byte bounds inside the browser
   await expect(page.evaluate(readGatewayResource, { ...input, maxBytes: 2 })).rejects.toThrow('limit');
 });
 test('gateway verification reader rejects browser redirects without following them', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4175');
+  await page.goto('http://127.0.0.1:4181');
   let destinationHits = 0;
-  await page.route('**/bounded-redirect', route => route.fulfill({ status: 302, headers: { location: '/bounded-target' } }));
   await page.route('**/bounded-target', route => { destinationHits++; return route.fulfill({ body: 'unexpected' }); });
   await expect(page.evaluate(readGatewayResource, {
-    url: 'http://127.0.0.1:4175/bounded-redirect', maxBytes: 20,
+    url: 'http://127.0.0.1:4181/bounded-redirect', maxBytes: 20,
   })).rejects.toThrow();
   expect(destinationHits).toBe(0);
 });

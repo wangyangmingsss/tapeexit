@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // Production HTTP fixtures; no wallet access or chain operation.
 for (const fault of ['http', 'overflow', 'redirect'] as const)
   test(`production recovery export fails visibly on ${fault} and can retry`, async ({ page }) => {
-    const origin = 'http://127.0.0.1:4175';
+    const origin = fault === 'redirect' ? 'http://127.0.0.1:4181' : 'http://127.0.0.1:4175';
     let downloads = 0, destination = 0;
     page.on('download', () => downloads++);
     await page.route(`${origin}/redirected-manifest`, async route => {
@@ -12,8 +12,8 @@ for (const fault of ['http', 'overflow', 'redirect'] as const)
     });
     await page.route(`${origin}/release-manifest.json`, async route => {
       if (fault === 'http') await route.fulfill({ status: 503, body: 'unavailable' });
-      else if (fault === 'redirect') await route.fulfill({
-        status: 307, headers: { location: '/redirected-manifest' },
+      else if (fault === 'redirect') await route.continue({
+        headers: { ...route.request().headers(), 'x-fixture-redirect': '1' },
       });
       else await route.fulfill({ body: 'x'.repeat(262145) });
     });
