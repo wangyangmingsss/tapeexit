@@ -1,4 +1,4 @@
-name: Verify public TapeExit gateway
+name: Verify public TapeExit gateways
 on:
   workflow_dispatch:
 permissions:
@@ -14,6 +14,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: npm run build:gateway
       - run: npx playwright install --with-deps chromium
       - run: npx tsx tools/verify-live-gateway.ts
       - uses: actions/upload-artifact@v4
