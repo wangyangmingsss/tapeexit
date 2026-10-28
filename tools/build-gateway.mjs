@@ -23,4 +23,17 @@ await writeFile('dist-gateway/tapeexit-gateway.json', JSON.stringify({
   policy, serveSha256: createHash('sha256').update(output).digest('hex'),
   scope: 'Dedicated TapeExit gateway; upstream reserved routes and verification are preserved',
 }, null, 2) + '\n');
+// Netlify omits dot directories; keep the reserved URLs through a rewrite.
+await cp('dist-gateway/.tape', 'dist-gateway/tape-assets', { recursive: true });
+await writeFile('dist-gateway/_redirects',
+  '/.tape/* /tape-assets/:splat 200\n/* /index.html 200\n');
+await writeFile('dist-gateway/_headers', [
+  '/*',
+  '  Cache-Control: no-store',
+  '  X-Content-Type-Options: nosniff',
+  '  X-Frame-Options: DENY',
+  '  Referrer-Policy: no-referrer',
+  '  Service-Worker-Allowed: /',
+  '',
+].join('\n'));
 console.log('Dedicated TapeExit gateway built. Hosting, TLS and actual container verification are separate release steps.');
