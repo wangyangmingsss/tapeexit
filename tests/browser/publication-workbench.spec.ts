@@ -127,3 +127,21 @@ test('wallet events clear the preview and mobile layout keeps controls in view',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/${test.info().project.name}-publication-workbench-mobile.png`, fullPage: true });
 });
+test('preparing a slow or failed quote shows feedback beside the button without sending', async ({ page }) => {
+  await install(page);
+  let release!: () => void;
+  const waiting = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/preview', async route => {
+    await waiting;
+    await route.fulfill({ status: 409, json: { error: 'Independent RPC responses unavailable' } });
+  });
+  await page.locator('#refresh').click();
+  await expect(page.locator('#refresh')).toContainText('正在准备');
+  await expect(page.locator('#preview')).toContainText('正在核对两个 RPC');
+  await expect(page.locator('#refresh')).toBeDisabled();
+  expect(await sends(page)).toBe(0);
+  release();
+  await expect(page.locator('#preview')).toContainText('Independent RPC responses unavailable');
+  await expect(page.locator('#refresh')).toBeEnabled();
+  expect(await sends(page)).toBe(0);
+});

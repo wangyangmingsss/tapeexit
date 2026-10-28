@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 const wallets = new Map();
 let context, preview, account, connectedProvider, busy = false, generation = 0, removeObservers = () => {};
+let preparingSince = null;
 const status = text => { $('status').textContent = text; };
 const coin = wei => {
   const n = BigInt(wei), whole = n / 10n ** 18n;
@@ -22,6 +23,8 @@ async function api(path, body) {
   return value;
 }
 function controls() {
+  $('refresh').textContent = preparingSince === null ? '准备 / 刷新下一笔' :
+    `正在准备 · ${Math.floor((Date.now() - preparingSince) / 1000)} 秒`;
   const authorized = context?.authorization?.expiresAt > Date.now();
   $('connect').disabled = busy || !wallets.size || !context;
   $('wallet').disabled = busy;
@@ -133,8 +136,22 @@ $('authorize').addEventListener('click', () => run(async () => {
   status('费用范围已确认；每次仅发送你选择确认的一笔上传交易');
 }));
 $('refresh').addEventListener('click', () => run(async () => {
-  preview = null; $('preview').replaceChildren(); status('正在核对容器、文件前缀和当前费用');
-  const result = await api('preview', {});
+  preview = null; preparingSince = Date.now(); controls();
+  $('preview').replaceChildren();
+  field('preview', '状态', '正在核对两个 RPC、容器、已上传文件和费用，请等待');
+  status('正在核对容器、文件前缀和当前费用');
+  let result;
+  try {
+    result = await api('preview', {});
+  } catch (error) {
+    $('preview').replaceChildren();
+    const message = error instanceof Error ? error.message : '检查未完成';
+    field('preview', '准备未完成', `${message}；尚未请求钱包交易，可重新准备`);
+    throw error;
+  } finally {
+    preparingSince = null; controls();
+  }
+  $('preview').replaceChildren();
   if (result.complete) {
     field('preview', '完成', '所有发行文件及 fallback 已回读核验；激活另行处理');
     status('实际上传文件回读通过；容器激活状态以回读报告为准'); return;
