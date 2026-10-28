@@ -196,6 +196,21 @@ describe('bounded browser-wallet publication coordinator', () => {
     await f.bench.reconcile();
     expect(f.bench.context().attempts[0].status).toBe('confirmed');
   });
+  it('shares the original budget across batches and cancellations without silently increasing it', async () => {
+    const { f, p } = await batch();
+    let preview = p;
+    for (let i = 0; i < 16; i++) {
+      const { attempt: a } = await f.bench.reserveBatch(preview.id, BATCH_CONSENT);
+      await f.bench.recordBatchFailure(a.id, 'USER_REJECTED_4001');
+      await f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE');
+      if (i < 15) preview = await f.bench.prepareNext(true) as UploadPreview;
+    }
+    expect(f.bench.context().maximumWei).toBe(profile.maxUploadCostWei);
+    expect(f.bench.context().reservedWei).toBe((16n * 14_000_000n * 30_000_000n).toString());
+    await expect(f.bench.prepareNext(true)).rejects.toThrow('budget insufficient');
+    expect(f.journal.attempts).toHaveLength(16);
+    expect(() => fixture(structuredClone(f.writes.at(-1)!))).not.toThrow();
+  });
   it('persists capability observations without granting fees, reserving uploads or trusting browser claims', async () => {
     const f = fixture();
     await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'supported');

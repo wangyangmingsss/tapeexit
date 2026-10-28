@@ -426,6 +426,7 @@ $('attach').addEventListener('click', () => run(async () => {
   status('交易哈希已保存，等待链上核验');
 }));
 async function reconcileWithFeedback() {
+  const batch = context.attempts.find(a => a.id === context.unresolved)?.batch;
   verifyingSince = Date.now();
   $('verification-progress').hidden = false;
   $('verification-result').hidden = true;
@@ -441,6 +442,7 @@ async function reconcileWithFeedback() {
       : '交易已确认回滚，本笔上传未完成。请重新准备本笔并检查钱包结果。';
     $('verification-result').textContent = message;
     $('verification-result').hidden = false;
+    if (batch) $('batch-progress').textContent = message;
     status(message);
   } catch (error) {
     const detail = error instanceof Error ? error.message : '检查未完成';
@@ -451,6 +453,7 @@ async function reconcileWithFeedback() {
       : `核验未完成：${detail}。上传记录已保留，请勿重复发送交易。`;
     $('verification-result').textContent = message;
     $('verification-result').hidden = false;
+    if (batch) $('batch-progress').textContent = message;
     throw new Error(message);
   } finally {
     verifyingSince = null;

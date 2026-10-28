@@ -251,6 +251,7 @@ it('submits one durable atomic batch, checks wallet status and counts two verifi
   f.send.click(); f.send.click();
   await vi.waitFor(() => expect(document.getElementById('verification-result')!.textContent).toContain('本批 2 步'));
   expect(document.getElementById('confirmed')!.textContent).toBe('2 / 31 步');
+  expect(document.getElementById('batch-progress')!.textContent).toContain('核验成功');
   expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_sendCalls')).toHaveLength(1);
   expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
   const paths = f.fetcher.mock.calls.map(([url]) => url);
