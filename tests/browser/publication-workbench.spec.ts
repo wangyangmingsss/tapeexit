@@ -13,8 +13,12 @@ async function install(page: Page, mode = 'success') {
     manifestSha256: 'b'.repeat(64), fileCount: 9, totalBytes: 587736, totalOperations: 31,
     maximumWei: '7000000000000000', maxGas: '7000000', maxGasPriceWei: '30000000',
     reservedWei: '0', authorization: null as null | { expiresAt: number }, unresolved: null as null | string,
+    batch: { consent: 'fixture-batch-consent' },
     walletCapabilities: null as null | { publisher: string; chainId: number; outcome: string; atomicStatus: string | null },
-    attempts: [] as { id: string; operation: number; status: string; transaction: typeof transaction; hash?: string }[] };
+    attempts: [] as { id: string; operation: number; status: string; transaction: typeof transaction; hash?: string;
+      batch?: { operations: number[]; requestId: string; bundleId?: string; needsUpgrade: boolean } }[] };
+  const batchCalls = [0, 1].map(n => ({ to: transaction.to, data: `0x1234560${n}`, value: '0x0' }));
+  const batchTx = { ...transaction, to: publisher, data: '0xabcdef12', gas: '0xd59f80', gasPrice: '0x1c9c380' };
   const calls: string[] = [];
   await page.route('**/publication-workbench', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.route('**/client.js', route => route.fulfill({ contentType: 'text/javascript', body: js }));
@@ -30,6 +34,18 @@ async function install(page: Page, mode = 'success') {
     }
     if (action === 'preview') value = { id: 'preview', expiresAt: Date.now() + 30000,
       operation: 0, remaining: 31, file: 'LICENSE.txt', chunk: 0, maximumCostWei: '2520000000000', transaction };
+    if (action === 'batch-preview') value = { id: 'batch-preview', expiresAt: Date.now() + 60000,
+      operation: 0, remaining: 31, maximumCostWei: '420000000000000', transaction: batchTx,
+      batch: { operations: [0, 1], calls: batchCalls, files: [{ file: 'index.js', chunk: 1 }, { file: 'index.js', chunk: 2 }],
+        needsUpgrade: true, estimatedGas: '10000000', implementation: publisher } };
+    if (action === 'batch-reserve') {
+      const a = { id: 'attempt', operation: 0, status: 'reserved', transaction: batchTx,
+        batch: { operations: [0, 1], requestId: 'app-bundle', needsUpgrade: true } };
+      context.attempts.push(a); context.unresolved = a.id;
+      value = { attempt: a, request: { version: '2.0.0', id: 'app-bundle', from: publisher, chainId: '0xc4',
+        atomicRequired: true, calls: batchCalls } };
+    }
+    if (action === 'bundle') context.attempts[0].batch!.bundleId = route.request().postDataJSON().bundleId;
     if (action === 'reserve') {
       const reservedTx = mode === 'tampered' ? { ...transaction, value: '0x1' } : transaction;
       const a = { id: 'attempt', operation: 0, status: 'reserved', transaction: reservedTx };
@@ -54,13 +70,19 @@ async function install(page: Page, mode = 'success') {
         if (method === 'eth_chainId') return '0xc4';
         if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [publisher];
         if (method === 'wallet_getCapabilities') {
-          if (mode === 'capability-supported') return { '0xc4': { atomic: { status: 'supported' } } };
+          if (mode === 'capability-supported' || mode.startsWith('batch-')) return { '0xc4': { atomic: { status: 'ready' } } };
           throw Object.assign(new Error('Method not found'), { code: -32601 });
         }
         if (method === 'eth_sendTransaction') {
           if (mode === 'unknown') throw new Error('Fixture wallet response lost');
           return txHash;
         }
+        if (method === 'wallet_sendCalls') {
+          if (mode === 'batch-unknown') throw new Error('Fixture batch response lost');
+          return { id: 'wallet-bundle' };
+        }
+        if (method === 'wallet_getCallsStatus') return { version: '2.0.0', id: 'wallet-bundle', chainId: '0xc4',
+          atomic: true, status: 200, receipts: [{ transactionHash: txHash }] };
         throw new Error('Forbidden fixture method');
       },
       on(name: string, fn: () => void) {
@@ -159,11 +181,44 @@ test('reads current-chain batch capabilities, saves observations and never sends
   await expect(page.locator('#detect-batch')).toBeDisabled();
   await page.locator('#connect').click();
   await page.locator('#detect-batch').click();
-  await expect(page.locator('#batch-capability')).toContainText('钱包声明支持 X Layer 原子批量');
+  await expect(page.locator('#batch-capability')).toContainText('需要先经你确认升级账户');
   expect(await sends(page)).toBe(0);
   expect(calls).toContain('capabilities');
   expect(calls).not.toContain('reserve');
   await page.reload();
   await expect(page.locator('#batch-capability')).toContainText('上次检测');
   await expect(page.locator('#detect-batch')).toBeDisabled();
+});
+test('atomic batch requires separate consent, submits once and verifies both steps', async ({ page }) => {
+  const { calls } = await install(page, 'batch-success');
+  await page.locator('#connect').click();
+  await page.locator('#detect-batch').click();
+  await page.locator('#consent').check(); await page.locator('#authorize').click();
+  await page.locator('#prepare-batch').click();
+  await expect(page.locator('#batch-preview')).toContainText('index.js');
+  await expect(page.locator('#send-batch')).toBeDisabled();
+  await page.locator('#batch-consent').check();
+  await page.locator('#send-batch').click();
+  await expect(page.locator('#verification-result')).toContainText('本批 2 步');
+  await expect(page.locator('#confirmed')).toHaveText('2 / 31 步');
+  expect(await sends(page)).toBe(0);
+  const methods = await page.evaluate(() => (window as unknown as { uploadFixture: { methods: string[] } }).uploadFixture.methods);
+  expect(methods.filter(m => m === 'wallet_sendCalls')).toHaveLength(1);
+  expect(calls.indexOf('batch-reserve')).toBeLessThan(calls.indexOf('bundle'));
+  await page.setViewportSize({ width: 360, height: 900 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: `test-results/${test.info().project.name}-atomic-batch-mobile.png`, fullPage: true });
+});
+test('unknown atomic submission survives reload and blocks all resends', async ({ page }) => {
+  await install(page, 'batch-unknown');
+  await page.locator('#connect').click(); await page.locator('#detect-batch').click();
+  await page.locator('#consent').check(); await page.locator('#authorize').click();
+  await page.locator('#prepare-batch').click(); await page.locator('#batch-consent').check();
+  await page.locator('#send-batch').click();
+  await expect(page.locator('#pending-section')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#bundle-id')).toHaveValue('app-bundle');
+  await expect(page.locator('#prepare-batch')).toBeDisabled();
+  await expect(page.locator('#refresh')).toBeDisabled();
+  await expect(page.locator('#cancel-request')).toBeDisabled();
 });

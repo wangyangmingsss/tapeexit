@@ -4,6 +4,7 @@ let context, preview, account, connectedProvider, busy = false, generation = 0, 
 let preparingSince = null;
 let verifyingSince = null;
 let detectingSince = null;
+let batchPreview = null, batchPreparingSince = null;
 const CAPABILITY_TIMEOUT_MS = 15_000;
 const CHECK_TIMEOUT_MS = 90_000;
 const status = text => { $('status').textContent = text; };
@@ -27,6 +28,13 @@ async function api(path, body) {
   return value;
 }
 function controls() {
+  const atomic = context?.walletCapabilities?.atomicStatus;
+  $('prepare-batch').disabled = busy || !account || !['ready', 'supported'].includes(atomic) || !!context?.unresolved;
+  $('prepare-batch').textContent = batchPreparingSince === null ? '准备两步批量' :
+    `正在准备批量 · ${Math.floor((Date.now() - batchPreparingSince) / 1000)} 秒`;
+  $('send-batch').disabled = busy || !account || !batchPreview || batchPreview.expiresAt <= Date.now() ||
+    !$('batch-consent').checked || !(context?.authorization?.expiresAt > Date.now()) || !!context?.unresolved;
+  $('batch-consent').disabled = busy;
   $('detect-batch').disabled = busy || !context || !account || !connectedProvider;
   $('detect-batch').textContent = detectingSince === null ? '检测批量支持' :
     `检测中 · ${Math.max(0, 15 - Math.floor((Date.now() - detectingSince) / 1000))} 秒`;
@@ -47,14 +55,16 @@ function controls() {
   $('attach').disabled = busy || !context?.unresolved;
   $('reconcile').disabled = busy || !context?.unresolved;
   const pending = context?.attempts.find(a => a.id === context.unresolved);
-  $('cancel-request').disabled = busy || !pending || !!pending.hash || !$('cancel-consent').checked;
+  $('cancel-request').disabled = busy || !pending || !!pending.hash || (pending.batch && !pending.batch.offchainFailure) || !$('cancel-consent').checked;
+  $('recover-batch').disabled = busy || !pending?.batch || !account;
   $('export').disabled = !context;
   $('badge').textContent = context?.unresolved ? '待核验 · 上传暂停' : authorized ? '费用已确认' : '未确认费用';
 }
 function render() {
   if (detectingSince === null && context.walletCapabilities) renderCapabilities(context.walletCapabilities);
   $('files').textContent = `${context.fileCount} 个 / ${context.totalBytes.toLocaleString()} 字节`;
-  $('confirmed').textContent = `${context.attempts.filter(a => a.status === 'confirmed').length} 笔 / ${context.totalOperations} 步`;
+  $('confirmed').textContent = `${context.attempts.filter(a => a.status === 'confirmed')
+    .reduce((n, a) => n + (a.batch?.operations.length || 1), 0)} / ${context.totalOperations} 步`;
   $('maximum').textContent = coin(context.maximumWei);
   $('reserved').textContent = coin(context.reservedWei);
   $('identity').replaceChildren();
@@ -67,8 +77,15 @@ function render() {
   $('consent-label').textContent = `我确认向上述容器上传这一发行，EVM Gas 总预算最多 ${coin(context.maximumWei)}，确认有效期一小时；不含激活及链特有附加费用。`;
   const pending = context.attempts.find(a => a.id === context.unresolved);
   $('pending-section').hidden = !pending;
+  $('bundle-label').hidden = !pending?.batch;
+  $('recover-batch').hidden = !pending?.batch;
   if (pending) {
-    $('pending-status').textContent = `第 ${pending.operation + 1} 步的钱包请求尚未核验，其他上传已停止。`;
+    $('pending-status').textContent = `第 ${pending.batch ? pending.batch.operations.map(n => n + 1).join('、') : pending.operation + 1} 步的钱包请求尚未核验，其他上传已停止。`;
+    if (pending.batch) {
+      let saved;
+      try { saved = JSON.parse(localStorage.getItem(`tapeexit-batch:${context.contextId}`) || 'null'); } catch { /* Journal is authoritative. */ }
+      $('bundle-id').value = pending.batch.bundleId || (saved?.attemptId === pending.id && saved.bundleId) || pending.batch.requestId;
+    }
     if (pending.hash) $('tx-hash').value = pending.hash;
     else {
       try {
@@ -81,7 +98,8 @@ function render() {
   const names = { reserved: '待核验', confirmed: '交易与文件已核验', reverted: '交易回滚', 'cancelled-by-user': '用户确认已取消' };
   for (const attempt of context.attempts) {
     const tr = document.createElement('tr');
-    for (const value of [attempt.operation + 1, names[attempt.status], attempt.hash || '等待钱包交易哈希']) {
+    for (const value of [attempt.batch ? attempt.batch.operations.map(n => n + 1).join('、') : attempt.operation + 1,
+      names[attempt.status], attempt.hash || attempt.batch?.bundleId || '等待钱包交易哈希']) {
       const td = document.createElement('td'); td.textContent = String(value); tr.append(td);
     }
     $('attempts').append(tr);
@@ -100,7 +118,8 @@ async function run(action) {
   }
 }
 function invalidateWallet() {
-  generation++; account = null; connectedProvider = null; preview = null;
+  generation++; account = null; connectedProvider = null; preview = null; batchPreview = null;
+  $('batch-consent').checked = false;
   $('batch-capability').textContent = '钱包或网络已变化，连接后重新检测批量支持';
   $('account').textContent = '账户或网络已变化，请重新连接'; controls();
 }
@@ -168,7 +187,8 @@ function renderCapabilities(report) {
     timeout: '能力检测超时，可重新检测；没有请求交易或签名。',
     error: '钱包能力读取未完成，可检查连接后重新检测。',
   };
-  $('batch-capability').textContent = `上次检测：${messages[report.atomicStatus || report.outcome]} 当前上传仍采用逐笔确认。`;
+  $('batch-capability').textContent = `上次检测：${messages[report.atomicStatus || report.outcome]} ${
+    ['supported', 'ready'].includes(report.atomicStatus) ? '可准备两步批量，预览后单独确认。' : '当前上传仍采用逐笔确认。'}`;
 }
 $('detect-batch').addEventListener('click', () => run(async () => {
   const provider = connectedProvider, version = generation;
@@ -212,10 +232,10 @@ $('authorize').addEventListener('click', () => run(async () => {
   if (!$('consent').checked || !connectedProvider) throw new Error('请先连接发布账户并确认费用范围');
   await assertWallet(connectedProvider, generation);
   await api('authorize', { contextId: context.contextId, maximumWei: context.maximumWei });
-  status('费用范围已确认；每次仅发送你选择确认的一笔上传交易');
+  status('费用范围已确认；仅在你点击提交并在钱包确认后发送');
 }));
 $('refresh').addEventListener('click', () => run(async () => {
-  preview = null; preparingSince = Date.now(); controls();
+  preview = null; batchPreview = null; $('batch-consent').checked = false; preparingSince = Date.now(); controls();
   $('preview').replaceChildren();
   field('preview', '状态', '正在核对两个 RPC、容器、已上传文件和费用，请等待');
   status('正在核对容器、文件前缀和当前费用');
@@ -280,6 +300,125 @@ $('send').addEventListener('click', () => run(async () => {
     await reconcileWithFeedback();
   });
 }));
+$('batch-consent').addEventListener('change', controls);
+$('prepare-batch').addEventListener('click', () => run(async () => {
+  preview = null; batchPreview = null; $('batch-consent').checked = false;
+  batchPreparingSince = Date.now(); controls();
+  $('batch-preview').replaceChildren();
+  field('batch-preview', '状态', '正在核对续传字节、候选账户实现和双 RPC 批量模拟');
+  try {
+    await assertWallet(connectedProvider, generation);
+    const result = await api('batch-preview', {});
+    $('batch-preview').replaceChildren();
+    if (result.complete) {
+      field('batch-preview', '完成', '发行文件和 fallback 已全部回读核验'); return;
+    }
+    if (!result.batch) throw new Error('服务未返回有效批量预览');
+    batchPreview = result;
+    for (const [name, value] of [
+      ['步骤', result.batch.operations.map(n => n + 1).join('、')],
+      ['文件和分块', result.batch.files.map(f => `${f.file} · ${f.chunk}`).join('；')],
+      ['模拟 Gas / 本批 Gas 范围', `${result.batch.estimatedGas} / ${BigInt(result.transaction.gas)}`],
+      ['本批 EVM 费用预留', coin(result.maximumCostWei)],
+      ['Gas 单价范围 / wei', BigInt(result.transaction.gasPrice)],
+      ['候选账户实现', result.batch.implementation],
+      ['升级', result.batch.needsUpgrade ? '当前账户尚未升级，钱包可能另行请求升级确认及费用' : '当前账户实现已匹配'],
+      ['核验支持范围', '发布账户直接调用自身 execute；中继或其他包装交易将暂停并保留记录'],
+      ['报价到期', new Date(result.expiresAt).toISOString()],
+    ]) field('batch-preview', name, value);
+    status('批量模拟通过，请核对本批范围后勾选确认');
+  } catch (error) {
+    $('batch-preview').replaceChildren();
+    field('batch-preview', '准备未完成', error instanceof Error ? error.message : '检查失败');
+    throw error;
+  } finally { batchPreparingSince = null; controls(); }
+}));
+function validateBatchReservation(value, expected) {
+  const a = value?.attempt, request = value?.request, tx = a?.transaction;
+  if (!a?.batch || a.status !== 'reserved' || !request || request.version !== '2.0.0' ||
+      request.id !== a.batch.requestId || request.from !== context.publisher || request.chainId !== '0xc4' ||
+      request.atomicRequired !== true || !Array.isArray(request.calls) ||
+      request.calls.length !== expected.batch.operations.length ||
+      JSON.stringify(request.calls) !== JSON.stringify(expected.batch.calls) ||
+      JSON.stringify(a.batch.operations) !== JSON.stringify(expected.batch.operations) ||
+      JSON.stringify(tx) !== JSON.stringify(expected.transaction) ||
+      tx.to !== context.publisher || tx.value !== '0x0' ||
+      BigInt(tx.gas) > BigInt(context.maxGas) * BigInt(request.calls.length) ||
+      BigInt(tx.gasPrice) > BigInt(context.maxGasPriceWei) ||
+      request.calls.some(c => c.to !== context.registry || c.value !== '0x0' || !/^0x(?:[0-9a-f]{2})+$/i.test(c.data)))
+    throw new Error('批量预约与预览不一致，停止请求钱包');
+  return a;
+}
+async function walletRead(provider, method, params) {
+  let timer;
+  try {
+    return await Promise.race([provider.request({ method, params }),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('钱包状态查询超时，请再次核验，无需重新发送')), 15000); })]);
+  } finally { clearTimeout(timer); }
+}
+async function recoverBatchHash() {
+  const a = context.attempts.find(a => a.id === context.unresolved);
+  if (!a?.batch || a.hash) return;
+  const provider = connectedProvider, version = generation;
+  if (!provider) throw new Error('请先连接原发布钱包，再查询批量结果');
+  await assertWallet(provider, version);
+  const id = $('bundle-id').value.trim() || a.batch.bundleId || a.batch.requestId;
+  const result = await walletRead(provider, 'wallet_getCallsStatus', [id]);
+  await assertWallet(provider, version);
+  if (!result || result.version !== '2.0.0' || result.id !== id || typeof result.chainId !== 'string' ||
+      !/^0x[0-9a-f]+$/i.test(result.chainId) || BigInt(result.chainId) !== 196n || !Number.isSafeInteger(result.status))
+    throw new Error('钱包批量状态格式不匹配，记录保持待核验');
+  await api('bundle', { attemptId: a.id, bundleId: id });
+  if (result.status === 400 && (!result.receipts || result.receipts.length === 0)) {
+    await api('batch-failure', { attemptId: a.id, reason: 'WALLET_STATUS_400' });
+    throw new Error('钱包报告链外失败，请核对钱包后勾选取消旧请求；没有自动重新发送');
+  }
+  if (result.status >= 100 && result.status < 200) throw new Error('批量仍在钱包处理中，请稍后再次核验');
+  if (![200, 500].includes(result.status) || result.atomic !== true ||
+      !Array.isArray(result.receipts) || result.receipts.length !== 1 ||
+      !/^0x[0-9a-f]{64}$/i.test(result.receipts[0].transactionHash))
+    throw new Error('当前批量结果含中继、多回执、部分失败或未知格式，需检查钱包；不会自动补发');
+  const hash = result.receipts[0].transactionHash;
+  $('tx-hash').value = hash;
+  await api('hash', { attemptId: a.id, hash });
+}
+$('send-batch').addEventListener('click', () => run(async () => {
+  if (!navigator.locks) throw new Error('请使用支持页面互斥锁的 Chrome');
+  await navigator.locks.request('tapeexit-publication-wallet', { ifAvailable: true }, async lock => {
+    if (!lock) throw new Error('另一页面正在请求钱包');
+    const expected = batchPreview, provider = connectedProvider, version = generation;
+    batchPreview = null;
+    if (!expected?.batch || !provider || !$('batch-consent').checked || expected.expiresAt <= Date.now())
+      throw new Error('请重新准备批量并确认本批范围');
+    await assertWallet(provider, version);
+    const value = await api('batch-reserve', { previewId: expected.id, consent: context.batch.consent });
+    let submitted = false;
+    try {
+      const a = validateBatchReservation(value, expected);
+      await refreshContext();
+      await assertWallet(provider, version);
+      if (!(context.authorization?.expiresAt > Date.now())) throw new Error('费用确认已到期');
+      $('batch-progress').textContent = '请处理钱包批量上传及可能出现的账户升级确认；关闭页面也会保留预约。';
+      status('等待钱包确认本批；请核对账户升级方案、Gas 及总费用');
+      submitted = true;
+      const result = await provider.request({ method: 'wallet_sendCalls', params: [value.request] });
+      if (!result || typeof result.id !== 'string' || !result.id.length || result.id.length > 512)
+        throw new Error('钱包未返回有效批量 ID，请检查钱包并使用已保存的请求 ID 查询；不要重新发送');
+      try { localStorage.setItem(`tapeexit-batch:${context.contextId}`, JSON.stringify({ attemptId: a.id, bundleId: result.id })); } catch { /* Reservation survives. */ }
+      $('bundle-id').value = result.id;
+      await api('bundle', { attemptId: a.id, bundleId: result.id });
+      await refreshContext();
+      await reconcileWithFeedback();
+    } catch (error) {
+      if (!submitted || [4001, 5750].includes(Number(error?.code)))
+        await api('batch-failure', { attemptId: value.attempt.id, reason: !submitted ? 'NOT_SUBMITTED' :
+          Number(error?.code) === 5750 ? 'WALLET_REJECTED_UPGRADE_5750' : 'USER_REJECTED_4001' });
+      $('batch-progress').textContent = '本批记录已保留。请查询批量结果；明确拒绝的请求可在核对钱包后取消。';
+      throw error;
+    } finally { $('batch-consent').checked = false; }
+  });
+}));
+$('recover-batch').addEventListener('click', () => run(reconcileWithFeedback));
 $('attach').addEventListener('click', () => run(async () => {
   const hash = $('tx-hash').value.trim();
   if (!/^0x[0-9a-f]{64}$/i.test(hash)) throw new Error('请输入完整交易哈希');
@@ -293,11 +432,12 @@ async function reconcileWithFeedback() {
   controls();
   status('正在核对交易回执、稳定区块和文件字节');
   try {
+    if (context.attempts.find(a => a.id === context.unresolved)?.batch) await recoverBatchHash();
     const result = await api('reconcile', {});
     context = result; render();
     const attempt = result.attempts.at(-1);
     const message = attempt?.status === 'confirmed'
-      ? '核验成功：交易与文件字节均通过检查，可以准备下一笔。'
+      ? `核验成功：${attempt.batch ? `本批 ${attempt.batch.operations.length} 步` : '交易'}与文件字节均通过检查，可以准备下一笔。`
       : '交易已确认回滚，本笔上传未完成。请重新准备本笔并检查钱包结果。';
     $('verification-result').textContent = message;
     $('verification-result').hidden = false;

@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 
-afterEach(() => { vi.restoreAllMocks(); document.body.replaceChildren(); });
+afterEach(() => { vi.restoreAllMocks(); document.body.replaceChildren(); Reflect.deleteProperty(navigator, 'locks'); });
 
 it('shows a slow quote and its error locally, then permits a successful retry without wallet calls', async () => {
   const base = `${process.cwd()}/tools/publication-workbench/`;
@@ -143,7 +143,8 @@ it.each([
   expect(f.provider.request.mock.calls.every(([request]) =>
     ['eth_requestAccounts', 'eth_accounts', 'eth_chainId', 'wallet_getCapabilities'].includes(request.method))).toBe(true);
   expect(f.fetcher.mock.calls.every(([url]) => /\/api\/(context|capabilities)$/.test(url))).toBe(true);
-  expect(f.result.textContent).toContain('当前上传仍采用逐笔确认');
+  expect(f.result.textContent).toContain(['ready', 'supported'].includes(String(atomicStatus))
+    ? '可准备两步批量' : '当前上传仍采用逐笔确认');
 });
 
 it('shows a countdown, prevents duplicate detection and ignores a late result after timeout', async () => {
@@ -185,4 +186,86 @@ it('reports an unsupported wallet method without falling back to any transaction
   expect(f.context.walletCapabilities).toMatchObject({ outcome: 'method-unavailable', atomicStatus: null });
   expect(f.result.textContent).toContain('未提供能力检测接口');
   expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
+});
+
+async function batchClient(mode = 'success') {
+  const f = await capabilityClient(async () => ({ '0xc4': { atomic: { status: 'ready' } } }));
+  f.button.click();
+  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
+  const ctx = f.context as unknown as Record<string, any>;
+  const registry = '0x2000000000000000000000000000000000000002';
+  Object.assign(ctx, { registry, maxGas: '7000000', maxGasPriceWei: '30000000',
+    authorization: { expiresAt: Date.now() + 3600000 }, batch: { consent: 'batch-consent' } });
+  const calls = [0, 1].map(n => ({ to: registry, data: `0x1234560${n}`, value: '0x0' }));
+  const transaction = { from: f.publisher, to: f.publisher, data: '0xabcdef12', value: '0x0',
+    chainId: '0xc4', gas: '0xd59f80', gasPrice: '0x1c9c380', nonce: '0x0' };
+  const preview = { id: 'preview', expiresAt: Date.now() + 60000, operation: 0, remaining: 31,
+    maximumCostWei: '420000000000000', transaction,
+    batch: { operations: [0, 1], files: [{ file: 'index.js', chunk: 1 }, { file: 'index.js', chunk: 2 }],
+      calls, estimatedGas: '10000000', needsUpgrade: true, implementation: registry } };
+  f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
+    const body = options?.body ? JSON.parse(String(options.body)) : {};
+    if (url.endsWith('/batch-preview')) return Response.json(preview);
+    if (url.endsWith('/batch-reserve')) {
+      const attempt = { id: 'a', operation: 0, status: 'reserved', transaction, batch: {
+        operations: [0, 1], requestId: 'app-id', needsUpgrade: true } };
+      ctx.attempts = [attempt]; ctx.unresolved = attempt.id;
+      return Response.json({ attempt, request: { version: '2.0.0', id: 'app-id', from: f.publisher,
+        chainId: '0xc4', atomicRequired: true,
+        calls: mode === 'tampered' ? [{ ...calls[0], data: '0x00' }, calls[1]] : calls } });
+    }
+    if (url.endsWith('/bundle')) ctx.attempts[0].batch.bundleId = body.bundleId;
+    if (url.endsWith('/hash')) ctx.attempts[0].hash = body.hash;
+    if (url.endsWith('/batch-failure')) ctx.attempts[0].batch.offchainFailure = true;
+    if (url.endsWith('/reconcile')) { ctx.attempts[0].status = 'confirmed'; ctx.unresolved = null; }
+    return Response.json(ctx);
+  });
+  f.provider.request.mockImplementation(async ({ method }: { method: string }) => {
+    if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [f.publisher];
+    if (method === 'eth_chainId') return '0xc4';
+    if (method === 'wallet_sendCalls') {
+      if (mode === 'unknown') throw new Error('wallet response lost');
+      if (mode === 'rejected') throw Object.assign(new Error('User rejected'), { code: 4001 });
+      return { id: 'wallet-id' };
+    }
+    if (method === 'wallet_getCallsStatus') return { version: '2.0.0', id: 'wallet-id', chainId: '0xc4',
+      status: mode === 'partial' ? 600 : mode === 'pending' ? 100 : 200, atomic: true,
+      receipts: [{ transactionHash: `0x${'ab'.repeat(32)}` }] };
+    throw new Error('unexpected wallet method');
+  });
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: {
+    request: async (_name: string, _options: unknown, fn: (lock: object) => Promise<void>) => fn({}),
+  } });
+  (document.getElementById('prepare-batch') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('batch-preview')!.textContent).toContain('index.js'));
+  await vi.waitFor(() => expect((document.getElementById('prepare-batch') as HTMLButtonElement).disabled).toBe(false));
+  const send = document.getElementById('send-batch') as HTMLButtonElement;
+  expect(send.disabled).toBe(true);
+  const consent = document.getElementById('batch-consent') as HTMLInputElement;
+  consent.checked = true; consent.dispatchEvent(new Event('change'));
+  expect(send.disabled).toBe(false);
+  return { ...f, send, ctx };
+}
+it('submits one durable atomic batch, checks wallet status and counts two verified steps', async () => {
+  const f = await batchClient();
+  f.send.click(); f.send.click();
+  await vi.waitFor(() => expect(document.getElementById('verification-result')!.textContent).toContain('本批 2 步'));
+  expect(document.getElementById('confirmed')!.textContent).toBe('2 / 31 步');
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_sendCalls')).toHaveLength(1);
+  expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
+  const paths = f.fetcher.mock.calls.map(([url]) => url);
+  expect(paths.indexOf('/api/batch-reserve')).toBeLessThan(paths.indexOf('/api/bundle'));
+  expect(paths.indexOf('/api/hash')).toBeLessThan(paths.indexOf('/api/reconcile'));
+});
+it.each(['unknown', 'rejected', 'tampered', 'partial', 'pending'])('preserves unresolved batch without fallback: %s', async mode => {
+  const f = await batchClient(mode);
+  f.send.click();
+  await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
+  expect(f.ctx.unresolved).toBe('a');
+  expect((document.getElementById('refresh') as HTMLButtonElement).disabled).toBe(true);
+  expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
+  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/reconcile'))).toBe(false);
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_sendCalls'))
+    .toHaveLength(mode === 'tampered' ? 0 : 1);
+  if (mode === 'rejected' || mode === 'tampered') expect(f.ctx.attempts[0].batch.offchainFailure).toBe(true);
 });

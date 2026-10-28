@@ -58,6 +58,14 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
       switch (path) {
         case '/api/preview':
           exactKeys([]); return reply(200, await workbench.prepareNext());
+        case '/api/batch-preview':
+          exactKeys([]); return reply(200, await workbench.prepareNext(true));
+        case '/api/batch-reserve':
+          exactKeys(['previewId', 'consent']); return reply(200, await workbench.reserveBatch(body.previewId, body.consent));
+        case '/api/bundle':
+          exactKeys(['attemptId', 'bundleId']); return reply(200, await workbench.recordBundle(body.attemptId, body.bundleId));
+        case '/api/batch-failure':
+          exactKeys(['attemptId', 'reason']); return reply(200, await workbench.recordBatchFailure(body.attemptId, body.reason));
         case '/api/authorize':
           exactKeys(['contextId', 'maximumWei']); return reply(200, await workbench.authorize(body.contextId, body.maximumWei));
         case '/api/reserve':

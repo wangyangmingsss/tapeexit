@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { getAddress, type Hex } from 'viem';
+import { recoverAuthorizationAddress } from 'viem/utils';
 import { StrictRpc, type Block } from '../src/core/rpc';
 import { digest, REGISTRY, encodePublishFile, fallbackTransaction, type loadPublication } from './publish-core';
 import { inspectPublication, parsePublishProfile, type PublishProfile } from './operations-core';
 import { resumePublication } from './resume-publication-core';
 import { verifyPublication } from './verify-publication-core';
+import { batchData, BATCH_CONSENT, BATCH_IMPLEMENTATION, BATCH_CODE_HASH, checkBatchCode, simulateBatch } from './publication-batch';
 
 type Publication = Awaited<ReturnType<typeof loadPublication>>;
 export interface UploadTransaction {
@@ -16,6 +18,8 @@ export interface UploadAttempt {
   status: 'reserved' | 'confirmed' | 'reverted' | 'cancelled-by-user'; hash?: Hex; cancellationAcknowledgedAt?: number;
   block?: Block; gasUsed?: string; effectiveGasPriceWei?: string;
   minedEnvelope?: { gas: string; maximumGasPriceWei: string; settledWithinReservation?: true };
+  batch?: { operations: number[]; requestId: string; bundleId?: string; consent: typeof BATCH_CONSENT;
+    consentAt: number; needsUpgrade: boolean; offchainFailure?: true };
 }
 export interface UploadJournal {
   schemaVersion: 1; contextId: string;
@@ -38,6 +42,8 @@ export interface JournalStore { save(journal: UploadJournal): Promise<void> }
 export interface UploadPreview {
   id: string; expiresAt: number; operation: number; remaining: number; file: string; chunk: number;
   maximumCostWei: string; block: Block; transaction: UploadTransaction;
+  batch?: { operations: number[]; files: { file: string; chunk: number }[]; needsUpgrade: boolean;
+    estimatedGas: string; implementation: string; codeHash: string; calls: { to: string; data: Hex; value: '0x0' }[] };
 }
 const hex = (n: bigint): Hex => `0x${n.toString(16)}`;
 function quantity(value: unknown): bigint {
@@ -99,12 +105,23 @@ export class PublicationWorkbench {
     const ids = new Set(), hashes = new Set();
     for (const [index, attempt] of j.attempts.entries()) {
       const tx = attempt.transaction, op = this.operations[attempt.operation];
+      const batch = attempt.batch;
+      if (batch && (!Array.isArray(batch.operations) || batch.operations.length < 1 || batch.operations.length > 2 ||
+          batch.operations[0] !== attempt.operation ||
+          batch.operations.some((n, i) => !Number.isSafeInteger(n) || !this.operations[n] || (i > 0 && n !== batch.operations[i - 1] + 1)) ||
+          !/^[0-9a-f-]{36}$/.test(batch.requestId) || batch.consent !== BATCH_CONSENT ||
+          !Number.isSafeInteger(batch.consentAt) || batch.consentAt !== attempt.createdAt ||
+          typeof batch.needsUpgrade !== 'boolean' ||
+          (batch.bundleId !== undefined && !this.validBundleId(batch.bundleId)) ||
+          (batch.offchainFailure !== undefined && batch.offchainFailure !== true)))
+        throw new Error('Invalid persisted batch reservation');
+      const expectedData = batch ? batchData(batch.operations.map(n => this.operations[n])) : op?.data;
       if (!attempt || typeof attempt.id !== 'string' || ids.has(attempt.id) || !op ||
           !Number.isSafeInteger(attempt.operation) || !Number.isSafeInteger(attempt.createdAt) ||
           !['reserved', 'confirmed', 'reverted', 'cancelled-by-user'].includes(attempt.status) ||
-          !tx || tx.from !== p.publisher || tx.to !== REGISTRY || tx.data !== op.data ||
+          !tx || tx.from !== p.publisher || tx.to !== (batch ? p.publisher : REGISTRY) || tx.data !== expectedData ||
           tx.value !== '0x0' || tx.chainId !== '0xc4' ||
-          quantity(tx.gas) === 0n || quantity(tx.gas) > BigInt(p.maxGasPerTransaction) ||
+          quantity(tx.gas) === 0n || quantity(tx.gas) > this.gasCap(attempt) ||
           quantity(tx.gasPrice) > BigInt(p.maxFeePerGasWei) || quantity(tx.nonce) >= 1n << 64n ||
           (attempt.status === 'reserved' && index !== j.attempts.length - 1))
         throw new Error('Invalid or unresolved upload journal entry');
@@ -135,7 +152,7 @@ export class PublicationWorkbench {
             (e.settledWithinReservation === true
               ? BigInt(attempt.gasUsed!) > quantity(tx.gas) ||
                 BigInt(attempt.effectiveGasPriceWei!) > quantity(tx.gasPrice)
-              : BigInt(e.gas) > BigInt(p.maxGasPerTransaction) ||
+              : BigInt(e.gas) > this.gasCap(attempt) ||
                 BigInt(e.maximumGasPriceWei) > BigInt(p.maxFeePerGasWei)))
           throw new Error('Invalid mined fee envelope');
       }
@@ -152,6 +169,12 @@ export class PublicationWorkbench {
     }, 0n);
   }
   private unresolved() { return this.journal.attempts.find(a => a.status === 'reserved'); }
+  private gasCap(a: UploadAttempt) {
+    return BigInt(this.profile.maxGasPerTransaction) * BigInt(a.batch?.operations.length ?? 1);
+  }
+  private validBundleId(value: unknown): value is string {
+    return typeof value === 'string' && value.length > 0 && value.length <= 512 && !/[\u0000-\u001f\u007f]/.test(value);
+  }
   private async exclusive<T>(run: () => Promise<T>): Promise<T> {
     if (this.busy || this.fault) throw new Error(this.fault ? 'Journal write failed; restart and inspect journal' : 'Upload check already running');
     this.busy = true;
@@ -172,6 +195,8 @@ export class PublicationWorkbench {
       authorization: this.journal.authorization, attempts: structuredClone(this.journal.attempts),
       unresolved: this.unresolved()?.id ?? null,
       walletCapabilities: this.journal.walletCapabilities ? structuredClone(this.journal.walletCapabilities) : null,
+      batch: { maximumOperations: 2, implementation: BATCH_IMPLEMENTATION, codeHash: BATCH_CODE_HASH,
+        consent: BATCH_CONSENT },
       scope: 'Upload registry calls only. No activation, token approval, liquidity or app funds operations. ' +
         'Observed code pins are not an independent security review. EVM gas cap excludes chain-specific fees.',
     };
@@ -206,12 +231,13 @@ export class PublicationWorkbench {
   private async checkHistory() {
     for (const a of this.journal.attempts) if (a.block) await this.rpc.assertBlock(a.block);
   }
-  private async prepare(): Promise<UploadPreview | { complete: true; readback: unknown }> {
+  private async prepare(batchMode = false): Promise<UploadPreview | { complete: true; readback: unknown }> {
     if (this.unresolved()) throw new Error('Previous wallet request unresolved; do not resend');
     await this.checkHistory();
     const plan = await resumePublication(this.rpc, this.profile.container, this.publication);
     for (const a of this.journal.attempts) {
-      if (a.status === 'confirmed' && plan.transactions.some(op => equal(op, this.operations[a.operation])))
+      if (a.status === 'confirmed' && (a.batch?.operations ?? [a.operation])
+        .some(n => plan.transactions.some(op => equal(op, this.operations[n]))))
         throw new Error('Previously confirmed publication bytes disappeared; stopped');
     }
     if (!plan.transactions.length) {
@@ -229,6 +255,31 @@ export class PublicationWorkbench {
     ]);
     if (quantity(latest) !== quantity(pending)) throw new Error('Publisher has pending transactions; resolve them first');
     if (price > BigInt(this.profile.maxFeePerGasWei)) throw new Error('Current gas price exceeds cap');
+    if (batchMode) {
+      const capability = this.journal.walletCapabilities;
+      if (!capability || !['ready', 'supported'].includes(capability.atomicStatus ?? '') ||
+          this.now() - capability.checkedAt > 3_600_000)
+        throw new Error('Detect current wallet atomic batch support first');
+      const selected = plan.transactions.slice(0, 2);
+      const indices = selected.map(item => this.operations.findIndex(o => equal(item, o)));
+      if (indices.some((n, i) => n < 0 || (i > 0 && n !== indices[i - 1] + 1)))
+        throw new Error('Noncontiguous batch continuation');
+      const data = batchData(selected), gas = BigInt(this.profile.maxGasPerTransaction) * BigInt(selected.length);
+      const simulation = await simulateBatch(this.rpc, this.profile.publisher, data, hex(gas), plan.block);
+      if ((simulation.estimate * 120n + 99n) / 100n > gas) throw new Error('Batch gas estimate exceeds cap; use single upload');
+      // EIP-5792 has no standard fee cap fields. Reserve the full displayed envelope.
+      const cost = gas * BigInt(this.profile.maxFeePerGasWei);
+      if (this.reservedCost() + cost > BigInt(this.profile.maxUploadCostWei)) throw new Error('Remaining upload budget insufficient');
+      await this.rpc.assertBlock(plan.block); await this.rpc.assertBlock(identity.block);
+      return { id: randomUUID(), expiresAt: this.now() + 60_000, operation, remaining: plan.transactions.length,
+        file: op.file, chunk: op.chunk, maximumCostWei: cost.toString(), block: plan.block,
+        transaction: { from: this.profile.publisher, to: this.profile.publisher, data, value: '0x0',
+          chainId: '0xc4', nonce: latest, gas: hex(gas), gasPrice: hex(BigInt(this.profile.maxFeePerGasWei)) },
+        batch: { operations: indices, files: selected.map(({ file, chunk }) => ({ file, chunk })),
+          needsUpgrade: simulation.needsUpgrade, estimatedGas: simulation.estimate.toString(),
+          implementation: BATCH_IMPLEMENTATION, codeHash: BATCH_CODE_HASH,
+          calls: selected.map(item => ({ to: REGISTRY, data: item.data, value: '0x0' as const })) } };
+    }
     const base = { from: this.profile.publisher, to: REGISTRY, data: op.data, value: '0x0' as const };
     await this.rpc.request('eth_call', [base, plan.block.number]);
     const estimate = await this.rpc.estimate({ ...base, gasPrice: hex(price), nonce: latest });
@@ -242,25 +293,28 @@ export class PublicationWorkbench {
       file: op.file, chunk: op.chunk, maximumCostWei: cost.toString(), block: plan.block,
       transaction: { ...base, chainId: '0xc4', nonce: latest, gas: hex(gas), gasPrice: hex(price) } };
   }
-  prepareNext() {
+  prepareNext(batchMode = false) {
     return this.exclusive(async () => {
       this.preview = null;
-      const result = await this.prepare();
+      const result = await this.prepare(batchMode);
       if (!('complete' in result)) this.preview = result;
       return result;
     });
   }
-  reserve(previewId: unknown) {
+  reserve(previewId: unknown, batchConsent?: unknown, batchOnly = false) {
     return this.exclusive(async () => {
       this.authorized();
       const previous = this.preview;
       this.preview = null;
       if (!previous || previewId !== previous.id || previous.expiresAt <= this.now())
         throw new Error('Upload preview expired; refresh before signing');
-      const fresh = await this.prepare();
+      if (batchOnly && !previous.batch) throw new Error('Batch preview required');
+      if (previous.batch && batchConsent !== BATCH_CONSENT) throw new Error('Explicit batch and upgrade consent required');
+      const fresh = await this.prepare(!!previous.batch);
       if ('complete' in fresh || fresh.operation !== previous.operation ||
           fresh.transaction.nonce !== previous.transaction.nonce ||
           fresh.transaction.data !== previous.transaction.data ||
+          fresh.batch?.needsUpgrade !== previous.batch?.needsUpgrade ||
           quantity(fresh.transaction.gas) > quantity(previous.transaction.gas) ||
           quantity(fresh.transaction.gasPrice) > quantity(previous.transaction.gasPrice))
         throw new Error('Upload state or quote changed; refresh before signing');
@@ -268,9 +322,44 @@ export class PublicationWorkbench {
       if (this.now() >= previous.expiresAt) throw new Error('Upload preview expired during recheck');
       const attempt: UploadAttempt = { id: randomUUID(), operation: previous.operation, createdAt: this.now(),
         status: 'reserved', transaction: previous.transaction };
+      if (previous.batch) attempt.batch = { operations: previous.batch.operations, requestId: randomUUID(),
+        consent: BATCH_CONSENT, consentAt: attempt.createdAt, needsUpgrade: previous.batch.needsUpgrade };
       this.journal.attempts.push(attempt);
       await this.persist();
       return structuredClone(attempt);
+    });
+  }
+  batchRequest(a: UploadAttempt) {
+    if (!a.batch) throw new Error('Not a batch reservation');
+    return { version: '2.0.0', id: a.batch.requestId, from: this.profile.publisher, chainId: '0xc4',
+      atomicRequired: true, calls: a.batch.operations.map(n => ({
+        to: REGISTRY, data: this.operations[n].data, value: '0x0',
+      })) };
+  }
+  reserveBatch(previewId: unknown, consent: unknown) {
+    return this.reserve(previewId, consent, true).then(attempt => {
+      if (!attempt.batch) throw new Error('Batch preview required');
+      return { attempt, request: this.batchRequest(attempt) };
+    });
+  }
+  recordBundle(attemptId: unknown, bundleId: unknown) {
+    return this.exclusive(async () => {
+      const a = this.unresolved();
+      if (!a?.batch || a.id !== attemptId || !this.validBundleId(bundleId) ||
+          (a.batch.bundleId && a.batch.bundleId !== bundleId))
+        throw new Error('Bundle ID does not match pending batch');
+      a.batch.bundleId = bundleId;
+      await this.persist(); return this.context();
+    });
+  }
+  recordBatchFailure(attemptId: unknown, reason: unknown) {
+    return this.exclusive(async () => {
+      const a = this.unresolved();
+      if (!a?.batch || a.id !== attemptId || a.hash ||
+          !['USER_REJECTED_4001', 'WALLET_REJECTED_UPGRADE_5750', 'WALLET_STATUS_400', 'NOT_SUBMITTED'].includes(String(reason)))
+        throw new Error('Explicit offchain batch failure required');
+      a.batch.offchainFailure = true;
+      await this.persist(); return this.context();
     });
   }
   attachHash(attemptId: unknown, transactionHash: unknown) {
@@ -290,6 +379,7 @@ export class PublicationWorkbench {
       const a = this.unresolved();
       if (!a || a.id !== attemptId || a.hash || acknowledgement !== 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE')
         throw new Error('Explicit cancellation acknowledgement required; hashed transactions must be reconciled');
+      if (a.batch && !a.batch.offchainFailure) throw new Error('Unknown batch may still execute; recover wallet status before cancellation');
       await this.rpc.checkChain(196);
       const [latest, pending] = await Promise.all([
         this.rpc.request<Hex>('eth_getTransactionCount', [this.profile.publisher, 'latest']),
@@ -315,7 +405,7 @@ export class PublicationWorkbench {
           fields(['status', 'transactionHash', 'blockNumber', 'blockHash', 'gasUsed', 'effectiveGasPrice'])),
         this.rpc.request<Record<string, unknown> | null>('eth_getTransactionByHash', [a.hash],
           fields(['hash', 'from', 'to', 'input', 'value', 'nonce', 'chainId', 'gas', 'gasPrice',
-            'type', 'maxFeePerGas', 'maxPriorityFeePerGas', 'blockNumber', 'blockHash'])),
+            'type', 'maxFeePerGas', 'maxPriorityFeePerGas', 'blockNumber', 'blockHash', 'authorizationList'])),
       ]);
       if (!receipt || !actual) throw new Error('Transaction not confirmed by both RPC sources; keep waiting');
       const tx = a.transaction;
@@ -323,23 +413,26 @@ export class PublicationWorkbench {
       // A settled receipt can prove actual usage remained inside the original
       // reservation even when the wallet increased an unused maximum.
       const gas = quantity(actual.gas), price = quantity(actual.gasPrice);
-      const maximumPrice = actual.type === '0x2' ? quantity(actual.maxFeePerGas) : price;
+      const feeMarket = actual.type === '0x2' || actual.type === '0x4';
+      const maximumPrice = feeMarket ? quantity(actual.maxFeePerGas) : price;
       const originalCost = quantity(tx.gas) * quantity(tx.gasPrice);
       const settledWithinReservation = quantity(receipt.gasUsed) <= quantity(tx.gas) &&
         price <= quantity(tx.gasPrice);
-      const outsideEnvelope = gas > BigInt(this.profile.maxGasPerTransaction) ||
+      const outsideEnvelope = gas > this.gasCap(a) ||
         maximumPrice > BigInt(this.profile.maxFeePerGasWei);
       const settledException = outsideEnvelope && settledWithinReservation;
       const minedCost = settledException ? originalCost : gas * maximumPrice;
-      if (![undefined, '0x0', '0x1', '0x2'].includes(actual.type as string | undefined) ||
+      if (![undefined, '0x0', '0x1', '0x2', ...(a.batch ? ['0x4'] : [])].includes(actual.type as string | undefined) ||
           (outsideEnvelope && !settledWithinReservation) || price > maximumPrice ||
-          (actual.type === '0x2' && quantity(actual.maxPriorityFeePerGas) > maximumPrice) ||
+          (feeMarket && quantity(actual.maxPriorityFeePerGas) > maximumPrice) ||
           this.reservedCost() + (minedCost > originalCost ? minedCost - originalCost : 0n) > BigInt(this.profile.maxUploadCostWei))
         throw new Error('Mined wallet fee envelope exceeds authorized upload budget; stopped');
       if (!['0x0', '0x1'].includes(String(receipt.status)) || receipt.transactionHash !== a.hash ||
           actual.hash !== a.hash || typeof actual.from !== 'string' || getAddress(actual.from) !== tx.from ||
           typeof actual.to !== 'string' || getAddress(actual.to) !== tx.to || actual.input !== tx.data ||
-          quantity(actual.value) !== 0n || quantity(actual.nonce) !== quantity(tx.nonce) ||
+          quantity(actual.value) !== 0n || (a.batch
+            ? quantity(actual.nonce) < quantity(tx.nonce) || quantity(actual.nonce) > quantity(tx.nonce) + (a.batch.needsUpgrade ? 2n : 0n)
+            : quantity(actual.nonce) !== quantity(tx.nonce)) ||
           quantity(actual.chainId) !== 196n ||
           actual.blockNumber !== receipt.blockNumber || actual.blockHash !== receipt.blockHash ||
           typeof receipt.blockNumber !== 'string' || !/^0x[0-9a-f]+$/i.test(receipt.blockNumber) ||
@@ -350,10 +443,26 @@ export class PublicationWorkbench {
       const stable = await this.rpc.pin();
       if (block.hash !== receipt.blockHash || BigInt(stable.number) < BigInt(block.number))
         throw new Error('Transaction block is not yet stable in the two-source snapshot');
+      if (a.batch) {
+        await checkBatchCode(this.rpc, tx.from, block, false);
+        if (actual.type === '0x4') {
+          const auth = actual.authorizationList;
+          if (!Array.isArray(auth) || auth.length !== 1) throw new Error('Unsupported batch authorization list');
+          const item = auth[0] as Record<string, unknown>;
+          if (typeof item.address !== 'string' || getAddress(item.address) !== BATCH_IMPLEMENTATION ||
+              quantity(item.chainId) !== 196n || quantity(item.nonce) !== quantity(actual.nonce) + 1n)
+            throw new Error('Batch authorization differs from pinned account upgrade');
+          const signer = await recoverAuthorizationAddress({ authorization: {
+            address: BATCH_IMPLEMENTATION, chainId: 196, nonce: Number(quantity(item.nonce)),
+            r: item.r as Hex, s: item.s as Hex, yParity: Number(quantity(item.yParity)),
+          } });
+          if (getAddress(signer) !== tx.from) throw new Error('Batch authorization signer mismatch');
+        }
+      }
       await this.rpc.assertBlock(block);
       const continuation = await resumePublication(this.rpc, this.profile.container, this.publication);
-      const op = this.operations[a.operation];
-      if (receipt.status === '0x1' && continuation.transactions.some(item => equal(item, op)))
+      if (receipt.status === '0x1' && (a.batch?.operations ?? [a.operation])
+        .some(n => continuation.transactions.some(item => equal(item, this.operations[n]))))
         throw new Error('Confirmed transaction did not produce matching publication bytes');
       await this.rpc.assertBlock(block);
       a.status = receipt.status === '0x1' ? 'confirmed' : 'reverted';

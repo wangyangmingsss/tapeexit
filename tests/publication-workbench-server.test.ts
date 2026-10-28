@@ -13,6 +13,8 @@ describe('loopback-only publication server', () => {
     reserve: vi.fn(async () => ({ status: 'reserved' })),
     attachHash: vi.fn(async () => ({})), reconcile: vi.fn(async () => ({})),
     recordCapabilities: vi.fn(async () => ({ recorded: true })),
+    reserveBatch: vi.fn(async () => ({ attempt: {}, request: {} })),
+    recordBundle: vi.fn(async () => ({})), recordBatchFailure: vi.fn(async () => ({})),
   };
   const headers = { origin, 'content-type': 'application/json', 'x-tapeexit-client': 'publication-workbench' };
   beforeAll(async () => { server = await createPublicationWorkbenchServer(bench as unknown as PublicationWorkbench, port); });
@@ -64,5 +66,16 @@ describe('loopback-only publication server', () => {
     expect(bench.recordCapabilities).toHaveBeenCalledWith('release', 'publisher', 196, 'reported', 'supported');
     expect((await post('/api/capabilities', { ...report, calls: [] })).status).toBe(409);
     expect((await post('/api/sendCalls', { calls: [] })).status).toBe(404);
+  });
+  it('accepts exact batch preview, reservation and recovery fields without a broadcast endpoint', async () => {
+    const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
+    expect((await post('/api/batch-preview', {})).status).toBe(200);
+    expect(bench.prepareNext).toHaveBeenCalledWith(true);
+    expect((await post('/api/batch-reserve', { previewId: 'p', consent: 'c' })).status).toBe(200);
+    expect(bench.reserveBatch).toHaveBeenCalledWith('p', 'c');
+    expect((await post('/api/bundle', { attemptId: 'a', bundleId: 'b' })).status).toBe(200);
+    expect(bench.recordBundle).toHaveBeenCalledWith('a', 'b');
+    expect((await post('/api/batch-failure', { attemptId: 'a', reason: 'USER_REJECTED_4001' })).status).toBe(200);
+    expect((await post('/api/batch-reserve', { previewId: 'p', consent: 'c', calls: [] })).status).toBe(409);
   });
 });

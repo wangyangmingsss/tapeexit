@@ -1,18 +1,25 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { keccak256, type Hex } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { StrictRpc, type Block } from '../src/core/rpc';
 import { PublicationWorkbench, type UploadAttempt, type UploadJournal, type UploadPreview } from '../tools/publication-workbench-core';
 import { digest, encodePublishFile, fallbackTransaction, REGISTRY } from '../tools/publish-core';
 import { inspectPublication, parsePublishProfile } from '../tools/operations-core';
 import { resumePublication } from '../tools/resume-publication-core';
 import { verifyPublication } from '../tools/verify-publication-core';
+import { simulateBatch, checkBatchCode, BATCH_CONSENT, BATCH_IMPLEMENTATION } from '../tools/publication-batch';
 
 vi.mock('../tools/operations-core', async original => ({
   ...await original<typeof import('../tools/operations-core')>(), inspectPublication: vi.fn(),
 }));
 vi.mock('../tools/resume-publication-core', () => ({ resumePublication: vi.fn() }));
 vi.mock('../tools/verify-publication-core', () => ({ verifyPublication: vi.fn() }));
-const publisher = '0x1000000000000000000000000000000000000001';
+vi.mock('../tools/publication-batch', async original => ({
+  ...await original<typeof import('../tools/publication-batch')>(),
+  simulateBatch: vi.fn(), checkBatchCode: vi.fn(),
+}));
+const testSigner = privateKeyToAccount(`0x${'02'.repeat(32)}`);
+const publisher = testSigner.address;
 const container = '0x2000000000000000000000000000000000000002';
 const txHash = `0x${'ab'.repeat(32)}` as Hex;
 const contents = ['index.html', 'release-manifest.json'].map(path => {
@@ -27,7 +34,11 @@ const profile = parsePublishProfile({ schemaVersion: 1, chainId: 196, publisher,
   expectedCodeHashes: Object.fromEntries(['processor', 'container', 'opener', 'registry', 'binding', 'factory']
     .map(name => [name, keccak256('0x6000')])) });
 const block: Block = { number: '0x10', hash: `0x${'cd'.repeat(32)}`, timestamp: '0x123' };
-beforeEach(() => { vi.resetAllMocks(); });
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(simulateBatch).mockResolvedValue({ needsUpgrade: true, estimate: 10_000_000n });
+  vi.mocked(checkBatchCode).mockResolvedValue(false);
+});
 
 function fixture(saved?: UploadJournal) {
   let now = Date.now(), next = 0, failSave = false, receipt: Record<string, unknown> | null = null;
@@ -74,12 +85,117 @@ function fixture(saved?: UploadJournal) {
       receipt = { status, transactionHash: txHash, gasUsed: '0x10000',
         effectiveGasPrice: a.transaction.gasPrice, blockNumber: block.number, blockHash: block.hash };
       nonce = '0x1'; pendingNonce = nonce;
-      if (status === '0x1') next = a.operation + 1;
+      if (status === '0x1') next = (a.batch?.operations.at(-1) ?? a.operation) + 1;
       return { receipt, actual };
     },
   };
 }
 describe('bounded browser-wallet publication coordinator', () => {
+  async function batch(f = fixture()) {
+    await f.authorize();
+    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'ready');
+    const p = await f.bench.prepareNext(true) as UploadPreview;
+    return { f, p };
+  }
+  it('previews two ordered operations and requires separate batch consent without altering single caps', async () => {
+    const { f, p } = await batch();
+    expect(p.batch?.operations).toEqual([0, 1]);
+    expect(p.maximumCostWei).toBe((14_000_000n * 30_000_000n).toString());
+    expect(p.transaction.to).toBe(publisher);
+    expect(f.bench.context().maxGas).toBe('7000000');
+    await expect(f.bench.reserveBatch(p.id, 'yes')).rejects.toThrow('consent');
+    expect(f.journal.attempts).toHaveLength(0);
+    expect(f.requests.some(m => /send|sign/.test(m))).toBe(false);
+  });
+  it('persists a recoverable app bundle ID before returning exact EIP-5792 calls and verifies both operations', async () => {
+    const { f, p } = await batch();
+    const { attempt: a, request } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    expect(request).toMatchObject({ version: '2.0.0', id: a.batch?.requestId, atomicRequired: true, from: publisher });
+    expect(request.calls).toEqual(p.batch?.calls);
+    expect(f.writes.at(-1)?.attempts.at(-1)).toEqual(a);
+    const restart = new PublicationWorkbench(f.rpc, profile, publication, structuredClone(f.writes.at(-1)!), f.store);
+    await expect(restart.prepareNext()).rejects.toThrow('unresolved');
+    await f.bench.recordBundle(a.id, 'wallet-bundle-1');
+    await expect(f.bench.recordBundle(a.id, 'different')).rejects.toThrow('Bundle ID');
+    await f.bench.attachHash(a.id, txHash); f.mine(a);
+    await f.bench.reconcile();
+    expect(f.bench.context().unresolved).toBeNull();
+    expect((await f.prepare()).operation).toBe(2);
+    expect(checkBatchCode).toHaveBeenCalledWith(f.rpc, publisher, block, false);
+    expect(() => fixture(structuredClone(f.writes.at(-1)!))).not.toThrow();
+  });
+  it('refuses missing capability, failed simulation, excessive estimates and changed upgrade state', async () => {
+    const f = fixture();
+    await expect(f.bench.prepareNext(true)).rejects.toThrow('Detect');
+    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'ready');
+    vi.mocked(simulateBatch).mockRejectedValueOnce(new Error('implementation pin mismatch'));
+    await expect(f.bench.prepareNext(true)).rejects.toThrow('pin');
+    vi.mocked(simulateBatch).mockResolvedValueOnce({ needsUpgrade: true, estimate: 14_000_000n });
+    await expect(f.bench.prepareNext(true)).rejects.toThrow('gas estimate');
+    const { f: g, p } = await batch();
+    vi.mocked(simulateBatch).mockResolvedValueOnce({ needsUpgrade: false, estimate: 10_000_000n });
+    await expect(g.bench.reserveBatch(p.id, BATCH_CONSENT)).rejects.toThrow('changed');
+    expect(g.journal.attempts).toHaveLength(0);
+  });
+  it('does not cancel unknown batches; explicit rejection still checks nonce and retains the whole budget', async () => {
+    const { f, p } = await batch();
+    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    await expect(f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE')).rejects.toThrow('Unknown batch');
+    await f.bench.recordBatchFailure(a.id, 'USER_REJECTED_4001');
+    await f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE');
+    expect(f.bench.context().reservedWei).toBe(p.maximumCostWei);
+    expect(f.bench.context().attempts[0].status).toBe('cancelled-by-user');
+  });
+  it('rejects partial byte progress, unsupported implementation and wrapper input without falsely completing a batch', async () => {
+    const { f, p } = await batch();
+    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual } = f.mine(a); f.next(1);
+    await expect(f.bench.reconcile()).rejects.toThrow('matching publication bytes');
+    f.next(2);
+    vi.mocked(checkBatchCode).mockRejectedValueOnce(new Error('unsupported account implementation'));
+    await expect(f.bench.reconcile()).rejects.toThrow('unsupported');
+    actual.input = '0x1234';
+    await expect(f.bench.reconcile()).rejects.toThrow('differs');
+    expect(f.bench.context().unresolved).toBe(a.id);
+  });
+  it('retains a reverted batch and rejects corrupt persisted batch operations', async () => {
+    const { f, p } = await batch();
+    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    await f.bench.attachHash(a.id, txHash); f.mine(a, '0x0');
+    await f.bench.reconcile();
+    expect(f.bench.context().attempts[0].status).toBe('reverted');
+    expect(f.bench.context().reservedWei).toBe(p.maximumCostWei);
+    const saved = structuredClone(f.writes.at(-1)!);
+    saved.attempts[0].batch!.operations = [0, 2];
+    expect(() => fixture(saved)).toThrow('batch reservation');
+  });
+  it.each(['wrong-signer', 'extra-authorization', 'wrong-chain', 'wrong-target'])('rejects unsafe EIP-7702 authorization: %s', async mode => {
+    const { f, p } = await batch();
+    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual } = f.mine(a);
+    const signer = privateKeyToAccount(`0x${'01'.repeat(32)}`);
+    const signed = await signer.signAuthorization({ contractAddress: BATCH_IMPLEMENTATION, chainId: 196, nonce: 1 });
+    const auth = { ...signed, chainId: '0xc4', nonce: '0x1', yParity: `0x${signed.yParity}` };
+    if (mode === 'wrong-chain') auth.chainId = '0x1';
+    if (mode === 'wrong-target') auth.address = container;
+    Object.assign(actual, { type: '0x4', maxFeePerGas: a.transaction.gasPrice, maxPriorityFeePerGas: '0x1',
+      authorizationList: mode === 'extra-authorization' ? [auth, auth] : [auth] });
+    await expect(f.bench.reconcile()).rejects.toThrow(/authorization/i);
+    expect(f.bench.context().unresolved).toBe(a.id);
+  });
+  it('verifies the publisher signature on a pinned EIP-7702 self-upgrade before completing both calls', async () => {
+    const { f, p } = await batch();
+    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual } = f.mine(a);
+    const signed = await testSigner.signAuthorization({ contractAddress: BATCH_IMPLEMENTATION, chainId: 196, nonce: 1 });
+    Object.assign(actual, { type: '0x4', maxFeePerGas: a.transaction.gasPrice, maxPriorityFeePerGas: '0x1',
+      authorizationList: [{ ...signed, chainId: '0xc4', nonce: '0x1', yParity: `0x${signed.yParity}` }] });
+    await f.bench.reconcile();
+    expect(f.bench.context().attempts[0].status).toBe('confirmed');
+  });
   it('persists capability observations without granting fees, reserving uploads or trusting browser claims', async () => {
     const f = fixture();
     await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'supported');
