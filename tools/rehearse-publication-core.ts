@@ -21,7 +21,7 @@ export async function rehearseOperations(request: Request, input: unknown, opera
   }
   if (await request('eth_chainId') !== '0xc4') throw new Error('Wrong local chain');
   const price = quantity(await request('eth_gasPrice'));
-  if (!price || price > BigInt(profile.maxFeePerGasWei)) throw new Error('Fork gas price exceeds budget');
+  if (price > BigInt(profile.maxFeePerGasWei)) throw new Error('Fork gas price exceeds budget');
   const ceiling = BigInt(profile.maxGasPerTransaction);
   if (ceiling * BigInt(profile.maxFeePerGasWei) * BigInt(operations.length) > BigInt(profile.maxUploadCostWei))
     throw new Error('Upload gas ceilings exceed total budget');

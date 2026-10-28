@@ -51,7 +51,7 @@ test('wallet harness discovers a fixture safely and never requests transaction s
   const methods = await page.evaluate(() =>
     (window as unknown as { walletFixture: { methods: string[] } }).walletFixture.methods);
   expect(methods.every(m => ['eth_accounts', 'eth_requestAccounts', 'eth_chainId', 'wallet_switchEthereumChain'].includes(m))).toBe(true);
-  await page.screenshot({ path: 'test-results/wallet-harness-fixture.png', fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-wallet-harness-fixture.png`, fullPage: true });
 });
 test('wallet harness records an actual provider rejection response without inventing acceptance', async ({ page }) => {
   await installFixture(page);

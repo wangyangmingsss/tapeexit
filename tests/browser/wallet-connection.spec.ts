@@ -52,7 +52,7 @@ test('production wallet choice keeps the newer connection when an older provider
     (window as unknown as { connectionFixture: { methods: { id: string; method: string }[] } }).connectionFixture.methods);
   expect(methods.filter(m => m.id === 'A').map(m => m.method)).toEqual(['eth_chainId', 'eth_requestAccounts']);
   expect(methods.some(m => /send|sign/i.test(m.method))).toBe(false);
-  await page.screenshot({ path: 'test-results/production-wallet-connection-fixture.png', fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-production-wallet-connection-fixture.png`, fullPage: true });
 });
 test('closing production wallet choice discards a pending provider response', async ({ page }) => {
   await installFixture(page);

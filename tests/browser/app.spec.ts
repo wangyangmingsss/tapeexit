@@ -13,7 +13,7 @@ test('complete isolated exit and persist clearly labelled local history', async 
   await page.getByRole('button', { name: '确认模拟退出' }).click();
   await expect(page.getByText('领取证据已核对')).toBeVisible();
   await expect(page.getByText('模拟结果，不代表真实链上交易。')).toBeVisible();
-  await page.screenshot({ path: 'test-results/desktop-completed.png', fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-desktop-completed.png`, fullPage: true });
   await page.getByRole('button', { name: '操作记录', exact: true }).click();
   await expect(page.getByText('received-checked')).toBeVisible();
   expect(errors).toEqual([]);
@@ -53,7 +53,7 @@ for (const width of [360, 390, 768, 1280, 1440]) test(`demo task and review at $
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
   }
-  await page.screenshot({ path: `test-results/demo-review-${width}.png`, fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-demo-review-${width}.png`, fullPage: true });
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
 });

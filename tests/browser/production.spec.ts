@@ -74,5 +74,5 @@ for (const width of [360, 390, 768, 1280, 1440]) test(`production recovery at ${
   const bounds = await input.boundingBox();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
-  await page.screenshot({ path: `test-results/production-recovery-${width}.png`, fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-production-recovery-${width}.png`, fullPage: true });
 });

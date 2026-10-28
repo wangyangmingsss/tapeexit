@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ipc } from 'viem/node';
+import { ipc, getIpcRpcClient } from 'viem/node';
 import type { Block } from '../src/core/rpc';
 
 // No caller-supplied write endpoint: every request uses the socket of this child.
@@ -31,7 +31,8 @@ export async function startLocalEvm(fork?: { url: string; block: Block }) {
     disposed = true;
     clearTimeout(timer);
     if (connected) {
-      try { (await transport.value!.getRpcClient()).close(); } catch { /* Child may already have exited. */ }
+      // Match the request transport's reconnect setting; the default getter uses a different cache key.
+      try { (await getIpcRpcClient(socket, { reconnect: false })).close(); } catch { /* Child may already have exited. */ }
     }
     if (child.exitCode === null && child.signalCode === null && child.pid) child.kill('SIGTERM');
     const force = setTimeout(() => child.kill('SIGKILL'), 5000);

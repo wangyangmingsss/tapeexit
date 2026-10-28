@@ -1,0 +1,14 @@
+[
+  {
+    "pilotId": null,
+    "organizationId": null,
+    "consentToRecord": false,
+    "observedAt": null,
+    "sourceCommit": null,
+    "manifestSha256": null,
+    "environment": null,
+    "stage": null,
+    "evidence": {},
+    "receivedUsdCents": null
+  }
+]

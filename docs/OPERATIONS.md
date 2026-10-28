@@ -24,6 +24,12 @@ npm run verify:assets -- <保存的候选报告.json> <独立保存的报告SHA2
 
 这是候选观察记录，不是安全判断。依赖合约的槽在各自地址读取，不代表 delegatecall 实际使用的存储；两个 caller 取样不证明对所有 caller 都相同。空槽不能证明非代理，标准槽也不能证明实际执行路径；管理员无 runtime 不能证明无升级权限。治理权限、暂停/黑名单、税费、重基准、桥和发行人身份仍需人工追溯。两次观察之间及之后的变化不在结论内。实际转账行为必须在官方合约测试或固定区块分叉中验证。不自动修改 `SUPPORTED_TOKENS`；复核一致报告不能替代正式资产审阅证据。
 
+```sh
+npm run verify:asset-fork -- <实际仓位编号> --block=<十进制区块号>
+```
+
+可省略区块参数以使用当前固定区块。命令先以双来源观察实际仓位，再启动私有 IPC 一次性分叉，比较持有人、资产和流动性。六场景分别从 snapshot 恢复：部分退出、全部退出、有/无流动性的仅领取、最低输出回滚、过期回滚。核对资产余额增量、领取事件、剩余流动性和 NFT 所有权；回滚时要求余额、流动性及欠款不变。仅在子 EVM impersonate 和填充测试余额，不接受远程写入地址、不使用私钥。报告 `asset-fork-matrix.json` 不批准资产，也不证明升级治理、暂停、税费、重基准或未来行为。
+
 ## 2. 容器身份与预算
 
 先观察公共环境，无需钱包：
@@ -35,7 +41,7 @@ npm run inspect:tapeout -- 5
 
 输出 `release-artifacts/tapeout-environment.json`；每次先删除旧结果，双来源固定区块记录 factory/registry/binding/opener 的代码和已固定实现、处理器总数、最多 5 个登记条目及当时月费。可用返回的下一偏移继续分页；列出不等于选择或批准处理器，代码摘要不证明封印与治理安全。月费为零也不等于上传、容器获取和未来费用为零。下一步的真实输入及任务见 `REAL-ACCEPTANCE.md`。
 
-将 `docs/publication-profile.example.json` 作为填写模板。所有 `null` 必须替换成真实公开身份、独立核对过的代码摘要或明确预算。不得填写私钥。金额使用最小单位十进制字符串；预算上限不代表预估成本。
+将 `docs/publication-profile.example.json` 作为填写模板。所有 `null` 必须替换成真实公开身份、独立核对过的代码摘要或明确预算。不得填写私钥。金额使用最小单位十进制字符串；预算上限不代表预估成本。gas 数量上限必须为正；明确的价格/总费用上限允许为 `"0"`，只接受当时实际报价也为零的演练，不推断主网费用总是为零。
 
 ```sh
 npm run inspect:publication -- <已填写的profile.json>
@@ -96,6 +102,8 @@ npm run accept:wallet
 
 真实演练必须记录阻断范围、生效的失败请求、两个入口共享的 DNS/CDN/云/RPC、源码与摘要、钱包请求和结果。在不同 origin 的浏览器中，待处理标记不共享；必须先核查原入口钱包交易，不能在备用入口直接重试。
 
+真实网关工具的文件读取以独立清单中每个文件的大小为流式上限，状态读取限 64 KiB，严格 UTF-8/JSON；禁止重定向、省略凭据，超时覆盖响应体。过大、失败或停滞会终止并释放响应体。这些检查同时通过 loopback HTTP 和三引擎浏览器用例验证，不等于已取得实际网关。
+
 ## 6. 视频、用户记录与参赛包
 
 ```sh
@@ -134,8 +142,14 @@ npm run package:entry
 npm run report:performance
 npm run model:business
 npm run model:business -- <私有假设.json>
+npm run report:pilots -- <私有试点记录.json>
+npm run report:compatibility
 ```
 
 性能报告要求干净提交与同版本生产构建，核对初始/延后加载 chunk、文件摘要、gzip 估计和预算；官方 SDK 仅在预演/验证时加载，仍包含在完整发行中。模块缺失会停止操作。报告不测网速或设备时间，也不提供链上费用结论。
 
 商业示例的 13 个数值均为 null；未获得报价、测量或明确假设前不填零。输入金额为 USD 整数美分，时间为整数分钟，成本计算使用精确整数。输出保留 `ASSUMPTIONS_ONLY`，不能作为客户、收入或市场验证。实际试点及比较方法见 `competition/PILOT-PLAN.md`；需要指定联系人和明确发送授权后才联系第三方。
+
+试点记录格式见 `competition/PILOT-RECORD.example.json`。记录放在公开仓库之外，以匿名编号和明确同意记录；各阶段分别要求访谈、协议、结果、付款文件的相对路径及独立保存摘要。工具核对实际文件字节、大小和目录边界，按源提交/发行/环境分组；摘要不认证同意、签署者或付款真实性。没有输入时为 `NO_PILOT_EVIDENCE`。
+
+兼容报告读取三引擎完整 JSON 结果，并绑定干净源提交、发行清单和结果摘要；拒绝缺引擎、跳过、失败或重试通过。版本及 Web Locks、Service Worker、SubtleCrypto、流和 BigInt 来自实际浏览器观察。WebKit 不等于真实 Safari 或手机，provider 夹具不等于 OKX 扩展。

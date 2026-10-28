@@ -32,7 +32,7 @@ for (const width of [360, 1280]) test(`production imports, selects and exports e
   const bounds = await select.boundingBox();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
-  await page.screenshot({ path: `test-results/production-recovery-import-${width}.png`, fullPage: true });
+  await page.screenshot({ path: `test-results/${test.info().project.name}-production-recovery-import-${width}.png`, fullPage: true });
 });
 test('production rejects duplicate recovery IDs without replacing existing hints and accepts empty drafts', async ({ page }) => {
   await page.goto('http://127.0.0.1:4175');

@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { loadPublication } from './publish-core';
 import { assertProfileManifest, checkGatewayFile, parseGatewayProfile } from './release-profile-core';
 import { createRecoveryProxy } from './recovery-proxy';
+import { readGatewayResource } from './gateway-resource';
 
 const output = 'release-artifacts/gateway-verification.json';
 await rm(output, { force: true });
@@ -36,23 +37,17 @@ try {
       await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 60_000 });
       await page.waitForSelector('#root', { state: 'attached', timeout: 60_000 });
       for (const { file } of publication.contents) {
-        const response = await page.evaluate(async path => {
-          const response = await fetch(`/${path}`, { cache: 'no-store', credentials: 'omit',
-            signal: AbortSignal.timeout(60_000) });
-          if (!response.ok) throw new Error(`Gateway HTTP ${response.status}`);
-          return { url: response.url, headers: Object.fromEntries(response.headers),
-            bytes: Array.from(new Uint8Array(await response.arrayBuffer())),
-            controller: navigator.serviceWorker.controller?.scriptURL };
-        }, file.path);
-        if (!response.controller || new URL(response.controller).origin !== gateway.origin)
+        const response = await page.evaluate(readGatewayResource, {
+          url: new URL(`/${file.path}`, gateway.origin).href, maxBytes: file.size });
+        const controller = await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL);
+        if (!controller || new URL(controller).origin !== gateway.origin)
           throw new Error('Missing same-origin Service Worker controller');
         checkGatewayFile(profile, file, new Uint8Array(response.bytes), response.headers, response.url, gateway.origin);
       }
-      const status = await page.evaluate(async () => {
-        const response = await fetch('/.tape/status?json=1', { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
-        if (!response.ok) throw new Error('Gateway status unavailable');
-        return response.json();
-      });
+      const statusResponse = await page.evaluate(readGatewayResource, {
+        url: `${gateway.origin}/.tape/status?json=1`, maxBytes: 64 * 1024, timeoutMs: 30000 });
+      if (new URL(statusResponse.url).origin !== gateway.origin) throw new Error('Gateway status origin changed');
+      const status = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(statusResponse.bytes)));
       if (status.name !== profile.tapeName || status.container?.toLowerCase() !== profile.container.toLowerCase() ||
           status.chainId !== 196 || status.status !== 'ok') throw new Error('Gateway runtime identity mismatch');
       gateways.push({ ...gateway, releaseBytesChecked: true, filesChecked: publication.contents.length,

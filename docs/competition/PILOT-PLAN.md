@@ -36,6 +36,20 @@ Run `npm run model:business -- <private-assumptions.json>`. The example leaves e
 
 Obtain actual reviewer and hosting quotations; measure maintenance and support minutes; observe publication and activation fees. Convert chain fees using a separately recorded date and FX observation. Keep setup revenue, recurring revenue and costs distinct. Exclude unsponsored or unknown costs from any assertion of profitability.
 
+## Private Evidence Records
+
+`PILOT-RECORD.example.json` is an intentionally invalid blank record. Store actual records and evidence outside
+the public repository. Run `npm run report:pilots -- <records.json>`; no input produces `NO_PILOT_EVIDENCE`.
+Use `INTERVIEWED`, `AGREED`, `COMPLETED` or `PAID` for each pilot's latest declared stage. Every earlier
+stage's evidence is required: `interview`, then `agreement`, then `outcome`, then `payment`. Each reference
+contains a safe relative `path` and the exact file's `sha256`. Paths resolve beneath the records file's directory;
+symlink escapes, changed bytes and evidence over 2 MB are rejected.
+
+Only `PAID` may record positive integer `receivedUsdCents`; all other stages require null. Keep actual
+conversion/FX records with payment evidence when needed. One pilot is counted once, organizations separately,
+and versions/environments are never pooled. The report omits contact details, identifiers and document contents.
+It verifies bytes, not people, agreements, payments or protocol endorsement. Human verification remains required.
+
 ## Outreach Draft
 
 Prepared text only; sending requires explicit authorization and a named recipient:

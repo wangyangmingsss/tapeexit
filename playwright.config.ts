@@ -1,8 +1,19 @@
 import { defineConfig } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 export default defineConfig({
+  metadata: {
+    sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    sourceDirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
+  },
   testDir: './tests/browser',
   fullyParallel: false,
   workers: 1,
+  reporter: [['list'], ['json', { outputFile: 'release-artifacts/browser-tests.json' }]],
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'firefox', use: { browserName: 'firefox' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
   use: {
     baseURL: 'http://127.0.0.1:4174',
     locale: 'zh-CN',

@@ -6,6 +6,7 @@ import { managerAbi, tokenAbi } from '../src/config';
 import { inspectReceipt } from '../src/core/receipt';
 import { recheckHistory } from '../src/core/history';
 import { discoverPositions } from '../src/core/discovery';
+import { runAssetForkMatrix } from '../tools/asset-fork-matrix';
 describe('official V3 contracts on isolated local EVM', () => {
   let f: Fixture;
   let checkpoint: `0x${string}`;
@@ -53,6 +54,16 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(page.total).toBe(1n);
     expect(page.next).toBeNull();
     expect((await discoverPositions(f.adapter, f.other)).tokenIds).toEqual([]);
+  });
+  it('runs the asset matrix against actual official local V3 contracts and restores every case', async () => {
+    const before = await f.adapter.snapshot(f.tokenId);
+    const report = await runAssetForkMatrix((method, params = []) => f.client.request({
+      method: method as never, params: params as never,
+    }), f.adapter.rpc, f.deployment, f.tokenId);
+    expect(report.results).toHaveLength(6);
+    expect(report.results.every(r => r.status === 'LOCAL_FORK_CASE_PASSED')).toBe(true);
+    expect(report.assets.every(a => a.approval === 'NOT_APPROVED')).toBe(true);
+    expect((await f.adapter.snapshot(f.tokenId)).liquidity).toBe(before.liquidity);
   });
   async function balances() {
     return Promise.all([f.token0, f.token1].map(address => f.client.readContract({

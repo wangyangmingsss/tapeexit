@@ -15,11 +15,15 @@ await mkdir(`${root}/docs`, { recursive: true });
 await cp('docs/competition', `${root}/docs`, { recursive: true });
 await cp('docs/REAL-ACCEPTANCE.md', `${root}/docs/REAL-ACCEPTANCE.md`);
 await cp('dist/release-manifest.json', `${root}/release-manifest.json`);
-for (const name of ['performance', 'business-model'])
+for (const name of ['performance', 'business-model', 'pilot-validation', 'browser-tests', 'compatibility'])
   await cp(`release-artifacts/${name}.json`, `${root}/${name}.json`);
 const performance = JSON.parse(await readFile(`${root}/performance.json`, 'utf8'));
 if (performance.sourceCommit !== sourceCommit || performance.manifestSha256 !== publication.manifestSha256)
   throw new Error('Performance report is stale');
+const compatibility = JSON.parse(await readFile(`${root}/compatibility.json`, 'utf8'));
+if (compatibility.sourceCommit !== sourceCommit || compatibility.manifestSha256 !== publication.manifestSha256 ||
+    compatibility.status !== 'THREE_ENGINE_FIXTURE_MATRIX_PASSED')
+  throw new Error('Compatibility report is stale or incomplete');
 const business = JSON.parse(await readFile(`${root}/business-model.json`, 'utf8'));
 if (business.evidenceLevel !== 'ASSUMPTIONS_ONLY')
   throw new Error('Business assumptions must not be packaged as actual validation');

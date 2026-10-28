@@ -95,6 +95,27 @@ describe('disposable publication EVM and sequential runner', () => {
     await evm.request('evm_mine'); await evm.request('evm_mine');
     expect((await verifyPublication(rpc, container, publication, publication.manifestSha256)).files).toHaveLength(3);
   });
+  it('executes zero-price transactions in a zero-base-fee local EVM with an explicit zero fee budget', async () => {
+    await evm.request('anvil_setNextBlockBaseFeePerGas', ['0x0']);
+    await evm.request('evm_mine');
+    const result = await rehearseOperations((method, params) =>
+      method === 'eth_gasPrice' ? Promise.resolve('0x0') : evm.request(method, params),
+    { ...profile, maxFeePerGasWei: '0', maxUploadCostWei: '0' }, operations);
+    expect(result.receipts).toHaveLength(5);
+    expect(result.simulatedUploadCostWei).toBe('0');
+    expect(result.receipts.every(r => r.effectiveGasPriceWei === '0')).toBe(true);
+    expect(BigInt(result.totalGas)).toBeGreaterThan(0n);
+    await evm.request('evm_mine'); await evm.request('evm_mine');
+    expect((await verifyPublication(rpc, container, publication, publication.manifestSha256)).files).toHaveLength(3);
+  });
+  it('rejects a positive quote against a zero fee ceiling before any send', async () => {
+    let sends = 0;
+    await expect(rehearseOperations(async (method, params) => {
+      if (method === 'eth_sendTransaction') sends++;
+      return evm.request(method, params);
+    }, { ...profile, maxFeePerGasWei: '0', maxUploadCostWei: '0' }, operations)).rejects.toThrow('price exceeds');
+    expect(sends).toBe(0);
+  });
   it('stops an out of order append before submitting it', async () => {
     let sends = 0;
     await expect(rehearseOperations(async (method, params) => {

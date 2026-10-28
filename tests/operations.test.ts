@@ -62,7 +62,7 @@ describe('read-only operational preflight', () => {
   });
   it('rejects missing identity, placeholder hashes, wrong chain and ambiguous budgets before RPC', () => {
     for (const patch of [{ publisher: null }, { container: zeroAddress }, { chainId: 1 },
-      { maxUploadCostWei: '1.2' }, { maxFeePerGasWei: '0' }, { circuitId: '-1' },
+      { maxUploadCostWei: '1.2' }, { maxFeePerGasWei: '-1' }, { circuitId: '-1' },
       { processorIndex: '1000000001' }, { expectedCodeHashes: { ...profile.expectedCodeHashes, opener: null } }])
       expect(() => parsePublishProfile({ ...profile, ...patch })).toThrow();
   });

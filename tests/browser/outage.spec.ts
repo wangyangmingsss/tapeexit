@@ -19,8 +19,9 @@ test('controlled primary-origin outage leaves a matching alternate recovery pack
   await expect(recovery.getByRole('button', { name: '读取仓位' })).toBeVisible();
   const recovered = await recovery.request.get(`${alternate}/release-manifest.json`);
   expect(createHash('sha256').update(await recovered.body()).digest('hex')).toBe(trustedDigest);
-  await recovery.screenshot({ path: 'test-results/local-outage-alternate.png', fullPage: true });
-  await writeFile('test-results/local-outage.json', JSON.stringify({ schemaVersion: 1,
+  await recovery.screenshot({ path: `test-results/${test.info().project.name}-local-outage-alternate.png`, fullPage: true });
+  await writeFile(`test-results/${test.info().project.name}-local-outage.json`, JSON.stringify({ schemaVersion: 1,
+    browserEngine: test.info().project.name,
     sourceCommit: JSON.parse(bytes.toString()).sourceCommit, manifestSha256: trustedDigest,
     environment: 'CONTROLLED_LOOPBACK_BROWSER_FAULT', primary, alternate, failedRequests: failed,
     result: 'ALTERNATE_READ_ONLY_ENTRY_REACHABLE',
