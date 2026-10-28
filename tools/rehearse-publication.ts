@@ -20,6 +20,7 @@ const remaining = await resumePublication(mainnet, profile.container, publicatio
 if (!remaining.transactions.length) throw new Error('Publication already complete; use verify:publication');
 const identity = await inspectPublication(mainnet, profile, remaining.transactions);
 await mainnet.assertBlock(remaining.block);
+const observedGasPrice = await mainnet.gasPrice();
 const evm = await startLocalEvm({ url: SOURCES[0].url, block: remaining.block });
 let report: unknown;
 try {
@@ -31,7 +32,7 @@ try {
   if (JSON.stringify(localPlan.transactions) !== JSON.stringify(remaining.transactions))
     throw new Error('Fork continuation differs from dual-source publication prefix');
   await inspectPublication(local, profile, localPlan.transactions);
-  const execution = await rehearseOperations(evm.request, profile, localPlan.transactions);
+  const execution = await rehearseOperations(evm.request, profile, localPlan.transactions, observedGasPrice);
   await evm.request('evm_mine'); await evm.request('evm_mine');
   const readback = await verifyPublication(local, profile.container, publication, publication.manifestSha256);
   await mainnet.assertBlock(remaining.block);
@@ -40,7 +41,7 @@ try {
   report = { schemaVersion: 1, status: 'ISOLATED_FORK_REHEARSAL_PASSED',
     observedAt: new Date().toISOString(), sourceCommit: manifest.sourceCommit, chainId: 196,
     manifestSha256: publication.manifestSha256, profileSha256: digest(profileBytes), container: profile.container,
-    pinned: remaining.block, identity, execution, simulatedReadback: readback,
+    pinned: remaining.block, observedGasPriceWei: observedGasPrice.toString(), identity, execution, simulatedReadback: readback,
     limitations: ['Disposable local fork; no mainnet transaction or wallet signature',
       'Publisher impersonated and balance replaced in local memory',
       'Two local reader labels use the same EVM; they are not independent operators',

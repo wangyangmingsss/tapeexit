@@ -116,6 +116,25 @@ describe('disposable publication EVM and sequential runner', () => {
     }, { ...profile, maxFeePerGasWei: '0', maxUploadCostWei: '0' }, operations)).rejects.toThrow('price exceeds');
     expect(sends).toBe(0);
   });
+  it('uses an explicit observed upstream price instead of the local fee suggestion', async () => {
+    await evm.request('anvil_setNextBlockBaseFeePerGas', ['0x0']);
+    await evm.request('evm_mine');
+    const result = await rehearseOperations((method, params) =>
+      method === 'eth_gasPrice' ? Promise.resolve('0x77359400') : evm.request(method, params),
+    { ...profile, maxFeePerGasWei: '21000000' }, operations, 21_000_000n);
+    expect(result.receipts.every(r => r.effectiveGasPriceWei === '21000000')).toBe(true);
+    expect(BigInt(result.simulatedUploadCostWei)).toBe(BigInt(result.totalGas) * 21_000_000n);
+  });
+  it('rejects invalid observed prices before local funding or sends', async () => {
+    for (const price of [-1n, 1n << 256n]) {
+      let writes = 0;
+      await expect(rehearseOperations(async (method, params) => {
+        if (method.startsWith('anvil_') || method === 'eth_sendTransaction') writes++;
+        return evm.request(method, params);
+      }, profile, operations, price)).rejects.toThrow('Invalid observed gas price');
+      expect(writes).toBe(0);
+    }
+  });
   it('stops an out of order append before submitting it', async () => {
     let sends = 0;
     await expect(rehearseOperations(async (method, params) => {

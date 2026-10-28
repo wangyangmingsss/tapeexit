@@ -11,7 +11,8 @@ const quantity = (value: unknown): bigint => {
 const hex = (value: bigint) => `0x${value.toString(16)}`;
 
 // Internal runner. The CLI supplies only startLocalEvm's private IPC transport.
-export async function rehearseOperations(request: Request, input: unknown, operations: PublishTransaction[]) {
+export async function rehearseOperations(request: Request, input: unknown, operations: PublishTransaction[],
+  observedGasPrice?: bigint) {
   const profile = parsePublishProfile(input);
   if (!operations.length || operations.length > 100_000) throw new Error('No bounded remaining publication operations');
   for (const op of operations) {
@@ -20,7 +21,9 @@ export async function rehearseOperations(request: Request, input: unknown, opera
     if (getAddress(decoded.args[0]) !== profile.container) throw new Error('Wrong publication container');
   }
   if (await request('eth_chainId') !== '0xc4') throw new Error('Wrong local chain');
-  const price = quantity(await request('eth_gasPrice'));
+  if (observedGasPrice !== undefined && (observedGasPrice < 0n || observedGasPrice >= 1n << 256n))
+    throw new Error('Invalid observed gas price');
+  const price = observedGasPrice ?? quantity(await request('eth_gasPrice'));
   if (price > BigInt(profile.maxFeePerGasWei)) throw new Error('Fork gas price exceeds budget');
   const ceiling = BigInt(profile.maxGasPerTransaction);
   if (ceiling * BigInt(profile.maxFeePerGasWei) * BigInt(operations.length) > BigInt(profile.maxUploadCostWei))

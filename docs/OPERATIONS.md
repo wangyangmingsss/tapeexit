@@ -63,6 +63,8 @@ npm run rehearse:publication -- <同一个publication-profile.json>
 
 报告为 `release-artifacts/publication-rehearsal.json`，绑定源码、清单、profile、起点区块以及每笔本地交易的估算/实际 gas。失败会先移除旧报告；退出时关闭子进程并删除临时目录。已完全上传的容器请直接使用 `verify:publication`。
 
+演练使用双 RPC 当前报价的较大值作为每笔本地交易的明确 gas price，报告另记 `observedGasPriceWei`。不采用 Anvil 默认的费用建议，因为它可能与上游链报价不同；本地执行仍须满足分叉 base fee 和 profile 费用上限。该报价仅用于模拟，不保证主网未来的实际收据费用。
+
 这是本地模拟：发布人被 impersonate，余额被替换为测试余额；本地两个读取标签指向同一个 EVM，并非独立来源。分叉状态从一个上游获取，初始文件前缀另与双来源观察比较。费用不含 activation、域名和链特有费用；不代表主网未来 gas、授权和状态，不作为正式发行预检的实际发布证据。自动化使用显式注册表协议夹具验证顺序和回读，真实 TapeOut 分叉演练仍需填写真实 profile。
 
 ## 3. 首次计划和中断恢复
