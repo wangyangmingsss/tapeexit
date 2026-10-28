@@ -270,3 +270,99 @@ it.each(['unknown', 'rejected', 'tampered', 'partial', 'pending'])('preserves un
     .toHaveLength(mode === 'tampered' ? 0 : 1);
   if (mode === 'rejected' || mode === 'tampered') expect(f.ctx.attempts[0].batch.offchainFailure).toBe(true);
 });
+
+async function activationClient(mode = 'success') {
+  const f = await capabilityClient(async () => ({}));
+  const ctx = f.context as unknown as Record<string, any>;
+  const binding = '0x3000000000000000000000000000000000000003';
+  const transaction = { from: f.publisher, to: binding, data: '0x12345678', value: '0x0',
+    chainId: '0xc4', gas: '0x371d2', gasPrice: '0x1406f40', nonce: '0x0' };
+  const q = { id: 'activation-quote', expiresAt: Date.now() + 120000, transaction,
+    serviceFeeWei: '0', maximumGasCostWei: '4740666000000', maximumTotalWei: '4740666000000' };
+  const a = { contextId: 'activation-context', publisher: f.publisher, binding, name: '2.2.289.tape',
+    gasCap: '500000', gasPriceCapWei: '30000000', consent: 'activation-only', unresolved: null,
+    observed: null, attempts: [] } as Record<string, any>;
+  ctx.activation = a;
+  // Preserve completed upload history while all activation transitions use a separate record.
+  ctx.attempts = [{ id: 'upload', operation: 30, status: 'confirmed',
+    batch: { operations: Array.from({ length: 31 }, (_, n) => n) } }];
+  let settle!: () => void;
+  const waiting = new Promise<void>(resolve => { settle = resolve; });
+  f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
+    const body = options?.body ? JSON.parse(String(options.body)) : {};
+    if (url.endsWith('/activation/preview')) return Response.json(q);
+    if (url.endsWith('/activation/reserve')) {
+      const item = { id: 'activation-attempt', status: 'reserved', quote: q };
+      a.attempts.push(item); a.unresolved = item.id;
+      return Response.json(mode === 'tampered' ? { ...item, quote: { ...q, transaction: { ...transaction, value: '0x1' } } } : item);
+    }
+    if (url.endsWith('/activation/hash')) a.attempts[0].hash = body.hash;
+    if (url.endsWith('/activation/reconcile')) {
+      if (mode === 'slow') await waiting;
+      a.attempts[0].status = 'confirmed';
+      a.attempts[0].state = { paidUntil: '2000000000' }; a.unresolved = null;
+      return Response.json(a);
+    }
+    return Response.json(ctx);
+  });
+  f.provider.request.mockImplementation(async ({ method }: { method: string }) => {
+    if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [f.publisher];
+    if (method === 'eth_chainId') return '0xc4';
+    if (method === 'eth_sendTransaction') {
+      if (mode === 'unknown') throw new Error('Activation wallet response lost');
+      return `0x${'ab'.repeat(32)}`;
+    }
+    throw new Error(`Unexpected activation wallet method ${method}`);
+  });
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: {
+    request: async (_name: string, _options: unknown, fn: (lock: object) => Promise<void>) => fn({}),
+  } });
+  (document.getElementById('connect') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
+  const prepare = document.getElementById('activation-prepare') as HTMLButtonElement;
+  prepare.click();
+  await vi.waitFor(() => expect(document.getElementById('activation-preview')!.textContent).toContain('服务费'));
+  await vi.waitFor(() => expect(prepare.disabled).toBe(false));
+  const send = document.getElementById('activation-send') as HTMLButtonElement;
+  expect(send.disabled).toBe(true);
+  const consent = document.getElementById('activation-consent') as HTMLInputElement;
+  consent.checked = true; consent.dispatchEvent(new Event('change'));
+  expect(send.disabled).toBe(false);
+  return { ...f, ctx, a, q, send, settle };
+}
+it('requires a separate activation checkbox, submits exactly once and preserves all 31 upload steps', async () => {
+  const f = await activationClient();
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign/i.test(r.method))).toBe(false);
+  f.send.click(); f.send.click();
+  await vi.waitFor(() => expect(document.getElementById('activation-result')!.textContent).toContain('激活核验成功'));
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
+  expect(document.getElementById('confirmed')!.textContent).toBe('31 / 31 步');
+  expect(f.ctx.attempts).toHaveLength(1);
+  expect(f.a.attempts).toHaveLength(1);
+  const paths = f.fetcher.mock.calls.map(([url]) => url);
+  expect(paths.indexOf('/api/activation/reserve')).toBeLessThan(paths.indexOf('/api/activation/hash'));
+  expect(paths.some(path => path === '/api/reserve' || path === '/api/authorize')).toBe(false);
+});
+it.each(['unknown', 'tampered'])('keeps activation reservations after %s without an automatic resend', async mode => {
+  const f = await activationClient(mode); f.send.click();
+  await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
+  expect(f.a.unresolved).toBe('activation-attempt');
+  expect(document.getElementById('activation-pending')!.hidden).toBe(false);
+  expect((document.getElementById('activation-prepare') as HTMLButtonElement).disabled).toBe(true);
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(mode === 'tampered' ? 0 : 1);
+});
+it('counts down activation verification beside the controls and displays the final expiry', async () => {
+  const f = await activationClient('slow'); f.send.click();
+  await vi.waitFor(() => expect(document.getElementById('activation-progress')!.textContent).toContain('核验激活结果'));
+  const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now + 5000); f.tick();
+  expect(document.getElementById('activation-progress')!.textContent).toContain('85 秒');
+  expect((document.getElementById('activation-reconcile') as HTMLButtonElement).disabled).toBe(true);
+  f.settle();
+  await vi.waitFor(() => expect(document.getElementById('activation-result')!.textContent).toContain('名称到期'));
+});
+it('invalidates activation consent and quote when the connected account changes', async () => {
+  const f = await activationClient(); f.events.get('accountsChanged')!();
+  expect(f.send.disabled).toBe(true);
+  expect((document.getElementById('activation-consent') as HTMLInputElement).checked).toBe(false);
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign/i.test(r.method))).toBe(false);
+});

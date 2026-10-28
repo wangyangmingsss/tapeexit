@@ -503,6 +503,23 @@ describe('bounded browser-wallet publication coordinator', () => {
     expect(verifyPublication).toHaveBeenCalledWith(f.rpc, container, publication, publication.manifestSha256);
     expect(f.journal.attempts).toHaveLength(0);
   });
+  it('checks all bytes once for activation and does not run a duplicate resume scan', async () => {
+    const f = fixture();
+    expect(await f.bench.verifyCompleted()).toMatchObject({ containerLive: false });
+    expect(verifyPublication).toHaveBeenCalledWith(f.rpc, container, publication, publication.manifestSha256);
+    expect(resumePublication).not.toHaveBeenCalled();
+    expect(f.journal.attempts).toHaveLength(0);
+    vi.mocked(verifyPublication).mockRejectedValueOnce(new Error('Published bytes mismatch'));
+    await expect(f.bench.verifyCompleted()).rejects.toThrow('bytes mismatch');
+  });
+  it('blocks activation readback while an upload request is unresolved or history changed', async () => {
+    const f = fixture(); await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await expect(f.bench.verifyCompleted()).rejects.toThrow('pending upload');
+    await f.bench.attachHash(a.id, txHash); f.mine(a); await f.bench.reconcile();
+    vi.mocked(f.rpc.assertBlock).mockRejectedValueOnce(new Error('Snapshot block changed'));
+    await expect(f.bench.verifyCompleted()).rejects.toThrow('block changed');
+  });
   it('binds budget, code pins and manifest to a journal and rejects corrupt persisted entries', async () => {
     const f = fixture(); await f.authorize();
     const a = await f.bench.reserve((await f.prepare()).id);

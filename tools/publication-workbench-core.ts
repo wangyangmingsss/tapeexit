@@ -231,6 +231,19 @@ export class PublicationWorkbench {
   private async checkHistory() {
     for (const a of this.journal.attempts) if (a.block) await this.rpc.assertBlock(a.block);
   }
+  verifyCompleted() {
+    return this.exclusive(async () => {
+      if (this.unresolved()) throw new Error('Resolve pending upload before activation');
+      const blocks = this.journal.attempts.flatMap(a => a.block ? [a.block] : []);
+      // Activation needs one full readback, not both a resume scan and a full readback.
+      // Bound independent history requests and wait for every in-flight check on failure.
+      for (let i = 0; i < blocks.length; i += 4) {
+        const checks = await Promise.allSettled(blocks.slice(i, i + 4).map(b => this.rpc.assertBlock(b)));
+        for (const check of checks) if (check.status === 'rejected') throw check.reason;
+      }
+      return verifyPublication(this.rpc, this.profile.container, this.publication, this.publication.manifestSha256);
+    });
+  }
   private async prepare(batchMode = false): Promise<UploadPreview | { complete: true; readback: unknown }> {
     if (this.unresolved()) throw new Error('Previous wallet request unresolved; do not resend');
     await this.checkHistory();

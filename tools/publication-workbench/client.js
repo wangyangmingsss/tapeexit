@@ -5,6 +5,7 @@ let preparingSince = null;
 let verifyingSince = null;
 let detectingSince = null;
 let batchPreview = null, batchPreparingSince = null;
+let activationPreview = null, activationSince = null, activationAction = '';
 const CAPABILITY_TIMEOUT_MS = 15_000;
 const CHECK_TIMEOUT_MS = 90_000;
 const status = text => { $('status').textContent = text; };
@@ -28,6 +29,7 @@ async function api(path, body) {
   return value;
 }
 function controls() {
+  activationControls();
   const atomic = context?.walletCapabilities?.atomicStatus;
   $('prepare-batch').disabled = busy || !account || !['ready', 'supported'].includes(atomic) || !!context?.unresolved;
   $('prepare-batch').textContent = batchPreparingSince === null ? '准备两步批量' :
@@ -58,9 +60,13 @@ function controls() {
   $('cancel-request').disabled = busy || !pending || !!pending.hash || (pending.batch && !pending.batch.offchainFailure) || !$('cancel-consent').checked;
   $('recover-batch').disabled = busy || !pending?.batch || !account;
   $('export').disabled = !context;
-  $('badge').textContent = context?.unresolved ? '待核验 · 上传暂停' : authorized ? '费用已确认' : '未确认费用';
+  if (context?.activation?.unresolved)
+    ['refresh', 'send', 'prepare-batch', 'send-batch'].forEach(id => { $(id).disabled = true; });
+  $('badge').textContent = context?.activation?.unresolved ? '激活待核验' :
+    context?.unresolved ? '待核验 · 上传暂停' : authorized ? '费用已确认' : '未确认费用';
 }
 function render() {
+  renderActivation();
   if (detectingSince === null && context.walletCapabilities) renderCapabilities(context.walletCapabilities);
   $('files').textContent = `${context.fileCount} 个 / ${context.totalBytes.toLocaleString()} 字节`;
   $('confirmed').textContent = `${context.attempts.filter(a => a.status === 'confirmed')
@@ -119,6 +125,7 @@ async function run(action) {
 }
 function invalidateWallet() {
   generation++; account = null; connectedProvider = null; preview = null; batchPreview = null;
+  activationPreview = null; $('activation-consent').checked = false;
   $('batch-consent').checked = false;
   $('batch-capability').textContent = '钱包或网络已变化，连接后重新检测批量支持';
   $('account').textContent = '账户或网络已变化，请重新连接'; controls();
@@ -478,6 +485,164 @@ $('export').addEventListener('click', async () => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch { status('上传记录读取失败，未导出'); }
 });
+function activationControls() {
+  const a = context?.activation, pending = a?.attempts.find(item => item.id === a.unresolved);
+  $('activation-section').hidden = !a;
+  $('activation-check').disabled = busy || !a;
+  $('activation-prepare').disabled = busy || !a || !!a.unresolved || !!context?.unresolved;
+  $('activation-consent').disabled = busy || !activationPreview;
+  $('activation-send').disabled = busy || !a || !account || !activationPreview ||
+    activationPreview.expiresAt <= Date.now() || !$('activation-consent').checked ||
+    !!a?.unresolved || !!context?.unresolved;
+  $('activation-attach').disabled = busy || !pending;
+  $('activation-reconcile').disabled = busy || !pending;
+  $('activation-cancel').disabled = busy || !pending || !!pending.hash || !$('activation-cancel-consent').checked;
+  $('activation-export').disabled = busy || !a;
+  if (activationSince !== null) {
+    const elapsed = Math.floor((Date.now() - activationSince) / 1000), remaining = Math.max(0, 90 - elapsed);
+    $('activation-progress').textContent = `${activationAction}：已等待 ${elapsed} 秒，本次请求超时倒计时 ${remaining} 秒。`;
+    $('activation-progress').hidden = false;
+  }
+}
+function renderActivation() {
+  const a = context.activation;
+  if (!a) return;
+  const observed = a.observed;
+  $('activation-state').textContent = observed
+    ? `${a.name} · ${observed.nameLive && observed.containerLive ? '链上已激活' : '链上尚未激活或已到期'} · 名称到期：${expiry(observed.paidUntil)} · 查询区块 ${BigInt(observed.block.number)}`
+    : `${a.name} · 请查询链上状态或准备激活报价`;
+  const pending = a.attempts.find(item => item.id === a.unresolved);
+  $('activation-pending').hidden = !pending;
+  if (pending) {
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem(`tapeexit-activation:${a.contextId}`) || 'null'); } catch { /* Durable journal is authoritative. */ }
+    $('activation-hash').value = pending.hash || (saved?.id === pending.id ? saved.hash : '') || '';
+  }
+  $('activation-record').replaceChildren();
+  const names = { reserved: '请求待核验，请勿重复发送', confirmed: '激活交易与到期时间已核验',
+    reverted: '激活交易回滚，可重新准备', 'cancelled-by-user': '用户确认已取消' };
+  for (const item of a.attempts) {
+    field('activation-record', names[item.status], item.hash || '钱包尚未返回哈希');
+    if (item.state) field('activation-record', '核验时名称到期', expiry(item.state.paidUntil));
+    if (item.gasUsed) field('activation-record', '实际 EVM Gas 费用',
+      coin(BigInt(item.gasUsed) * BigInt(item.effectiveGasPriceWei)));
+  }
+}
+function expiry(seconds) {
+  return BigInt(seconds) === 0n ? '未激活' : new Date(Number(seconds) * 1000).toLocaleString();
+}
+async function activationCheck(action, fn) {
+  activationSince = Date.now(); activationAction = action;
+  $('activation-result').hidden = true; activationControls();
+  try { return await fn(); }
+  catch (error) {
+    $('activation-result').textContent = `${action}未完成：${error instanceof Error ? error.message : '检查失败'}。已有请求记录会保留；可再次核验，请勿重复发送。`;
+    $('activation-result').hidden = false;
+    throw error;
+  } finally { activationSince = null; $('activation-progress').hidden = true; activationControls(); }
+}
+$('activation-consent').addEventListener('change', controls);
+$('activation-cancel-consent').addEventListener('change', controls);
+$('activation-check').addEventListener('click', () => run(() => activationCheck('查询激活状态', async () => {
+  context.activation = await api('activation/refresh', {}); renderActivation();
+})));
+$('activation-prepare').addEventListener('click', () => run(() => activationCheck('准备激活报价', async () => {
+  activationPreview = null; $('activation-consent').checked = false;
+  $('activation-preview').replaceChildren(); field('activation-preview', '状态', '正在核对完整上传、容器身份、激活服务费和双 RPC 模拟');
+  const q = await api('activation/preview', {});
+  $('activation-preview').replaceChildren();
+  if (q.live) {
+    field('activation-preview', '已激活', `名称及容器激活有效，名称到期 ${expiry(q.state.paidUntil)}`);
+    status('已激活，无需再次付款'); return;
+  }
+  activationPreview = q;
+  for (const [name, value] of [
+    ['名称', context.activation.name], ['激活时长', '30 天'], ['目标合约', context.activation.binding],
+    ['服务费', coin(q.serviceFeeWei)], ['EVM Gas 费用上限', coin(q.maximumGasCostWei)],
+    ['合计上限（不含链特有附加费用）', coin(q.maximumTotalWei)],
+    ['Gas 上限 / 单价 wei', `${BigInt(q.transaction.gas)} / ${BigInt(q.transaction.gasPrice)}`],
+    ['报价到期', new Date(q.expiresAt).toLocaleString()],
+  ]) field('activation-preview', name, value);
+  $('activation-consent-label').textContent = `我确认 ${context.activation.name} 激活 30 天，服务费 ${coin(q.serviceFeeWei)}，EVM Gas 最多 ${coin(q.maximumGasCostWei)}，合计最多 ${coin(q.maximumTotalWei)}；不含链特有附加费用。代码摘要来自观察，尚未经过独立安全审阅。`;
+  status('激活模拟通过，核对费用后勾选并在钱包确认');
+})));
+async function reconcileActivation() {
+  return activationCheck('核验激活结果', async () => {
+    const result = await api('activation/reconcile', {});
+    context.activation = result; renderActivation();
+    const a = result.attempts.at(-1);
+    const message = a.status === 'confirmed'
+      ? `激活核验成功：名称及容器均有效，名称到期 ${expiry(a.state.paidUntil)}。`
+      : '激活交易已回滚，没有完成激活。请核对钱包后重新准备。';
+    $('activation-result').textContent = message; $('activation-result').hidden = false; status(message);
+  });
+}
+$('activation-send').addEventListener('click', () => run(async () => {
+  try {
+  if (!navigator.locks) throw new Error('请使用支持页面互斥锁的 Chrome');
+  await navigator.locks.request('tapeexit-publication-wallet', { ifAvailable: true }, async lock => {
+    if (!lock) throw new Error('另一页面正在请求钱包');
+    const q = activationPreview, provider = connectedProvider, version = generation;
+    activationPreview = null;
+    if (!q || !provider || !$('activation-consent').checked || q.expiresAt <= Date.now())
+      throw new Error('请重新准备激活报价并确认本次费用');
+    await assertWallet(provider, version);
+    const a = await activationCheck('重新核对并保存激活请求', () =>
+      api('activation/reserve', { previewId: q.id, consent: context.activation.consent, maximumTotalWei: q.maximumTotalWei }));
+    if (a.status !== 'reserved' || JSON.stringify(a.quote.transaction) !== JSON.stringify(q.transaction) ||
+        a.quote.maximumTotalWei !== q.maximumTotalWei || a.quote.transaction.from !== context.publisher ||
+        a.quote.transaction.to !== context.activation.binding || a.quote.transaction.chainId !== '0xc4' ||
+        BigInt(a.quote.transaction.gas) > BigInt(context.activation.gasCap) ||
+        BigInt(a.quote.transaction.gasPrice) > BigInt(context.activation.gasPriceCapWei))
+      throw new Error('激活预约与预览不一致，未请求钱包');
+    await refreshContext(); await assertWallet(provider, version);
+    if (q.expiresAt <= Date.now()) throw new Error('报价已到期，预约已保留，未请求钱包；核对钱包后可取消预约');
+    status('请在钱包核对激活 30 天、服务费及网络费用');
+    $('activation-result').textContent = '等待钱包确认激活 30 天；预约已保存，结果不明时请先检查钱包交易记录。';
+    $('activation-result').hidden = false;
+    const hash = await provider.request({ method: 'eth_sendTransaction', params: [a.quote.transaction] });
+    if (typeof hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(hash))
+      throw new Error('钱包未返回有效激活哈希，预约已保留，请检查钱包记录');
+    $('activation-hash').value = hash;
+    try { localStorage.setItem(`tapeexit-activation:${context.activation.contextId}`, JSON.stringify({ id: a.id, hash })); } catch { /* Reservation survives. */ }
+    await api('activation/hash', { attemptId: a.id, hash });
+    await refreshContext();
+    // Retry read-only verification briefly while waiting for the stable two-source snapshot.
+    for (let i = 0; i < 4; i++) {
+      try { await reconcileActivation(); break; }
+      catch (error) {
+        if (i === 3 || !/not confirmed|not yet stable/i.test(error.message)) throw error;
+        status('激活交易等待稳定区块，将自动再次核验；无需重新发送');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+  });
+  } catch (error) {
+    $('activation-result').textContent = `${error instanceof Error ? error.message : '激活请求未完成'}。如已出现钱包请求，请先核对钱包记录并恢复哈希，勿重复发送。`;
+    $('activation-result').hidden = false;
+    throw error;
+  } finally { $('activation-consent').checked = false; }
+}));
+$('activation-attach').addEventListener('click', () => run(async () => {
+  const hash = $('activation-hash').value.trim();
+  await api('activation/hash', { attemptId: context.activation.unresolved, hash });
+  status('激活哈希已保存，可核验激活结果');
+}));
+$('activation-reconcile').addEventListener('click', () => run(reconcileActivation));
+$('activation-cancel').addEventListener('click', () => run(async () => {
+  if (!$('activation-cancel-consent').checked) throw new Error('请先在钱包取消此激活请求并确认');
+  await api('activation/cancel', { attemptId: context.activation.unresolved,
+    acknowledgement: 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE' });
+  $('activation-cancel-consent').checked = false;
+  status('已记录激活请求取消；重新准备会再次核对 nonce 和费用');
+}));
+$('activation-export').addEventListener('click', () => run(async () => {
+  await refreshContext();
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ uploadContextId: context.contextId,
+    manifestSha256: context.manifestSha256, ...context.activation }, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a'); a.href = url; a.download = 'tapeexit-activation-record.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}));
 setInterval(controls, 1000);
 try {
   await refreshContext();

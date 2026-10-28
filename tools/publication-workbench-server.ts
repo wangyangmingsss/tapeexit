@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import type { PublicationWorkbench } from './publication-workbench-core';
+import type { PublicationActivation } from './publication-activation';
 
 const headers = {
   'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY',
@@ -8,7 +9,7 @@ const headers = {
   'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; " +
     "connect-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'",
 };
-export async function createPublicationWorkbenchServer(workbench: PublicationWorkbench, port: number) {
+export async function createPublicationWorkbenchServer(workbench: PublicationWorkbench, port: number, activation?: PublicationActivation) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid publication workbench port');
   const origin = `http://127.0.0.1:${port}`;
   const staticFiles = new Map();
@@ -37,7 +38,8 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
       res.writeHead(200, { ...headers, 'content-type': type, 'content-length': bytes.length });
       return res.end(bytes);
     }
-    if (req.method === 'GET' && path === '/api/context') return reply(200, workbench.context());
+    if (req.method === 'GET' && path === '/api/context')
+      return reply(200, { ...workbench.context(), activation: activation?.context() ?? null });
     if (req.method !== 'POST') return reply(405, { error: 'Method not allowed' });
     if (req.headers.origin !== origin || req.headers['x-tapeexit-client'] !== 'publication-workbench' ||
         req.headers['content-type'] !== 'application/json') return reply(403, { error: 'Same-origin JSON request required' });
@@ -55,6 +57,28 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
         if (Object.keys(body).length !== keys.length || keys.some(key => !Object.hasOwn(body, key)))
           throw new Error('Unexpected request fields');
       };
+      if (path?.startsWith('/api/activation/')) {
+        if (!activation) return reply(404, { error: 'Activation unavailable' });
+        switch (path) {
+          case '/api/activation/refresh':
+            exactKeys([]); return reply(200, await activation.refresh());
+          case '/api/activation/preview':
+            exactKeys([]); return reply(200, await activation.previewActivation());
+          case '/api/activation/reserve':
+            exactKeys(['previewId', 'consent', 'maximumTotalWei']);
+            return reply(200, await activation.reserve(body.previewId, body.consent, body.maximumTotalWei));
+          case '/api/activation/hash':
+            exactKeys(['attemptId', 'hash']); return reply(200, await activation.attachHash(body.attemptId, body.hash));
+          case '/api/activation/reconcile':
+            exactKeys([]); return reply(200, await activation.reconcile());
+          case '/api/activation/cancel':
+            exactKeys(['attemptId', 'acknowledgement']);
+            return reply(200, await activation.cancel(body.attemptId, body.acknowledgement));
+          default: return reply(404, { error: 'Unknown activation operation' });
+        }
+      }
+      if (activation?.context().unresolved && ['/api/reserve', '/api/batch-reserve'].includes(path ?? ''))
+        throw new Error('Resolve pending activation before requesting another wallet transaction');
       switch (path) {
         case '/api/preview':
           exactKeys([]); return reply(200, await workbench.prepareNext());

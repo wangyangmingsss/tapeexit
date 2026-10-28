@@ -189,3 +189,41 @@ npm run report:compatibility
 试点记录格式见 `competition/PILOT-RECORD.example.json`。记录放在公开仓库之外，以匿名编号和明确同意记录；各阶段分别要求访谈、协议、结果、付款文件的相对路径及独立保存摘要。工具核对实际文件字节、大小和目录边界，按源提交/发行/环境分组；摘要不认证同意、签署者或付款真实性。没有输入时为 `NO_PILOT_EVIDENCE`。
 
 兼容报告读取三引擎完整 JSON 结果，并绑定干净源提交、发行清单和结果摘要；拒绝缺引擎、跳过、失败或重试通过。版本及 Web Locks、Service Worker、SubtleCrypto、流和 BigInt 来自实际浏览器观察。WebKit 不等于真实 Safari 或手机，provider 夹具不等于 OKX 扩展。
+
+# Wallet Publication: 30-Day Activation
+
+After the original release has finished uploading, the loopback publication workbench
+offers a separate **容器激活 · 30 天** section. Keep using the original publication
+directory and trusted manifest digest. Do not replace the uploaded release with a
+new local build.
+
+1. Connect the original publishing account on X Layer (196).
+2. Choose **准备激活 30 天**. The server verifies complete publication bytes,
+   the container holder, contract pins, current service fee, pending nonce and
+   a simulation through both configured RPC operators.
+3. Review the exact name, container, service fee and EVM gas ceiling. Check the
+   separate activation fee checkbox, then choose **在钱包确认激活 30 天**.
+   The browser requests one `DomainBinding.bind(name, container, 1)` transaction.
+   Upload authorization never authorizes activation. Each month is 30 days.
+4. The workbench saves a reservation before requesting the wallet, then verifies
+   the returned transaction hash, calldata, value, nonce, chain, receipt and stable
+   block through both RPC operators. Success also requires the exact name and
+   container to be live and their expiry to cover the purchased 30 days.
+5. Use **导出激活核验记录** for the transaction and expiry evidence. Query
+   **查询激活状态** to obtain a fresh observation after restarting.
+
+Activation uses `<upload-journal>.activation.json` and its own lock. Never delete
+either journal to clear an unknown result. A missing wallet response remains
+reserved across reloads and restarts. Recover the hash from the wallet and use
+**保存激活哈希**, then **核验激活结果**. The workbench does not automatically
+resubmit, renew an active name, upgrade an account, approve tokens or sign anything.
+Cancellation requires an explicit user attestation and unchanged latest/pending
+nonce; a hashed request must be reconciled instead.
+
+Quotes last two minutes. Any increased fee or gas quote, changed nonce, changed
+name expiry or expired quote requires a fresh preview and checkbox confirmation.
+Activation has a separate 500,000 gas / 30,000,000 wei gas-price ceiling.
+Receipt verification accepts a larger unused wallet gas envelope only if the
+actual settled usage and price fit the exact quoted reservation. EVM gas bounds
+exclude chain-specific fees; review the final wallet total. Observed code pins
+remain observations rather than an independent security review.

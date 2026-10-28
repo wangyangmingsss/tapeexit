@@ -3,13 +3,14 @@ import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { UploadJournal } from './publication-workbench-core';
 
-export async function openPublicationJournal(pathInput: string, contextId: string) {
+export async function openPublicationJournal<T extends { contextId: string } = UploadJournal>(
+  pathInput: string, contextId: string, initial?: T) {
   const path = resolve(pathInput), directory = dirname(path), lock = `${path}.lock`;
   await mkdir(directory, { recursive: true });
   // An existing lock is never reclaimed automatically, including after a crash.
   await mkdir(lock);
   let closed = false;
-  async function save(journal: UploadJournal) {
+  async function save(journal: T) {
     if (closed || journal.contextId !== contextId) throw new Error('Journal is closed or context changed');
     const bytes = Buffer.from(JSON.stringify(journal, null, 2) + '\n');
     if (bytes.length > 2 * 1024 * 1024) throw new Error('Upload journal exceeds size limit');
@@ -29,7 +30,7 @@ export async function openPublicationJournal(pathInput: string, contextId: strin
     await rm(lock, { recursive: true });
   }
   try {
-    let journal: UploadJournal;
+    let journal: T;
     const stat = await lstat(path).catch(error => {
       if (error.code === 'ENOENT') return null;
       throw error;
@@ -39,7 +40,7 @@ export async function openPublicationJournal(pathInput: string, contextId: strin
       journal = JSON.parse(await readFile(path, 'utf8'));
       if (journal.contextId !== contextId) throw new Error('Journal belongs to another release/profile');
     } else {
-      journal = { schemaVersion: 1, contextId, authorization: null, attempts: [] };
+      journal = initial ?? { schemaVersion: 1, contextId, authorization: null, attempts: [] } as unknown as T;
       await save(journal);
     }
     return { journal, save, close };

@@ -25,6 +25,25 @@
     <p id="account" role="status">等待钱包</p>
     <div class="toolbar"><button id="detect-batch" disabled>检测批量支持</button></div>
     <p id="batch-capability" role="status" aria-live="polite">尚未检测当前钱包的 X Layer 批量能力</p>
+    <section id="activation-section" hidden>
+      <h2>容器激活 · 30 天</h2>
+      <p id="activation-state" role="status" aria-live="polite">尚未读取链上激活状态</p>
+      <div class="toolbar"><button id="activation-check">查询激活状态</button><button id="activation-prepare">准备激活 30 天</button></div>
+      <dl id="activation-preview"><dt>状态</dt><dd>尚未准备激活报价</dd></dl>
+      <label class="consent"><input id="activation-consent" type="checkbox"><span id="activation-consent-label">我确认本次单独展示的 30 天激活服务费及 EVM Gas 费用上限；链特有附加费用以钱包为准。</span></label>
+      <button id="activation-send" disabled>在钱包确认激活 30 天</button>
+      <section id="activation-pending" hidden>
+        <h3>待核验的激活请求</h3>
+        <label>激活交易哈希<input id="activation-hash" type="text" maxlength="66" autocomplete="off" spellcheck="false"></label>
+        <div class="toolbar"><button id="activation-attach">保存激活哈希</button><button id="activation-reconcile">核验激活结果</button></div>
+        <label class="consent"><input id="activation-cancel-consent" type="checkbox"><span>我已在钱包拒绝或取消此激活请求，确认没有等待签名或待广播的交易。</span></label>
+        <button id="activation-cancel" disabled>记录激活取消并核对 nonce</button>
+      </section>
+      <p id="activation-progress" role="status" aria-live="polite" hidden></p>
+      <p id="activation-result" role="status" aria-live="polite" hidden></p>
+      <dl id="activation-record"></dl>
+      <button id="activation-export">导出激活核验记录</button>
+    </section>
     <h2>费用确认</h2>
     <p>仅上传当前发行文件至指定容器。每笔原生币转账金额为零；交易仍产生网络费用。本预算只约束 EVM Gas，不含激活、域名及链特有附加费用。代码摘要来自链上观察，尚不代表独立安全审阅。</p>
     <label class="consent"><input id="consent" type="checkbox"><span id="consent-label">正在读取预算</span></label>

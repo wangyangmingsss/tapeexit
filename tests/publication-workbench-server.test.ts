@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import http from 'node:http';
 import { createPublicationWorkbenchServer } from '../tools/publication-workbench-server';
 import type { PublicationWorkbench } from '../tools/publication-workbench-core';
+import type { PublicationActivation } from '../tools/publication-activation';
 
 describe('loopback-only publication server', () => {
   let server: http.Server;
@@ -17,7 +18,11 @@ describe('loopback-only publication server', () => {
     recordBundle: vi.fn(async () => ({})), recordBatchFailure: vi.fn(async () => ({})),
   };
   const headers = { origin, 'content-type': 'application/json', 'x-tapeexit-client': 'publication-workbench' };
-  beforeAll(async () => { server = await createPublicationWorkbenchServer(bench as unknown as PublicationWorkbench, port); });
+  const activation = { context: vi.fn(() => ({ months: 1, unresolved: null as string | null })), refresh: vi.fn(async () => ({})),
+    previewActivation: vi.fn(async () => ({})), reserve: vi.fn(async () => ({})),
+    attachHash: vi.fn(async () => ({})), reconcile: vi.fn(async () => ({})), cancel: vi.fn(async () => ({})) };
+  beforeAll(async () => { server = await createPublicationWorkbenchServer(bench as unknown as PublicationWorkbench, port,
+    activation as unknown as PublicationActivation); });
   afterAll(async () => {
     if (server) await new Promise<void>(resolve => { server.close(() => resolve()); server.closeAllConnections(); });
   });
@@ -77,5 +82,29 @@ describe('loopback-only publication server', () => {
     expect(bench.recordBundle).toHaveBeenCalledWith('a', 'b');
     expect((await post('/api/batch-failure', { attemptId: 'a', reason: 'USER_REJECTED_4001' })).status).toBe(200);
     expect((await post('/api/batch-reserve', { previewId: 'p', consent: 'c', calls: [] })).status).toBe(409);
+  });
+  it('requires exact activation fields and the same origin without accepting supplied calldata', async () => {
+    const post = (path: string, body: object, custom = headers) =>
+      fetch(origin + '/api/activation/' + path, { method: 'POST', headers: custom, body: JSON.stringify(body) });
+    expect((await post('preview', {})).status).toBe(200);
+    expect(activation.previewActivation).toHaveBeenCalledOnce();
+    expect((await post('reserve', { previewId: 'q', consent: 'c', maximumTotalWei: '4' })).status).toBe(200);
+    expect(activation.reserve).toHaveBeenCalledWith('q', 'c', '4');
+    expect((await post('reserve', { previewId: 'q', consent: 'c', maximumTotalWei: '4', transaction: {} })).status).toBe(409);
+    expect((await post('reserve', {}, { ...headers, origin: 'https://evil.example' })).status).toBe(403);
+    expect((await post('hash', { attemptId: 'a', hash: 'h' })).status).toBe(200);
+    expect(activation.attachHash).toHaveBeenCalledWith('a', 'h');
+    expect((await post('reconcile', {})).status).toBe(200);
+    expect((await post('refresh', {})).status).toBe(200);
+    expect((await post('cancel', { attemptId: 'a', acknowledgement: 'c' })).status).toBe(200);
+    expect((await post('broadcast', { raw: '0x' })).status).toBe(404);
+  });
+  it('blocks another upload reservation while activation is unresolved', async () => {
+    activation.context.mockReturnValueOnce({ months: 1, unresolved: 'activation-attempt' });
+    const before = bench.reserve.mock.calls.length;
+    const result = await fetch(origin + '/api/reserve', { method: 'POST', headers, body: JSON.stringify({ previewId: 'p' }) });
+    expect(result.status).toBe(409);
+    expect((await result.json()).error).toContain('pending activation');
+    expect(bench.reserve.mock.calls).toHaveLength(before);
   });
 });
