@@ -2,6 +2,8 @@ const $ = id => document.getElementById(id);
 const wallets = new Map();
 let context, preview, account, connectedProvider, busy = false, generation = 0, removeObservers = () => {};
 let preparingSince = null;
+let verifyingSince = null;
+const CHECK_TIMEOUT_MS = 90_000;
 const status = text => { $('status').textContent = text; };
 const coin = wei => {
   const n = BigInt(wei), whole = n / 10n ** 18n;
@@ -16,13 +18,19 @@ async function api(path, body) {
     ...(body === undefined ? {} : { method: 'POST', headers: {
       'content-type': 'application/json', 'x-tapeexit-client': 'publication-workbench',
     }, body: JSON.stringify(body) }),
-    credentials: 'omit', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(90_000),
+    credentials: 'omit', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
   });
   const value = await response.json();
   if (!response.ok) throw new Error(value.error || '发布检查失败');
   return value;
 }
 function controls() {
+  if (verifyingSince !== null) {
+    const elapsed = Math.floor((Date.now() - verifyingSince) / 1000);
+    const remaining = Math.max(0, Math.ceil(CHECK_TIMEOUT_MS / 1000) - elapsed);
+    $('reconcile').textContent = `正在核验 · 超时倒计时 ${remaining} 秒`;
+    $('verification-progress').textContent = `已等待 ${elapsed} 秒，距离本次请求超时剩余 ${remaining} 秒。正在检查双 RPC 回执、交易内容、稳定区块及文件字节；这不是预计完成时间。`;
+  } else $('reconcile').textContent = '核验交易和文件';
   $('refresh').textContent = preparingSince === null ? '准备 / 刷新下一笔' :
     `正在准备 · ${Math.floor((Date.now() - preparingSince) / 1000)} 秒`;
   const authorized = context?.authorization?.expiresAt > Date.now();
@@ -197,9 +205,8 @@ $('send').addEventListener('click', () => run(async () => {
     $('tx-hash').value = hash;
     try { localStorage.setItem(`tapeexit-publish:${context.contextId}`, JSON.stringify({ id: attempt.id, hash })); } catch { /* Server retains reservation. */ }
     await api('hash', { attemptId: attempt.id, hash });
-    status(`已提交，等待核验：${hash}`);
-    await api('reconcile', {});
-    status('本笔交易及文件已核验。准备下一笔后继续。');
+    await refreshContext();
+    await reconcileWithFeedback();
   });
 }));
 $('attach').addEventListener('click', () => run(async () => {
@@ -208,10 +215,39 @@ $('attach').addEventListener('click', () => run(async () => {
   await api('hash', { attemptId: context.unresolved, hash });
   status('交易哈希已保存，等待链上核验');
 }));
-$('reconcile').addEventListener('click', () => run(async () => {
-  status('正在核对两个 RPC 的交易回执、区块和文件字节，请等待；不会重新发送交易');
-  await api('reconcile', {}); status('交易与当前发行文件已核验，请准备下一笔');
-}));
+async function reconcileWithFeedback() {
+  verifyingSince = Date.now();
+  $('verification-progress').hidden = false;
+  $('verification-result').hidden = true;
+  controls();
+  status('正在核对交易回执、稳定区块和文件字节');
+  try {
+    const result = await api('reconcile', {});
+    context = result; render();
+    const attempt = result.attempts.at(-1);
+    const message = attempt?.status === 'confirmed'
+      ? '核验成功：交易与文件字节均通过检查，可以准备下一笔。'
+      : '交易已确认回滚，本笔上传未完成。请重新准备本笔并检查钱包结果。';
+    $('verification-result').textContent = message;
+    $('verification-result').hidden = false;
+    status(message);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : '检查未完成';
+    const message = /fee envelope exceeds authorized upload budget/i.test(detail)
+      ? '核验暂停：钱包最终 Gas 参数超出已确认的单笔或累计费用上限。请核对钱包最终参数；交易记录已保留，请勿重复发送。'
+      : /TimeoutError|timed out|aborted/i.test(detail)
+      ? '本次核验等待超时，上传记录已保留。可再次点击核验，无需重新发送交易。'
+      : `核验未完成：${detail}。上传记录已保留，请勿重复发送交易。`;
+    $('verification-result').textContent = message;
+    $('verification-result').hidden = false;
+    throw new Error(message);
+  } finally {
+    verifyingSince = null;
+    $('verification-progress').hidden = true;
+    controls();
+  }
+}
+$('reconcile').addEventListener('click', () => run(reconcileWithFeedback));
 $('cancel-consent').addEventListener('change', controls);
 $('cancel-request').addEventListener('click', () => run(async () => {
   if (!$('cancel-consent').checked) throw new Error('请先在钱包取消旧请求并确认');

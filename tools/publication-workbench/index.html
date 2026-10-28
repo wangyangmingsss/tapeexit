@@ -35,10 +35,12 @@
       <p id="pending-status"></p>
       <label>钱包交易哈希<input id="tx-hash" type="text" autocomplete="off" spellcheck="false" placeholder="0x…" maxlength="66"></label>
       <div class="toolbar"><button id="attach">保存交易哈希</button><button id="reconcile">核验交易和文件</button></div>
+      <p id="verification-progress" role="status" aria-live="polite" hidden></p>
       <p>请求结果不明时保持停止。请先查看钱包交易记录；没有核验旧请求前不要重复发送。</p>
       <label class="consent"><input id="cancel-consent" type="checkbox"><span>我已在钱包拒绝或取消旧请求，确认没有等待签名或待广播交易。</span></label>
       <button id="cancel-request" disabled>记录取消并核对 nonce</button>
     </section>
+    <p id="verification-result" role="status" aria-live="polite" hidden></p>
     <h2>上传记录</h2>
     <div class="table-wrap"><table><thead><tr><th>文件步骤</th><th>状态</th><th>交易哈希</th></tr></thead><tbody id="attempts"></tbody></table></div>
     <button id="export" disabled>导出上传记录</button>
