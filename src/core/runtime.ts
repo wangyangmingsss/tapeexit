@@ -1,4 +1,34 @@
 import { ExitError } from './rpc';
+const READ_TIMEOUT = 8000;
+function discard(response: Response) { void response.body?.cancel().catch(() => {}); }
+async function boundedBytes(response: Response, limit: number, signal: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
+  const invalid = () => new ExitError('ENTRY_CHANGED', 'Entry response unavailable or exceeds the size limit');
+  const length = response.headers.get('content-length');
+  if (!response.ok || response.redirected || !response.body ||
+      (length !== null && (!/^\d+$/.test(length) || BigInt(length) > BigInt(limit)))) {
+    discard(response); throw invalid();
+  }
+  const reader = response.body.getReader(), chunks: Uint8Array[] = [];
+  const abort = () => { void reader.cancel().catch(() => {}); };
+  signal.addEventListener('abort', abort, { once: true });
+  let size = 0;
+  try {
+    if (signal.aborted) abort();
+    signal.throwIfAborted();
+    while (true) {
+      const { done, value } = await reader.read();
+      signal.throwIfAborted();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) { abort(); throw invalid(); }
+      chunks.push(value);
+    }
+  } finally { signal.removeEventListener('abort', abort); reader.releaseLock(); }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return bytes;
+}
 export interface RuntimeStatus {
   mode: 'local' | 'tape-client' | 'tape-server' | 'web';
   label: string; name?: string; container?: string; block?: string; verified: boolean;
@@ -18,14 +48,19 @@ export async function runtimeStatus(): Promise<RuntimeStatus> {
   if (controller) {
     try {
       const options: RequestInit = { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
-        signal: AbortSignal.timeout(8000) };
+        redirect: 'error', signal: AbortSignal.timeout(READ_TIMEOUT) };
       const r = await fetch('/.tape/status?json=1', options);
-      if (!r.ok) throw new ExitError('ENTRY_CHANGED', 'Entry status unavailable');
-      const status = await r.json();
-      if (typeof status.name === 'string' && status.name.length > 0 && status.chainId === 196 &&
-          typeof status.container === 'string' && /^0x[0-9a-f]{40}$/i.test(status.container)) {
+      const status = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+        await boundedBytes(r, 64 * 1024, options.signal!)));
+      if (status && typeof status === 'object' && !Array.isArray(status) &&
+          typeof status.name === 'string' && status.name.length > 0 && status.name.length <= 253 &&
+          /^[a-z0-9.-]+$/i.test(status.name) && status.chainId === 196 &&
+          typeof status.container === 'string' && /^0x[0-9a-f]{40}$/i.test(status.container) &&
+          !/^0x0{40}$/i.test(status.container)) {
+        if (navigator.serviceWorker?.controller !== controller) throw new ExitError('ENTRY_CHANGED', 'Controller changed');
         const page = await fetch('/index.html', options);
-        if (!page.ok || navigator.serviceWorker?.controller !== controller)
+        discard(page);
+        if (!page.ok || page.redirected || options.signal!.aborted || navigator.serviceWorker?.controller !== controller)
           throw new ExitError('ENTRY_CHANGED', 'Entry response or controller changed');
         const client = page.headers.get('x-tape-mode') === 'client';
         return { mode: client ? 'tape-client' : 'tape-server', label: status.name,
@@ -40,8 +75,12 @@ export async function runtimeStatus(): Promise<RuntimeStatus> {
   return { mode: 'web', label: location.host, verified: false };
 }
 export async function manifestDigest(): Promise<string> {
-  const response = await fetch('./release-manifest.json', { cache: 'no-store' });
-  if (!response.ok) throw new ExitError('MANIFEST', 'Release manifest unavailable');
-  const bytes = await response.arrayBuffer();
-  return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    const signal = AbortSignal.timeout(READ_TIMEOUT);
+    const response = await fetch('./release-manifest.json', { cache: 'no-store', credentials: 'omit',
+      referrerPolicy: 'no-referrer', redirect: 'error', signal });
+    const bytes = await boundedBytes(response, 256 * 1024, signal);
+    return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch { throw new ExitError('MANIFEST', 'Release manifest unavailable or invalid'); }
 }

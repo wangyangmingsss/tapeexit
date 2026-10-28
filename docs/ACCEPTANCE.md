@@ -92,3 +92,9 @@ recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer h
 ## 待处理交易与 nonce
 
 `tests/pending-state.test.ts` 的 42 项用例覆盖严格交易身份/nonce、完整待处理与入块字段、固定区块账户 nonce、重组、原哈希消失/重新出现、收据延迟、大整数与双来源分歧。`tests/app-receipt.test.tsx` 新增 5 项 DOM 用例核对异常、继续等待或替换提示均不清除持久记录、不允许重复发送。测试使用明确 RPC/provider 夹具，不代表真实钱包替换或取消交易验收；替换提示不提供自动解锁。
+
+## 入口读取与恢复卡导出
+
+`tests/runtime.test.ts` 新增 28 项身份、大小/精确上限、UTF-8、重定向、响应体释放和超时测试；`tests/runtime-http.test.ts` 的 3 项真实 loopback HTTP 用例核对重定向目的地不被访问，状态及清单响应头返回后仍能中止停滞响应体。`tests/app-recovery.test.tsx` 新增 6 项生产摘要失败阻止下载、开发草稿省略摘要、工作区/保存序号/卸载竞态回归。
+
+生产浏览器用 HTTP 夹具注入 503、超大清单和重定向，核对报错且无下载、无重定向目的请求，重试后实际下载完整卡片并清除错误。测试不证明清单真实性、真实 TapeOut origin 或真钱包验收；原始字节摘要不替代独立可信发行核对。

@@ -107,6 +107,7 @@ export default function App() {
   const [tokenId, setTokenId] = useState(DEMO ? '28491' : '');
   const [recoveryIds, setRecoveryIds] = useState<string[]>([]);
   const recoveryImport = useRef(0);
+  const recoveryExport = useRef(0);
   const [positionPage, setPositionPage] = useState<PositionPage>();
   const [discovering, setDiscovering] = useState(false);
   const discoveryController = useRef<AbortController | undefined>(undefined);
@@ -180,7 +181,9 @@ export default function App() {
     walletConnection.current = undefined;
     setConnectingWallet(undefined); setWalletPicker(false);
   }
-  useEffect(() => () => { walletConnection.current?.controller.abort(); recoveryImport.current++; }, []);
+  useEffect(() => () => {
+    walletConnection.current?.controller.abort(); recoveryImport.current++; recoveryExport.current++;
+  }, []);
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   }, [lang]);
@@ -246,6 +249,7 @@ export default function App() {
       CONFLICT: '读取结果不一致，已停止生成交易。', QUORUM: '独立读取来源不足，请稍后重试。',
       RPC_INVALID: '读取来源返回的数据无效，已停止处理，请稍后重试。',
       IMPORT: '恢复卡格式或字段无效，请检查文件。',
+      MANIFEST: '发行清单读取失败，未保存恢复卡，请检查入口后重试。',
       OWNER: '当前钱包不是该仓位的直接持有人。', STALE: '快照或预览已过期，请重新读取。',
       UNSUPPORTED: '该资产尚未通过当前发行验证，暂时只读。', 4001: '你已取消钱包确认。',
       4100: '钱包尚未授权此站点，请在钱包中检查连接权限。',
@@ -494,18 +498,25 @@ export default function App() {
     } finally { historyLocks.current.delete(item.hash); }
   }
   async function saveCard() {
+    const request = ++recoveryExport.current, current = generation.current;
     const ids = recoveryIds.length && recoveryIds.includes(tokenId) ? recoveryIds : tokenId;
     const identity = {
       ...(runtime.name ? { tapeName: runtime.name } : {}),
       ...(runtime.container ? { container: runtime.container } : {}),
     };
-    let digest: string | undefined;
-    try { digest = await manifestDigest(); } catch { /* Development builds have no release manifest. */ }
     try {
+      let digest: string | undefined;
+      try { digest = await manifestDigest(); } catch (err) {
+        if (!import.meta.env.DEV && !DEMO) throw err;
+      }
+      if (request !== recoveryExport.current || current !== generation.current) return;
       downloadJson('tapeexit-recovery-card.json', recoveryCard(ids, {
         ...identity, ...(digest ? { manifestSha256: digest } : {}),
       }));
-    } catch (err) { showError(err); }
+      setError('');
+    } catch (err) {
+      if (request === recoveryExport.current && current === generation.current) showError(err);
+    }
   }
   async function importCard(file: File) {
     const request = ++recoveryImport.current, current = generation.current;
