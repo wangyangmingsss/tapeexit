@@ -91,11 +91,21 @@ try {
         try {
           if (proxy) {
             const before = proxy.blockedCount();
-            let rejected = false;
-            await page.goto(primary, { timeout: 10_000 }).catch(() => { rejected = true; });
-            if (!rejected || proxy.blockedCount() <= before)
+            // Close the failed probe before navigating; Chromium commits its error page asynchronously.
+            const probe = await context.newPage();
+            let rejection = '';
+            try {
+              await probe.goto(primary, { timeout: 10_000 });
+            } catch (error) {
+              rejection = error instanceof Error ? error.message : String(error);
+            } finally {
+              await probe.close();
+            }
+            if (!rejection || proxy.blockedCount() <= before)
               throw new Error('Primary HTTPS connection was not demonstrably blocked');
             observed.primaryBlockExercised = true;
+            observed.primaryProbe = { origin: primary, error: rejection,
+              blockedConnections: proxy.blockedCount() - before };
           }
           await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 90_000 });
           await page.waitForSelector('#root', { state: 'visible', timeout: 120_000 });
