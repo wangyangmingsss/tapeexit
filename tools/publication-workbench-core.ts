@@ -15,7 +15,7 @@ export interface UploadAttempt {
   id: string; operation: number; createdAt: number; transaction: UploadTransaction;
   status: 'reserved' | 'confirmed' | 'reverted' | 'cancelled-by-user'; hash?: Hex; cancellationAcknowledgedAt?: number;
   block?: Block; gasUsed?: string; effectiveGasPriceWei?: string;
-  minedEnvelope?: { gas: string; maximumGasPriceWei: string };
+  minedEnvelope?: { gas: string; maximumGasPriceWei: string; settledWithinReservation?: true };
 }
 export interface UploadJournal {
   schemaVersion: 1; contextId: string;
@@ -114,8 +114,12 @@ export class PublicationWorkbench {
         const e = attempt.minedEnvelope;
         if (!['confirmed', 'reverted'].includes(attempt.status) ||
             !/^[1-9][0-9]*$/.test(e.gas) || !/^[0-9]+$/.test(e.maximumGasPriceWei) ||
-            BigInt(e.gas) > BigInt(p.maxGasPerTransaction) ||
-            BigInt(e.maximumGasPriceWei) > BigInt(p.maxFeePerGasWei))
+            (e.settledWithinReservation !== undefined && e.settledWithinReservation !== true) ||
+            (e.settledWithinReservation === true
+              ? BigInt(attempt.gasUsed!) > quantity(tx.gas) ||
+                BigInt(attempt.effectiveGasPriceWei!) > quantity(tx.gasPrice)
+              : BigInt(e.gas) > BigInt(p.maxGasPerTransaction) ||
+                BigInt(e.maximumGasPriceWei) > BigInt(p.maxFeePerGasWei)))
           throw new Error('Invalid mined fee envelope');
       }
     }
@@ -125,7 +129,8 @@ export class PublicationWorkbench {
     // Never refund a reservation, even after a revert. This remains conservative across restarts.
     return this.journal.attempts.reduce((sum, a) => {
       const reserved = quantity(a.transaction.gas) * quantity(a.transaction.gasPrice);
-      const mined = a.minedEnvelope ? BigInt(a.minedEnvelope.gas) * BigInt(a.minedEnvelope.maximumGasPriceWei) : 0n;
+      const mined = a.minedEnvelope && !a.minedEnvelope.settledWithinReservation
+        ? BigInt(a.minedEnvelope.gas) * BigInt(a.minedEnvelope.maximumGasPriceWei) : 0n;
       return sum + (mined > reserved ? mined : reserved);
     }, 0n);
   }
@@ -285,14 +290,19 @@ export class PublicationWorkbench {
       if (!receipt || !actual) throw new Error('Transaction not confirmed by both RPC sources; keep waiting');
       const tx = a.transaction;
       // Extension wallets may convert a legacy request to EIP-1559 and re-estimate gas.
-      // Check the mined envelope against consent and account for its full liability.
+      // A settled receipt can prove actual usage remained inside the original
+      // reservation even when the wallet increased an unused maximum.
       const gas = quantity(actual.gas), price = quantity(actual.gasPrice);
       const maximumPrice = actual.type === '0x2' ? quantity(actual.maxFeePerGas) : price;
       const originalCost = quantity(tx.gas) * quantity(tx.gasPrice);
-      const minedCost = gas * maximumPrice;
+      const settledWithinReservation = quantity(receipt.gasUsed) <= quantity(tx.gas) &&
+        price <= quantity(tx.gasPrice);
+      const outsideEnvelope = gas > BigInt(this.profile.maxGasPerTransaction) ||
+        maximumPrice > BigInt(this.profile.maxFeePerGasWei);
+      const settledException = outsideEnvelope && settledWithinReservation;
+      const minedCost = settledException ? originalCost : gas * maximumPrice;
       if (![undefined, '0x0', '0x1', '0x2'].includes(actual.type as string | undefined) ||
-          gas > BigInt(this.profile.maxGasPerTransaction) ||
-          maximumPrice > BigInt(this.profile.maxFeePerGasWei) || price > maximumPrice ||
+          (outsideEnvelope && !settledWithinReservation) || price > maximumPrice ||
           (actual.type === '0x2' && quantity(actual.maxPriorityFeePerGas) > maximumPrice) ||
           this.reservedCost() + (minedCost > originalCost ? minedCost - originalCost : 0n) > BigInt(this.profile.maxUploadCostWei))
         throw new Error('Mined wallet fee envelope exceeds authorized upload budget; stopped');
@@ -319,7 +329,8 @@ export class PublicationWorkbench {
       a.status = receipt.status === '0x1' ? 'confirmed' : 'reverted';
       a.block = block; a.gasUsed = quantity(receipt.gasUsed).toString();
       a.effectiveGasPriceWei = quantity(receipt.effectiveGasPrice).toString();
-      a.minedEnvelope = { gas: gas.toString(), maximumGasPriceWei: maximumPrice.toString() };
+      a.minedEnvelope = { gas: gas.toString(), maximumGasPriceWei: maximumPrice.toString(),
+        ...(settledException ? { settledWithinReservation: true as const } : {}) };
       await this.persist();
       return this.context();
     });

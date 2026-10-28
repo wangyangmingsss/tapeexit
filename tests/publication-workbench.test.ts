@@ -153,12 +153,55 @@ describe('bounded browser-wallet publication coordinator', () => {
     const f = fixture(); await f.authorize();
     const a = await f.bench.reserve((await f.prepare()).id);
     await f.bench.attachHash(a.id, txHash);
-    const { actual } = f.mine(a);
+    const { actual, receipt } = f.mine(a);
     Object.assign(actual, { type: '0x2', maxFeePerGas: a.transaction.gasPrice,
       maxPriorityFeePerGas: '0x1', ...patch });
+    if ('gas' in patch || 'maxFeePerGas' in patch)
+      receipt.gasUsed = `0x${(BigInt(a.transaction.gas) + 1n).toString(16)}`;
     await expect(f.bench.reconcile()).rejects.toThrow('budget');
     expect(f.bench.context().unresolved).toBe(a.id);
     expect(f.journal.attempts[0].minedEnvelope).toBeUndefined();
+  });
+  it('reconciles consecutive wallet gas increases from settled usage without relaxing future signing caps', async () => {
+    const f = fixture(); f.setEstimate(5_500_000n); await f.authorize();
+    for (let operation = 0; operation < ops.length; operation++) {
+      const p = await f.prepare();
+      expect(p.operation).toBe(operation);
+      expect(BigInt(p.transaction.gas)).toBeLessThanOrEqual(7_000_000n);
+      const a = await f.bench.reserve(p.id);
+      const hash = `0x${(operation + 1).toString(16).padStart(64, '0')}` as Hex;
+      await f.bench.attachHash(a.id, hash);
+      const { actual, receipt } = f.mine(a);
+      Object.assign(actual, { hash, type: '0x2', gas: '0x88449e', gasPrice: '0x1312d01',
+        maxFeePerGas: '0x19bfcc1', maxPriorityFeePerGas: '0x1' });
+      Object.assign(receipt, { transactionHash: hash, gasUsed: '0x53cd3c', effectiveGasPrice: actual.gasPrice });
+      await f.bench.reconcile();
+      expect(f.bench.context().unresolved).toBeNull();
+      expect(f.bench.context().maxGas).toBe('7000000');
+      expect(f.bench.context().attempts.at(-1)?.minedEnvelope?.settledWithinReservation).toBe(true);
+    }
+    expect(f.bench.context().attempts.filter(a => a.status === 'confirmed')).toHaveLength(ops.length);
+    expect(await f.bench.prepareNext()).toMatchObject({ complete: true });
+    f.setEstimate(7_000_000n); f.next(0);
+    await expect(f.prepare()).rejects.toThrow('disappeared');
+    const restarted = fixture(structuredClone(f.writes.at(-1)!));
+    expect(restarted.bench.context().reservedWei).toBe(f.bench.context().reservedWei);
+  });
+  it('does not accept a settled exception when actual fees or restored evidence exceed the original reservation', async () => {
+    const f = fixture(); await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await f.bench.attachHash(a.id, txHash);
+    const { actual, receipt } = f.mine(a);
+    Object.assign(actual, { gas: '0x88449e', gasPrice: '0x1500000' });
+    receipt.effectiveGasPrice = actual.gasPrice;
+    await expect(f.bench.reconcile()).rejects.toThrow('budget');
+    actual.gasPrice = a.transaction.gasPrice; receipt.effectiveGasPrice = actual.gasPrice;
+    await f.bench.reconcile();
+    const saved = structuredClone(f.writes.at(-1)!);
+    saved.attempts[0].gasUsed = (BigInt(a.transaction.gas) + 1n).toString();
+    expect(() => fixture(saved)).toThrow('Invalid mined fee envelope');
+    const gas = fixture(); gas.setEstimate(7_000_000n);
+    await expect(gas.prepare()).rejects.toThrow('estimate exceeds');
   });
   it.each([false, true])('compares critical RPC fields despite operator metadata differences (conflict=%s)', async conflict => {
     const f = fixture(); await f.authorize();
