@@ -66,6 +66,10 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
           exactKeys(['attemptId', 'hash']); return reply(200, await workbench.attachHash(body.attemptId, body.hash));
         case '/api/reconcile':
           exactKeys([]); return reply(200, await workbench.reconcile());
+        case '/api/capabilities':
+          exactKeys(['contextId', 'publisher', 'chainId', 'outcome', 'atomicStatus']);
+          return reply(200, await workbench.recordCapabilities(body.contextId, body.publisher, body.chainId,
+            body.outcome, body.atomicStatus));
         case '/api/cancel-request':
           exactKeys(['attemptId', 'acknowledgement']);
           return reply(200, await workbench.acknowledgeCancellation(body.attemptId, body.acknowledgement));

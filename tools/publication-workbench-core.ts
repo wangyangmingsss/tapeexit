@@ -21,6 +21,18 @@ export interface UploadJournal {
   schemaVersion: 1; contextId: string;
   authorization: null | { expiresAt: number; maximumWei: string; grantedAt: number };
   attempts: UploadAttempt[];
+  walletCapabilities?: WalletCapabilityReport;
+}
+const capabilityOutcomes = ['reported', 'not-reported', 'method-unavailable', 'invalid-response', 'timeout', 'error'] as const;
+type CapabilityOutcome = typeof capabilityOutcomes[number];
+type AtomicStatus = 'supported' | 'ready' | 'unsupported';
+export interface WalletCapabilityReport {
+  publisher: string; chainId: 196; checkedAt: number;
+  outcome: CapabilityOutcome; atomicStatus: AtomicStatus | null;
+}
+function validCapabilityResult(outcome: unknown, atomicStatus: unknown) {
+  return capabilityOutcomes.includes(outcome as CapabilityOutcome) &&
+    (outcome === 'reported' ? ['supported', 'ready', 'unsupported'].includes(atomicStatus as string) : atomicStatus === null);
 }
 export interface JournalStore { save(journal: UploadJournal): Promise<void> }
 export interface UploadPreview {
@@ -74,6 +86,11 @@ export class PublicationWorkbench {
     const j = this.journal, p = this.profile;
     if (j.schemaVersion !== 1 || j.contextId !== this.contextId || !Array.isArray(j.attempts) || j.attempts.length > 1000)
       throw new Error('Upload journal does not match release/profile');
+    const report = j.walletCapabilities;
+    if (report !== undefined && (!report || report.publisher !== p.publisher || report.chainId !== 196 ||
+        !Number.isSafeInteger(report.checkedAt) || report.checkedAt < 0 ||
+        !validCapabilityResult(report.outcome, report.atomicStatus)))
+      throw new Error('Invalid wallet capability observation');
     const a = j.authorization;
     if (a !== null && (!a || a.maximumWei !== p.maxUploadCostWei ||
         !Number.isSafeInteger(a.grantedAt) || !Number.isSafeInteger(a.expiresAt) ||
@@ -154,9 +171,22 @@ export class PublicationWorkbench {
       maxGasPriceWei: this.profile.maxFeePerGasWei, reservedWei: this.reservedCost().toString(),
       authorization: this.journal.authorization, attempts: structuredClone(this.journal.attempts),
       unresolved: this.unresolved()?.id ?? null,
+      walletCapabilities: this.journal.walletCapabilities ? structuredClone(this.journal.walletCapabilities) : null,
       scope: 'Upload registry calls only. No activation, token approval, liquidity or app funds operations. ' +
         'Observed code pins are not an independent security review. EVM gas cap excludes chain-specific fees.',
     };
+  }
+  recordCapabilities(contextId: unknown, publisher: unknown, chainId: unknown, outcome: unknown, atomicStatus: unknown) {
+    return this.exclusive(async () => {
+      if (contextId !== this.contextId || publisher !== this.profile.publisher || chainId !== 196 ||
+          !validCapabilityResult(outcome, atomicStatus))
+        throw new Error('Wallet capability observation does not match upload context');
+      // Browser observations are informational; they never authorize signing or fees.
+      this.journal.walletCapabilities = { publisher: this.profile.publisher, chainId: 196, checkedAt: this.now(),
+        outcome: outcome as CapabilityOutcome, atomicStatus: atomicStatus as AtomicStatus | null };
+      await this.persist();
+      return this.context();
+    });
   }
   authorize(contextId: unknown, maximumWei: unknown) {
     return this.exclusive(async () => {

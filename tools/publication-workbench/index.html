@@ -23,6 +23,8 @@
     <h2>OKX 钱包</h2>
     <div class="toolbar"><select id="wallet" aria-label="钱包"></select><button id="connect" disabled>连接钱包</button></div>
     <p id="account" role="status">等待钱包</p>
+    <div class="toolbar"><button id="detect-batch" disabled>检测批量支持</button></div>
+    <p id="batch-capability" role="status" aria-live="polite">尚未检测当前钱包的 X Layer 批量能力</p>
     <h2>费用确认</h2>
     <p>仅上传当前发行文件至指定容器。每笔原生币转账金额为零；交易仍产生网络费用。本预算只约束 EVM Gas，不含激活、域名及链特有附加费用。代码摘要来自链上观察，尚不代表独立安全审阅。</p>
     <label class="consent"><input id="consent" type="checkbox"><span id="consent-label">正在读取预算</span></label>

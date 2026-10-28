@@ -81,3 +81,108 @@ it.each(['confirmed', 'reverted'])('counts down verification, preserves errors a
   expect(document.getElementById('pending-section')!.hidden).toBe(true);
   expect(fetcher.mock.calls.every(([url]) => /\/api\/(context|reconcile)$/.test(url))).toBe(true);
 });
+
+async function capabilityClient(read: () => Promise<unknown>) {
+  const base = `${process.cwd()}/tools/publication-workbench/`;
+  const template = document.createElement('template');
+  template.innerHTML = await readFile(`${base}index.html`, 'utf8');
+  template.content.querySelectorAll('link, script').forEach(element => element.remove());
+  document.body.replaceChildren(template.content);
+  const publisher = '0x1000000000000000000000000000000000000001';
+  const context = { contextId: 'release', publisher, fileCount: 9, totalBytes: 587736, totalOperations: 31,
+    maximumWei: '7000000000000000', reservedWei: '0', attempts: [], unresolved: null, walletCapabilities: null };
+  const fetcher = vi.fn(async (_url: string, options?: RequestInit) => {
+    if (_url.endsWith('/capabilities')) context.walletCapabilities = JSON.parse(String(options?.body));
+    return Response.json(context);
+  });
+  const events = new Map<string, () => void>();
+  const provider = { request: vi.fn(async ({ method }: { method: string }) => {
+    if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [publisher];
+    if (method === 'eth_chainId') return '0xc4';
+    if (method === 'wallet_getCapabilities') return read();
+    throw new Error(`Unexpected wallet method ${method}`);
+  }), on: (event: string, callback: () => void) => events.set(event, callback),
+  removeListener: (event: string) => events.delete(event) };
+  let tick!: () => void, timeout!: () => void;
+  const execute = new (Object.getPrototypeOf(async () => {}).constructor)(
+    'fetch', 'setInterval', 'setTimeout', 'clearTimeout', await readFile(`${base}client.js`, 'utf8'));
+  await execute(fetcher, (fn: () => void) => { tick = fn; }, (fn: () => void, ms: number) => {
+    if (ms === 15000) timeout = fn;
+    return 0;
+  }, () => {});
+  window.dispatchEvent(new CustomEvent('eip6963:announceProvider', {
+    detail: { info: { uuid: 'capability-test-wallet', name: 'Capability test wallet' }, provider },
+  }));
+  const button = document.getElementById('detect-batch') as HTMLButtonElement;
+  expect(button.disabled).toBe(true);
+  (document.getElementById('connect') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(button.disabled).toBe(false));
+  return { button, provider, fetcher, context, publisher, events,
+    tick: () => tick(), timeout: () => timeout(), result: document.getElementById('batch-capability')! };
+}
+
+it.each([
+  [{ '0xc4': { atomic: { status: 'supported' } } }, 'reported', 'supported'],
+  [{ '0xc4': { atomic: { status: 'ready' } } }, 'reported', 'ready'],
+  [{ '0xC4': { atomic: { status: 'unsupported' } } }, 'reported', 'unsupported'],
+  [{ '0x1': { atomic: { status: 'supported' } } }, 'not-reported', null],
+  [{ '0x0': { atomic: { status: 'supported' } } }, 'not-reported', null],
+  [{ '0xc4': {} }, 'not-reported', null],
+  [{ '0xc4': { atomic: { status: true } } }, 'invalid-response', null],
+  [[], 'invalid-response', null],
+  [null, 'invalid-response', null],
+  [{ '0xc4': { atomic: { status: 'supported' } }, '0xC4': { atomic: { status: 'unsupported' } } }, 'invalid-response', null],
+])('records only explicit X Layer capability observations: %j', async (value, outcome, atomicStatus) => {
+  const f = await capabilityClient(async () => value);
+  f.button.click();
+  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
+  expect(f.context.walletCapabilities).toMatchObject({ outcome, atomicStatus });
+  expect(f.provider.request).toHaveBeenCalledWith({
+    method: 'wallet_getCapabilities', params: [f.publisher, ['0xc4']],
+  });
+  expect(f.provider.request.mock.calls.every(([request]) =>
+    ['eth_requestAccounts', 'eth_accounts', 'eth_chainId', 'wallet_getCapabilities'].includes(request.method))).toBe(true);
+  expect(f.fetcher.mock.calls.every(([url]) => /\/api\/(context|capabilities)$/.test(url))).toBe(true);
+  expect(f.result.textContent).toContain('当前上传仍采用逐笔确认');
+});
+
+it('shows a countdown, prevents duplicate detection and ignores a late result after timeout', async () => {
+  let settle!: (value: unknown) => void;
+  const pending = new Promise(resolve => { settle = resolve; });
+  const f = await capabilityClient(() => pending);
+  const now = Date.now();
+  vi.spyOn(Date, 'now').mockReturnValue(now);
+  f.button.click(); f.button.click();
+  await vi.waitFor(() => expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_getCapabilities')).toHaveLength(1));
+  expect(f.button.textContent).toContain('15 秒');
+  vi.mocked(Date.now).mockReturnValue(now + 5000); f.tick();
+  expect(f.button.textContent).toContain('10 秒');
+  f.timeout();
+  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
+  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'timeout', atomicStatus: null });
+  settle({ '0xc4': { atomic: { status: 'supported' } } });
+  await Promise.resolve(); await Promise.resolve();
+  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'timeout' });
+  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/capabilities'))).toHaveLength(1);
+});
+
+it('does not persist capability results from a wallet that changed during detection', async () => {
+  let settle!: (value: unknown) => void;
+  const f = await capabilityClient(() => new Promise(resolve => { settle = resolve; }));
+  f.button.click();
+  await vi.waitFor(() => expect(settle).toBeDefined());
+  f.events.get('accountsChanged')!();
+  settle({ '0xc4': { atomic: { status: 'supported' } } });
+  await vi.waitFor(() => expect(document.getElementById('status')!.textContent).toMatch(/变化|不匹配/));
+  expect(f.context.walletCapabilities).toBeNull();
+  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/capabilities'))).toBe(false);
+});
+
+it('reports an unsupported wallet method without falling back to any transaction request', async () => {
+  const f = await capabilityClient(async () => { throw Object.assign(new Error('Method not found'), { code: -32601 }); });
+  f.button.click();
+  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
+  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'method-unavailable', atomicStatus: null });
+  expect(f.result.textContent).toContain('未提供能力检测接口');
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
+});

@@ -12,6 +12,7 @@ describe('loopback-only publication server', () => {
     prepareNext: vi.fn(async () => ({ operation: 0 })),
     reserve: vi.fn(async () => ({ status: 'reserved' })),
     attachHash: vi.fn(async () => ({})), reconcile: vi.fn(async () => ({})),
+    recordCapabilities: vi.fn(async () => ({ recorded: true })),
   };
   const headers = { origin, 'content-type': 'application/json', 'x-tapeexit-client': 'publication-workbench' };
   beforeAll(async () => { server = await createPublicationWorkbenchServer(bench as unknown as PublicationWorkbench, port); });
@@ -55,5 +56,13 @@ describe('loopback-only publication server', () => {
     expect((await post('/api/hash', { attemptId: 'a', hash: 'hash' })).status).toBe(200);
     expect(bench.attachHash).toHaveBeenCalledWith('a', 'hash');
     expect((await post('/api/preview', { extra: 'x'.repeat(5000) })).status).toBe(413);
+  });
+  it('records only scoped capability observations and never accepts a batch submission', async () => {
+    const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
+    const report = { contextId: 'release', publisher: 'publisher', chainId: 196, outcome: 'reported', atomicStatus: 'supported' };
+    expect((await post('/api/capabilities', report)).status).toBe(200);
+    expect(bench.recordCapabilities).toHaveBeenCalledWith('release', 'publisher', 196, 'reported', 'supported');
+    expect((await post('/api/capabilities', { ...report, calls: [] })).status).toBe(409);
+    expect((await post('/api/sendCalls', { calls: [] })).status).toBe(404);
   });
 });

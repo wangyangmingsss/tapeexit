@@ -3,6 +3,8 @@ const wallets = new Map();
 let context, preview, account, connectedProvider, busy = false, generation = 0, removeObservers = () => {};
 let preparingSince = null;
 let verifyingSince = null;
+let detectingSince = null;
+const CAPABILITY_TIMEOUT_MS = 15_000;
 const CHECK_TIMEOUT_MS = 90_000;
 const status = text => { $('status').textContent = text; };
 const coin = wei => {
@@ -25,6 +27,9 @@ async function api(path, body) {
   return value;
 }
 function controls() {
+  $('detect-batch').disabled = busy || !context || !account || !connectedProvider;
+  $('detect-batch').textContent = detectingSince === null ? '检测批量支持' :
+    `检测中 · ${Math.max(0, 15 - Math.floor((Date.now() - detectingSince) / 1000))} 秒`;
   if (verifyingSince !== null) {
     const elapsed = Math.floor((Date.now() - verifyingSince) / 1000);
     const remaining = Math.max(0, Math.ceil(CHECK_TIMEOUT_MS / 1000) - elapsed);
@@ -47,6 +52,7 @@ function controls() {
   $('badge').textContent = context?.unresolved ? '待核验 · 上传暂停' : authorized ? '费用已确认' : '未确认费用';
 }
 function render() {
+  if (detectingSince === null && context.walletCapabilities) renderCapabilities(context.walletCapabilities);
   $('files').textContent = `${context.fileCount} 个 / ${context.totalBytes.toLocaleString()} 字节`;
   $('confirmed').textContent = `${context.attempts.filter(a => a.status === 'confirmed').length} 笔 / ${context.totalOperations} 步`;
   $('maximum').textContent = coin(context.maximumWei);
@@ -95,6 +101,7 @@ async function run(action) {
 }
 function invalidateWallet() {
   generation++; account = null; connectedProvider = null; preview = null;
+  $('batch-capability').textContent = '钱包或网络已变化，连接后重新检测批量支持';
   $('account').textContent = '账户或网络已变化，请重新连接'; controls();
 }
 function addWallet(id, name, provider) {
@@ -135,6 +142,70 @@ $('connect').addEventListener('click', () => run(async () => {
   account = context.publisher; connectedProvider = provider;
   $('account').textContent = `${selected.name} · ${account} · X Layer`;
   status('发布账户已匹配；尚未请求交易签名');
+}));
+function parseCapabilities(value) {
+  const invalid = { outcome: 'invalid-response', atomicStatus: null };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return invalid;
+  const keys = Object.keys(value).filter(key => /^0x(?:0|[1-9a-f][0-9a-f]{0,15})$/i.test(key) && BigInt(key) === 196n);
+  if (!keys.length) return { outcome: 'not-reported', atomicStatus: null };
+  if (keys.length !== 1) return invalid;
+  const chain = value[keys[0]];
+  if (!chain || typeof chain !== 'object' || Array.isArray(chain)) return invalid;
+  if (!Object.hasOwn(chain, 'atomic')) return { outcome: 'not-reported', atomicStatus: null };
+  const atomic = chain.atomic;
+  if (!atomic || typeof atomic !== 'object' || Array.isArray(atomic) ||
+      !['supported', 'ready', 'unsupported'].includes(atomic.status)) return invalid;
+  return { outcome: 'reported', atomicStatus: atomic.status };
+}
+function renderCapabilities(report) {
+  const messages = {
+    supported: '钱包声明支持 X Layer 原子批量调用；尚未验证实际批量提交或确认次数。',
+    ready: '钱包声明需要先经你确认升级账户，才能支持原子批量；检测没有请求升级。',
+    unsupported: '钱包声明不支持原子性保证；可表示顺序批量能力，但不保证只签一次或整批成功。',
+    'not-reported': '钱包没有明确声明 X Layer 的批量能力。',
+    'method-unavailable': '当前钱包未提供能力检测接口，无法确认批量支持。',
+    'invalid-response': '钱包返回的能力格式不符合要求，无法确认批量支持。',
+    timeout: '能力检测超时，可重新检测；没有请求交易或签名。',
+    error: '钱包能力读取未完成，可检查连接后重新检测。',
+  };
+  $('batch-capability').textContent = `上次检测：${messages[report.atomicStatus || report.outcome]} 当前上传仍采用逐笔确认。`;
+}
+$('detect-batch').addEventListener('click', () => run(async () => {
+  const provider = connectedProvider, version = generation;
+  if (!provider || !account) throw new Error('请先连接发布钱包');
+  const contextId = context.contextId, publisher = context.publisher;
+  detectingSince = Date.now(); controls();
+  $('batch-capability').textContent = '正在读取当前钱包的 X Layer 批量能力，不请求交易或签名';
+  let timer, result;
+  try {
+    try {
+      const value = await Promise.race([
+        (async () => {
+          await assertWallet(provider, version);
+          const response = await provider.request({ method: 'wallet_getCapabilities', params: [publisher, ['0xc4']] });
+          await assertWallet(provider, version);
+          return response;
+        })(),
+        new Promise((_, reject) => { timer = setTimeout(() => {
+          const error = new Error('钱包能力检测超时'); error.name = 'TimeoutError'; reject(error);
+        }, CAPABILITY_TIMEOUT_MS); }),
+      ]);
+      result = parseCapabilities(value);
+    } catch (error) {
+      if (error instanceof Error && /钱包账户或网络/.test(error.message)) throw error;
+      result = { outcome: error?.name === 'TimeoutError' ? 'timeout' :
+        [-32601, 4200].includes(Number(error?.code)) ? 'method-unavailable' : 'error', atomicStatus: null };
+    } finally { clearTimeout(timer); }
+    if (version !== generation || provider !== connectedProvider || contextId !== context.contextId)
+      throw new Error('钱包或发行已变化，检测结果已丢弃，请重新连接后检测');
+    const saved = await api('capabilities', { contextId, publisher, chainId: 196, ...result });
+    context = saved;
+    renderCapabilities(saved.walletCapabilities);
+    status('批量能力检测结果已保存；没有请求交易或签名');
+  } catch (error) {
+    $('batch-capability').textContent = error instanceof Error ? error.message : '检测结果未能保存，请重新检测';
+    throw error;
+  } finally { detectingSince = null; controls(); }
 }));
 $('consent').addEventListener('change', controls);
 $('authorize').addEventListener('click', () => run(async () => {

@@ -13,6 +13,7 @@ async function install(page: Page, mode = 'success') {
     manifestSha256: 'b'.repeat(64), fileCount: 9, totalBytes: 587736, totalOperations: 31,
     maximumWei: '7000000000000000', maxGas: '7000000', maxGasPriceWei: '30000000',
     reservedWei: '0', authorization: null as null | { expiresAt: number }, unresolved: null as null | string,
+    walletCapabilities: null as null | { publisher: string; chainId: number; outcome: string; atomicStatus: string | null },
     attempts: [] as { id: string; operation: number; status: string; transaction: typeof transaction; hash?: string }[] };
   const calls: string[] = [];
   await page.route('**/publication-workbench', route => route.fulfill({ contentType: 'text/html', body: html }));
@@ -23,6 +24,10 @@ async function install(page: Page, mode = 'success') {
     calls.push(action);
     let value: unknown = context;
     if (action === 'authorize') context.authorization = { expiresAt: Date.now() + 3600000 };
+    if (action === 'capabilities') {
+      const { publisher, chainId, outcome, atomicStatus } = route.request().postDataJSON();
+      context.walletCapabilities = { publisher, chainId, outcome, atomicStatus };
+    }
     if (action === 'preview') value = { id: 'preview', expiresAt: Date.now() + 30000,
       operation: 0, remaining: 31, file: 'LICENSE.txt', chunk: 0, maximumCostWei: '2520000000000', transaction };
     if (action === 'reserve') {
@@ -48,6 +53,10 @@ async function install(page: Page, mode = 'success') {
         fixture.methods.push(method);
         if (method === 'eth_chainId') return '0xc4';
         if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [publisher];
+        if (method === 'wallet_getCapabilities') {
+          if (mode === 'capability-supported') return { '0xc4': { atomic: { status: 'supported' } } };
+          throw Object.assign(new Error('Method not found'), { code: -32601 });
+        }
         if (method === 'eth_sendTransaction') {
           if (mode === 'unknown') throw new Error('Fixture wallet response lost');
           return txHash;
@@ -144,4 +153,17 @@ test('preparing a slow or failed quote shows feedback beside the button without 
   await expect(page.locator('#preview')).toContainText('Independent RPC responses unavailable');
   await expect(page.locator('#refresh')).toBeEnabled();
   expect(await sends(page)).toBe(0);
+});
+test('reads current-chain batch capabilities, saves observations and never sends a transaction', async ({ page }) => {
+  const { calls } = await install(page, 'capability-supported');
+  await expect(page.locator('#detect-batch')).toBeDisabled();
+  await page.locator('#connect').click();
+  await page.locator('#detect-batch').click();
+  await expect(page.locator('#batch-capability')).toContainText('钱包声明支持 X Layer 原子批量');
+  expect(await sends(page)).toBe(0);
+  expect(calls).toContain('capabilities');
+  expect(calls).not.toContain('reserve');
+  await page.reload();
+  await expect(page.locator('#batch-capability')).toContainText('上次检测');
+  await expect(page.locator('#detect-batch')).toBeDisabled();
 });

@@ -80,6 +80,35 @@ function fixture(saved?: UploadJournal) {
   };
 }
 describe('bounded browser-wallet publication coordinator', () => {
+  it('persists capability observations without granting fees, reserving uploads or trusting browser claims', async () => {
+    const f = fixture();
+    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'supported');
+    expect(f.bench.context()).toMatchObject({ reservedWei: '0', authorization: null, attempts: [],
+      walletCapabilities: { publisher, chainId: 196, outcome: 'reported', atomicStatus: 'supported' } });
+    expect(f.requests).toHaveLength(0);
+    const restarted = fixture(structuredClone(f.writes.at(-1)!));
+    expect(restarted.bench.context().walletCapabilities).toEqual(f.bench.context().walletCapabilities);
+    await expect(restarted.bench.reserve((await restarted.prepare()).id)).rejects.toThrow('consent');
+  });
+  it.each([
+    ['other-release', publisher, 196, 'reported', 'supported'],
+    [null, container, 196, 'reported', 'supported'],
+    [null, publisher, 1, 'reported', 'supported'],
+    [null, publisher, 196, 'reported', 'unknown'],
+    [null, publisher, 196, 'timeout', 'supported'],
+    [null, publisher, 196, 'reported', null],
+  ])('rejects capability claims outside the current context: %j', async (context, address, chain, outcome, atomic) => {
+    const f = fixture();
+    await expect(f.bench.recordCapabilities(context ?? f.bench.contextId, address, chain, outcome, atomic)).rejects.toThrow('observation');
+    expect(f.writes).toHaveLength(0);
+  });
+  it('rejects corrupt saved capability observations and accepts a method-unavailable result', async () => {
+    const f = fixture();
+    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'method-unavailable', null);
+    const saved = structuredClone(f.writes.at(-1)!);
+    saved.walletCapabilities!.chainId = 1 as 196;
+    expect(() => fixture(saved)).toThrow('capability observation');
+  });
   it('quotes without signing and refuses reserve until explicit exact fee consent', async () => {
     const f = fixture(), preview = await f.prepare();
     expect(preview).toMatchObject({ operation: 0, remaining: 3, file: 'index.html',
