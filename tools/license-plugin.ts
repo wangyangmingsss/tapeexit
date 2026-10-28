@@ -5,6 +5,8 @@ import type { Plugin } from 'vite';
 import { gzipSync } from 'node:zlib';
 
 export function licensePlugin(mode: string): Plugin {
+  let graphModules: string[] = [];
+  let packageInventory: unknown[] = [];
   return {
     name: 'tapeexit-license-evidence',
     generateBundle(_options, bundle) {
@@ -35,17 +37,23 @@ export function licensePlugin(mode: string): Plugin {
       }
       this.emitFile({ type: 'asset', fileName: 'THIRD-PARTY-NOTICES.txt', source: notices.join('\n') });
       this.emitFile({ type: 'asset', fileName: 'LICENSE.txt', source: readFileSync('LICENSE', 'utf8') });
+      graphModules = [...modules].map(id => id.replaceAll(resolve('.'), '<project>')).sort();
+      packageInventory = inventory;
+    },
+    writeBundle(options, bundle) {
+      if (!options.dir) throw new Error('License evidence requires a directory build');
       mkdirSync('release-artifacts', { recursive: true });
-      const portableModules = [...modules].map(id => id.replaceAll(resolve('.'), '<project>')).sort();
-      const chunks = Object.values(bundle).filter(output => output.type === 'chunk').map(output => ({
-        path: output.fileName, sha256: createHash('sha256').update(output.code).digest('hex'),
-        bytes: Buffer.byteLength(output.code), gzipBytes: gzipSync(output.code, { level: 9 }).length,
-        entry: output.isEntry, imports: output.imports, dynamicImports: output.dynamicImports,
-        modules: Object.keys(output.modules).map(id => id.replaceAll(resolve('.'), '<project>')).sort(),
-      })).sort((a, b) => a.path.localeCompare(b.path));
+      const chunks = Object.values(bundle).filter(output => output.type === 'chunk').map(output => {
+        // Vite rewrites dynamic-import preload paths after generateBundle.
+        const bytes = readFileSync(resolve(options.dir!, output.fileName));
+        return { path: output.fileName, sha256: createHash('sha256').update(bytes).digest('hex'),
+          bytes: bytes.length, gzipBytes: gzipSync(bytes, { level: 9 }).length,
+          entry: output.isEntry, imports: output.imports, dynamicImports: output.dynamicImports,
+          modules: Object.keys(output.modules).map(id => id.replaceAll(resolve('.'), '<project>')).sort() };
+      }).sort((a, b) => a.path.localeCompare(b.path));
       writeFileSync(`release-artifacts/bundled-modules-${mode}.json`, JSON.stringify({
         schemaVersion: 1, mode, lockSha256: createHash('sha256').update(readFileSync('package-lock.json')).digest('hex'),
-        chunks, modules: portableModules, packages: inventory,
+        chunks, modules: graphModules, packages: packageInventory,
       }, null, 2) + '\n');
     },
   };
