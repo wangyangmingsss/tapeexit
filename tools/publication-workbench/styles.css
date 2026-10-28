@@ -1,0 +1,36 @@
+:root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #19231e; background: #f8faf9; line-height: 1.6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 24px; background: #fff; border-bottom: 1px solid #d7dfd9; }
+header strong { font-size: 22px; }
+#badge { margin-left: auto; padding: 3px 9px; border-radius: 4px; font-size: 13px; background: #fff2cf; color: #6a4a00; }
+main { max-width: 1100px; margin: auto; padding: 24px; }
+h1 { margin: 0 0 8px; font-size: 26px; }
+h2 { margin: 28px 0 12px; font-size: 18px; }
+p { margin: 8px 0 16px; overflow-wrap: anywhere; }
+.summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; padding: 20px 0; border-block: 1px solid #d7dfd9; }
+.summary span { display: block; font-size: 13px; color: #53645a; }
+.summary strong { display: block; font-size: 18px; overflow-wrap: anywhere; }
+dl { display: grid; grid-template-columns: 145px minmax(0,1fr); gap: 8px 16px; }
+dt { color: #53645a; } dd { margin: 0; overflow-wrap: anywhere; font: 14px/1.6 ui-monospace,monospace; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0; }
+button,select,input[type=text] { min-height: 40px; max-width: 100%; padding: 7px 12px; border: 1px solid #a6b5ac; border-radius: 4px; font: inherit; background: #fff; }
+button { cursor: pointer; background: #176240; color: #fff; border-color: #176240; }
+button:disabled { opacity: .45; cursor: default; }
+input[type=text] { display: block; width: 100%; font-family: ui-monospace,monospace; }
+.consent { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px; }
+.consent input { margin-top: 7px; }
+#pending-section { border-top: 2px solid #aa7200; margin-top: 24px; }
+[hidden] { display: none !important; }
+.table-wrap { overflow: auto; margin-bottom: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th,td { padding: 9px 12px; border-bottom: 1px solid #d7dfd9; text-align: left; }
+th { background: #edf2ef; }
+td:last-child { min-width: 230px; overflow-wrap: anywhere; font-family: ui-monospace,monospace; }
+@media(max-width:680px) {
+  header { padding: 16px; } main { padding: 20px 16px; }
+  #badge { margin-left: 0; }
+  .summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 10px; }
+  .toolbar button,.toolbar select { width: 100%; }
+}

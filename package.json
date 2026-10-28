@@ -20,6 +20,7 @@
     "inspect:publication": "tsx tools/inspect-publication.ts",
     "inspect:tapeout": "tsx tools/inspect-tapeout.ts",
     "rehearse:publication": "tsx tools/rehearse-publication.ts",
+    "publish:wallet": "tsx tools/publication-workbench.ts",
     "inspect:assets": "tsx tools/inspect-assets.ts",
     "verify:assets": "tsx tools/verify-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",

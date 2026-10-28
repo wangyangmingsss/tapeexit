@@ -9,6 +9,8 @@ import { startLocalEvm } from '../tools/local-evm';
 import { rehearseOperations } from '../tools/rehearse-publication-core';
 import { resumePublication } from '../tools/resume-publication-core';
 import { verifyPublication } from '../tools/verify-publication-core';
+import { PublicationWorkbench, type UploadJournal, type UploadPreview } from '../tools/publication-workbench-core';
+import { IMPL_SLOT, IMPLEMENTATIONS, OPENER, TAPE_FACTORY } from '../tools/operations-core';
 
 const publisher = '0x1000000000000000000000000000000000000001';
 const container = '0x2000000000000000000000000000000000000002';
@@ -39,6 +41,13 @@ contract RegistryFixture {
     result=new bytes(length); for(uint i=0;i<length;i++) result[i]=files[c][p].data[offset+i];
   }
   function isContainerLive(address) public pure returns(bool) { return false; }
+  function cpuAt(uint) public pure returns(address) { return address(0x3000000000000000000000000000000000000003); }
+  function isCPU(address a) public pure returns(bool) { return a == address(0x3000000000000000000000000000000000000003); }
+  function accountOf(address,uint) public pure returns(address) { return address(0x2000000000000000000000000000000000000002); }
+  function isOpened(address,uint) public pure returns(bool) { return true; }
+  function ownerOf(uint) public pure returns(address) { return address(0x1000000000000000000000000000000000000001); }
+  function token() public pure returns(uint,address,uint) { return (196,address(0x3000000000000000000000000000000000000003),1); }
+  function monthlyFee() public pure returns(uint) { return 0; }
 }`;
 const bytes = Buffer.alloc(24_001, 1);
 const contents = [
@@ -57,7 +66,7 @@ const profile = { schemaVersion: 1, chainId: 196, publisher, container, circuitI
     .map(key => [key, keccak256('0x6000')])) };
 
 describe('disposable publication EVM and sequential runner', () => {
-  let evm: Awaited<ReturnType<typeof startLocalEvm>>, checkpoint: unknown, rpc: StrictRpc;
+  let evm: Awaited<ReturnType<typeof startLocalEvm>>, checkpoint: unknown, rpc: StrictRpc, fixtureCodeHash: Hex;
   beforeAll(async () => {
     evm = await startLocalEvm();
     const compiled = JSON.parse(solc.compile(JSON.stringify({ language: 'Solidity',
@@ -67,8 +76,13 @@ describe('disposable publication EVM and sequential runner', () => {
     if (compiled.errors?.some((e: { severity: string }) => e.severity === 'error'))
       throw new Error(JSON.stringify(compiled.errors));
     const code: Hex = `0x${compiled.contracts['Fixture.sol'].RegistryFixture.evm.deployedBytecode.object}`;
-    await evm.request('anvil_setCode', [REGISTRY, code]);
-    await evm.request('anvil_setCode', [BINDING, code]);
+    fixtureCodeHash = keccak256(code);
+    for (const address of [REGISTRY, BINDING, TAPE_FACTORY, OPENER, container,
+      '0x3000000000000000000000000000000000000003', ...Object.values(IMPLEMENTATIONS)])
+      await evm.request('anvil_setCode', [address, code]);
+    for (const [address, implementation] of [[REGISTRY, IMPLEMENTATIONS.registry],
+      [BINDING, IMPLEMENTATIONS.binding], [TAPE_FACTORY, IMPLEMENTATIONS.factory]])
+      await evm.request('anvil_setStorageAt', [address, IMPL_SLOT, `0x${implementation.slice(2).padStart(64, '0')}`]);
     rpc = new StrictRpc([{ url: 'http://127.0.0.1', operator: 'same-local-a' },
       { url: 'http://127.0.0.1', operator: 'same-local-b' }], (_s, m, p) => evm.request(m, p));
   });
@@ -85,6 +99,34 @@ describe('disposable publication EVM and sequential runner', () => {
     expect(report.files).toHaveLength(3);
     expect(report.files[0].chunks).toBe('2');
     expect(report.containerLive).toBe(false);
+  });
+  it('runs the browser publication coordinator against actual disposable EVM receipts and resumes after restart', async () => {
+    const input = { ...profile, expectedCodeHashes: Object.fromEntries(Object.keys(profile.expectedCodeHashes)
+      .map(name => [name, fixtureCodeHash])) };
+    const contextId = PublicationWorkbench.contextId(input, publication.manifestSha256);
+    let saved: UploadJournal = { schemaVersion: 1, contextId, authorization: null, attempts: [] };
+    const store = { save: async (j: UploadJournal) => { saved = structuredClone(j); } };
+    let bench = new PublicationWorkbench(rpc, input, publication, structuredClone(saved), store);
+    await evm.request('anvil_setBalance', [publisher, '0x56bc75e2d63100000']);
+    await evm.request('anvil_impersonateAccount', [publisher]);
+    await evm.request('evm_mine'); await evm.request('evm_mine'); await evm.request('evm_mine');
+    await bench.authorize(contextId, input.maxUploadCostWei);
+    for (let i = 0; i < operations.length; i++) {
+      const preview = await bench.prepareNext() as UploadPreview;
+      expect(preview.operation).toBe(i);
+      const attempt = await bench.reserve(preview.id);
+      // This is an explicit local fixture wallet. The coordinator never sends.
+      const hash = await evm.request('eth_sendTransaction', [attempt.transaction]);
+      bench = new PublicationWorkbench(rpc, input, publication, structuredClone(saved), store);
+      await expect(bench.prepareNext()).rejects.toThrow('unresolved');
+      await bench.attachHash(attempt.id, hash);
+      await evm.request('evm_mine'); await evm.request('evm_mine');
+      await bench.reconcile();
+      expect(bench.context().attempts.at(-1)?.status).toBe('confirmed');
+    }
+    expect(await bench.prepareNext()).toMatchObject({ complete: true,
+      readback: { status: 'published-bytes-checked', containerLive: false } });
+    expect(saved.attempts).toHaveLength(operations.length);
   });
   it('resumes after a real committed first chunk without overwriting it', async () => {
     await rehearseOperations(evm.request, profile, operations.slice(0, 1));
