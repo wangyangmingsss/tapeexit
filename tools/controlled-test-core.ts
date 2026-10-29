@@ -221,15 +221,15 @@ export class ControlledTest {
       const block = await this.rpc.block(receipt.blockNumber), final = await this.rpc.block('finalized');
       if (block.hash !== receipt.blockHash || BigInt(final.number) < BigInt(block.number))
         throw new Error('Receipt not finalized; check again without resending');
+      let outcome: TestAttempt['outcome'];
       if (receipt.status === '0x1') {
-        const outcome = await inspectRecoveryOutcome(this.rpc, a.hash, BigInt(TEST_POLICY.tokenId), TEST_POLICY.account);
+        outcome = await inspectRecoveryOutcome(this.rpc, a.hash, BigInt(TEST_POLICY.tokenId), TEST_POLICY.account);
         if (outcome.state !== 'block-state-matched' || !('receipt' in outcome) || !outcome.receipt.finalized ||
             outcome.receipt.blockHash !== block.hash ||
             outcome.liquidity.before !== TEST_POLICY.baselineLiquidity ||
             outcome.liquidity.removed !== TEST_POLICY.removeLiquidity ||
             outcome.balances.some(b => BigInt(b.delta) > BigInt(TEST_POLICY.maximumCollectionPerToken)))
           throw new Error('Receipt, token arrival or remaining liquidity not matched; retain the request');
-        a.outcome = outcome;
       }
       const [lastReceipt, lastTransaction] = await Promise.all([
         this.rpc.request<Record<string, any> | null>('eth_getTransactionReceipt', [a.hash],
@@ -243,6 +243,8 @@ export class ControlledTest {
         throw new Error('Test transaction or receipt changed during recovery verification');
       await this.rpc.assertBlock(block); await this.rpc.assertBlock(final);
       a.status = receipt.status === '0x1' ? 'confirmed' : 'reverted';
+      if (outcome) a.outcome = outcome;
+      else delete a.outcome;
       a.gasUsed = used.toString(); a.effectiveGasPriceWei = price.toString();
       await this.persist(); this.freshlyVerified = a.status === 'confirmed'; return this.context();
     });

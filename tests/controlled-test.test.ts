@@ -156,6 +156,32 @@ it('withdraws the fresh success label after a failed recheck and still blocks an
   expect(f.bench.context().complete).toBe(true);
   await expect(f.bench.preview()).rejects.toThrow('completed');
 });
+it('does not retain an unverified arrival if the receipt changes during reconciliation', async () => {
+  const f = fixture(), a = await f.reserve();
+  await f.bench.attachHash(a.id, txHash); f.mine(a);
+  const request = vi.mocked(f.rpc.request).getMockImplementation()!;
+  let receipts = 0;
+  vi.mocked(f.rpc.request).mockImplementation(async (method, params, normalize) => {
+    const value = await request(method, params, normalize);
+    return method === 'eth_getTransactionReceipt' && ++receipts === 2
+      ? { ...value as object, gasUsed: '0x30d41' } as any : value;
+  });
+  await expect(f.bench.reconcile()).rejects.toThrow('changed during');
+  expect(f.bench.context().attempts[0].outcome).toBeUndefined();
+  expect(f.bench.context().complete).toBe(false);
+  expect(f.bench.context().unresolved).toBe(a.id);
+});
+it('clears historical arrival data if a previously confirmed transaction is now canonically reverted', async () => {
+  const f = fixture(), a = await f.reserve();
+  await f.bench.attachHash(a.id, txHash); f.mine(a); await f.bench.reconcile();
+  f.mine(a, '0x0');
+  const result = await f.bench.reconcile();
+  expect(result.complete).toBe(false);
+  expect(result.freshlyVerified).toBe(false);
+  expect(result.attempts[0].status).toBe('reverted');
+  expect(result.attempts[0].outcome).toBeUndefined();
+  expect(f.writes.at(-1)?.attempts[0].outcome).toBeUndefined();
+});
 it.each(['arrival', 'fee', 'finality'])('keeps %s failure unresolved', async mode => {
   const f = fixture(), a = await f.reserve();
   await f.bench.attachHash(a.id, txHash); const mined = f.mine(a);
