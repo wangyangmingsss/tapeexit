@@ -13,6 +13,7 @@
 .pending-submission>div:first-child{display:flex;align-items:center;gap:9px}
 .pending-submission p{font-size:12px;color:var(--muted);margin:9px 0}
 .pending-submission>.secondary-button{margin-top:12px}
+.result-actions{flex-wrap:wrap}
 .submission-hash{max-width:620px;margin-top:12px}
 .submission-hash label{display:block;font-size:12px;margin-bottom:6px}
 .submission-hash input{width:100%;min-width:0;padding:10px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--ink);font-family:Consolas,monospace;font-size:12px}
