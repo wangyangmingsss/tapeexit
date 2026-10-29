@@ -75,7 +75,8 @@ async function install(page: Page, mode = 'success') {
     })));
   }, { publisher, txHash, mode });
   await page.goto('/publication-workbench');
-  await expect(page.locator('#status')).toContainText('发行信息已加载');
+  await expect(page.locator('#status')).toContainText(
+    mode.startsWith('legacy-') ? '存在未核验的钱包请求，先处理旧请求' : '发行信息已加载');
   return { calls, context };
 }
 async function ready(page: Page) {
