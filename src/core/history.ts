@@ -1,4 +1,4 @@
-import { decodeFunctionData, getAddress, maxUint128, type Address, type Hex } from 'viem';
+import { decodeFunctionData, getAddress, type Address, type Hex } from 'viem';
 import { DEPLOYMENT, managerAbi, type Deployment } from '../config';
 import { parseTokenId } from './token-id';
 import { V3Adapter } from './adapter';
@@ -29,7 +29,7 @@ export function historicalExitToken(data: Hex, account: Address): bigint {
   if (decoded.functionName !== 'collect') return fail();
   const collect = decoded.args[0];
   if (getAddress(collect.recipient) !== getAddress(account) ||
-      collect.amount0Max !== maxUint128 || collect.amount1Max !== maxUint128 ||
+      (collect.amount0Max === 0n && collect.amount1Max === 0n) ||
       (decreaseId !== undefined && decreaseId !== collect.tokenId)) return fail();
   return collect.tokenId;
 }

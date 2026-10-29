@@ -6,6 +6,12 @@ Keep publication receipts separate from exit receipts.
 
 ## Current Route
 
+The latest user-directed real-asset test uses USDt0/native USDC V3 #67042.
+See `CONTROLLED-TEST-67042.md` for its explicitly separate, unreviewed,
+one-position small-test tool and consent. It leaves general production signing
+disabled and does not claim to meet this document's reviewed-release acceptance.
+The fixed-supply route below remains an optional local protocol demonstration.
+
 The WOKB source investigation has been discontinued as an acceptance blocker.
 Use `ACCEPTANCE-ASSETS.md`: two fixed-supply assets with fully embedded source
 replace the original USDt0/WOKB acceptance pair. WOKB positions remain readable

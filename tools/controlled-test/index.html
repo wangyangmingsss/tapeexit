@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TapeExit · USDt0 / USDC 小额实测</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/client.js"></script>
+</head>
+<body>
+  <header><strong>TapeExit</strong><span>USDt0 / USDC</span><span id="badge">受限主网实测 · 未独立审阅</span></header>
+  <main>
+    <h1>仓位 #67042 · 退出 1%</h1>
+    <p id="status" role="status" aria-live="polite">正在加载</p>
+    <dl id="identity"></dl>
+    <h2>连接原钱包</h2>
+    <div class="toolbar"><select id="wallet" aria-label="钱包"></select><button id="connect" disabled>连接钱包</button></div>
+    <p id="account" role="status">尚未连接</p>
+    <h2>本次退出</h2>
+    <button id="prepare" disabled>准备 1% 退出预览</button>
+    <dl id="preview"><dt>状态</dt><dd>尚未准备</dd></dl>
+    <p>本次仅减少指定仓位的 1% 流动性，领取到原钱包。每币种领取上限为 0.05，不新增代币授权。代币可被发行方暂停、冻结或升级；当前观察与模拟不等于安全审阅。</p>
+    <label class="consent"><input id="consent" type="checkbox" disabled><span id="consent-label">我理解这是尚未独立审阅的真实主网小额测试，并确认下方预览的数量、收款地址、费用和有效期。</span></label>
+    <button id="send" disabled>在 OKX 钱包确认本次退出</button>
+    <section id="pending-section" hidden>
+      <h2>待核验交易</h2>
+      <label>完整交易哈希<input id="hash" type="text" maxlength="66" autocomplete="off" spellcheck="false"></label>
+      <div class="toolbar"><button id="attach">保存哈希</button><button id="reconcile">核验到账与剩余仓位</button></div>
+      <label class="consent"><input id="cancel-consent" type="checkbox"><span>我已在钱包拒绝或取消本次请求，确认没有等待签名或待广播交易。</span></label>
+      <button id="cancel" disabled>记录取消并核对 nonce</button>
+    </section>
+    <p id="progress" role="status" aria-live="polite" hidden></p>
+    <h2>测试与恢复记录</h2>
+    <dl id="record"></dl>
+    <div class="toolbar"><button id="recheck" disabled>重新核验已完成交易</button><button id="export" disabled>导出测试与恢复记录</button></div>
+  </main>
+</body>
+</html>

@@ -6,13 +6,18 @@ import { ipc, getIpcRpcClient } from 'viem/node';
 import type { Block } from '../src/core/rpc';
 
 // No caller-supplied write endpoint: every request uses the socket of this child.
-export async function startLocalEvm(fork?: { url: string; block: Block }) {
+export async function startLocalEvm(fork?: { url: string; block: Block; gasPrice?: bigint }) {
+  if (fork?.gasPrice !== undefined && (fork.gasPrice < 0n || fork.gasPrice >= 1n << 128n))
+    throw new Error('Invalid local fork gas price');
   const directory = await mkdtemp(join(tmpdir(), 'tapeexit-'));
   const socket = join(directory, 'evm.ipc');
   const args = ['node_modules/@foundry-rs/anvil/bin.mjs', '--host', '127.0.0.1',
     '--port', '0', '--accounts', '0', '--chain-id', '196', '--ipc', socket, '--silent', '--no-cors'];
   if (fork) args.push('--fork-url', fork.url, '--fork-block-number', BigInt(fork.block.number).toString(),
     '--no-storage-caching');
+  if (fork?.gasPrice !== undefined) {
+    args.push('--gas-price', fork.gasPrice.toString(), '--disable-min-priority-fee');
+  }
   const child = spawn(process.execPath, args, { stdio: ['ignore', 'ignore', 'pipe'] });
   let failure = '';
   child.stderr?.on('data', bytes => { failure = (failure + bytes.toString()).slice(-2000); });
