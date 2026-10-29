@@ -87,6 +87,35 @@ tool; formal release preflight separately reloads and verifies the original sign
 a separately supplied public-key digest. A saved verification receipt cannot replace those inputs.
 Neither command opens production signing.
 
+## Review An Already Published Version
+
+The development branch may have advanced after a fixed publication. Freeze the
+already uploaded bytes without rebuilding or substituting the latest source:
+
+```sh
+npm run prepare:review -- --published docs/published-gateway-profile.json PATH_TO_EXACT_PUBLICATION
+```
+
+The profile pins the source commit and manifest digest. Preparation checks all
+declared publication bytes and obtains the source archive and lockfile from that
+exact Git commit, even when the current development lockfile differs. Existing
+packets cannot be overwritten. This prepares materials, not a completed review.
+
+To verify an external review of that frozen source from the later clean branch:
+
+```sh
+npm run verify:review -- --archived PACKET_DIRECTORY report.json report.sig reviewer-public.pem TRUSTED_PUBLIC_KEY_SHA256
+```
+
+Archived verification checks the immutable artifacts against the repository's
+exact committed archive and lockfile, all candidate bytes, and the original
+signed report. Its output explicitly states `ARCHIVED_SCOPE_ONLY` and identifies
+the verifier commit. It does not use a current `dist` build or qualify the
+current branch as reviewed. The ordinary command still requires the current
+clean HEAD and build to match the packet. Failed verification removes any
+previous receipt. Release preflight is unchanged and independently rechecks the
+original signed artifacts against its own exact release identity.
+
 Any source change requires a new packet and review. A review of this disabled candidate does not approve
 a later change to its signing gates. Real-wallet tasks must identify the exact separately reviewed
 executable release, actual origin and asset policy rather than silently modifying this packet.

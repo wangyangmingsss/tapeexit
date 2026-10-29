@@ -3,17 +3,26 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
 import { digest, loadPublication } from './publish-core';
 import { REVIEW_SURFACES, type ReviewPacket } from './review-handoff-core';
+import { assertProfileManifest, parseGatewayProfile } from './release-profile-core';
+import { readBoundedFile } from './evidence-files';
 
-if (process.argv.length !== 2) throw new Error('Usage: npm run prepare:review');
+const args = process.argv.slice(2);
+const archived = args[0] === '--published';
+if (args.length && (!archived || args.length !== 3))
+  throw new Error('Usage: npm run prepare:review [--published profile.json publication-directory]');
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 if (git('status', '--porcelain')) throw new Error('Review preparation requires a clean committed source');
 if (RELEASE_APPROVED || SUPPORTED_TOKENS.length) throw new Error('Development signing gates must remain closed');
-const sourceCommit = git('rev-parse', 'HEAD');
-const publication = await loadPublication('dist');
+const toolCommit = git('rev-parse', 'HEAD');
+const profile = archived ? parseGatewayProfile(JSON.parse((await readBoundedFile(args[1], 64_000)).toString())) : null;
+const sourceCommit = profile?.sourceCommit ?? toolCommit;
+const publication = await loadPublication(archived ? args[2] : 'dist');
 const manifest = publication.contents.find(item => item.file.path === 'release-manifest.json')!.bytes;
+if (profile) assertProfileManifest(profile, manifest);
 if (JSON.parse(manifest.toString()).sourceCommit !== sourceCommit)
   throw new Error('Build the exact clean source before freezing review materials');
-const lockfile = await readFile('package-lock.json');
+const lockfile = archived ? execFileSync('git', ['show', `${sourceCommit}:package-lock.json`],
+  { maxBuffer: 4 * 1024 * 1024 }) : await readFile('package-lock.json');
 const archive = execFileSync('git', ['archive', '--format=tar.gz', sourceCommit], { maxBuffer: 32 * 1024 * 1024 });
 const packet: ReviewPacket = {
   schemaVersion: 1, status: 'AWAITING_INDEPENDENT_REVIEW', chainId: 196, sourceCommit,
@@ -22,7 +31,7 @@ const packet: ReviewPacket = {
 };
 const packetBytes = Buffer.from(JSON.stringify(packet, null, 2) + '\n');
 const output = `release-artifacts/independent-review/${sourceCommit}`;
-if (git('status', '--porcelain') || git('rev-parse', 'HEAD') !== sourceCommit)
+if (git('status', '--porcelain') || git('rev-parse', 'HEAD') !== toolCommit)
   throw new Error('Source changed while preparing the review packet');
 await mkdir('release-artifacts/independent-review', { recursive: true });
 // A packet is immutable: a second attempt must not overwrite a review already in progress.
@@ -61,13 +70,14 @@ Example signature command (run by the reviewer with their existing private key):
 openssl pkeyutl -sign -rawin -inkey reviewer-private.pem -in report.json -out report.sig
 
 Verify with:
-npm run verify:review -- PACKET_DIRECTORY report.json report.sig reviewer-public.pem TRUSTED_PUBLIC_KEY_SHA256
+npm run verify:review -- ${archived ? '--archived ' : ''}PACKET_DIRECTORY report.json report.sig reviewer-public.pem TRUSTED_PUBLIC_KEY_SHA256
 
 A valid signature proves possession of the pinned key. It does not prove independence, identity or
 accuracy. REQUEST_CHANGES reports are preserved but cannot qualify for human release assessment.
 Unresolved/accepted critical or high findings and exclusions also prevent qualification.
 Verification never edits configuration, approves assets, publishes or requests wallet signatures.
+${archived ? 'This packet targets a fixed published source, not the current development HEAD. Archived verification authenticates that source only; it cannot approve a newer or signing-enabled release.\n' : ''}
 `);
-if (git('status', '--porcelain') || git('rev-parse', 'HEAD') !== sourceCommit)
+if (git('status', '--porcelain') || git('rev-parse', 'HEAD') !== toolCommit)
   throw new Error('Source changed during packet creation; do not use the resulting packet');
 console.log(`Frozen review packet: ${output}; signing remains disabled.`);
