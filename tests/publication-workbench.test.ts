@@ -424,7 +424,7 @@ describe('bounded browser-wallet publication coordinator', () => {
   });
   it('rejects expired previews, expired consent, pending transactions and fee ceiling breaches', async () => {
     const f = fixture(); await f.authorize();
-    const p = await f.prepare(); f.advance(30_001);
+    const p = await f.prepare(); f.advance(180_001);
     await expect(f.bench.reserve(p.id)).rejects.toThrow('expired');
     const p2 = await f.prepare(); f.advance(3_600_001);
     await expect(f.bench.reserve(p2.id)).rejects.toThrow('expired');
@@ -434,6 +434,32 @@ describe('bounded browser-wallet publication coordinator', () => {
     await expect(fee.prepare()).rejects.toThrow('price exceeds');
     const gas = fixture(); gas.setEstimate(7_000_000n);
     await expect(gas.prepare()).rejects.toThrow('estimate exceeds');
+  });
+  it('reserves an unchanged transaction after a migration recheck lasting more than 30 seconds', async () => {
+    const f = fixture(); await f.authorize();
+    const p = await f.prepare();
+    vi.mocked(resumePublication).mockImplementationOnce(async () => {
+      f.advance(45_000);
+      return { schemaVersion: 1, status: 'UNSIGNED_RESUME_PLAN_ONLY', container, block,
+        manifestSha256: publication.manifestSha256, checked: [], transactions: ops,
+        transactionCount: ops.length, scope: 'Slow migration readback fixture' };
+    });
+    const reservation = await f.bench.reserve(p.id);
+    expect(reservation.transaction).toEqual(p.transaction);
+    expect(f.journal.attempts).toHaveLength(1);
+    expect(f.writes.at(-1)?.attempts[0]).toEqual(reservation);
+  });
+  it('still refuses to reserve when the bounded preview expires during recheck', async () => {
+    const f = fixture(); await f.authorize();
+    const p = await f.prepare();
+    vi.mocked(resumePublication).mockImplementationOnce(async () => {
+      f.advance(180_001);
+      return { schemaVersion: 1, status: 'UNSIGNED_RESUME_PLAN_ONLY', container, block,
+        manifestSha256: publication.manifestSha256, checked: [], transactions: ops,
+        transactionCount: ops.length, scope: 'Expired migration fixture' };
+    });
+    await expect(f.bench.reserve(p.id)).rejects.toThrow('expired during recheck');
+    expect(f.journal.attempts).toHaveLength(0);
   });
   it('faults closed on journal disk errors before releasing any transaction', async () => {
     const f = fixture(); await f.authorize(); const p = await f.prepare(); f.failSave();

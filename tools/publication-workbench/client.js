@@ -3,6 +3,7 @@ const wallets = new Map();
 let context, preview, account, connectedProvider, busy = false, generation = 0, removeObservers = () => {};
 let preparingSince = null;
 let verifyingSince = null;
+let submissionSince = null, submissionPhase = '';
 let activationPreview = null, activationSince = null, activationAction = '';
 const CHECK_TIMEOUT_MS = 90_000;
 const status = text => { $('status').textContent = text; };
@@ -27,6 +28,20 @@ async function api(path, body) {
 }
 function controls() {
   activationControls();
+  if (submissionSince !== null) {
+    const elapsed = Math.floor((Date.now() - submissionSince) / 1000);
+    if (submissionPhase === 'recheck') {
+      const remaining = Math.max(0, Math.ceil(CHECK_TIMEOUT_MS / 1000) - elapsed);
+      $('send').textContent = `提交前复核 · ${remaining} 秒`;
+      $('submission-progress').textContent = `正在重新核对链上文件、nonce 和费用，尚未请求钱包。已等待 ${elapsed} 秒，本次复核超时倒计时 ${remaining} 秒。`;
+    } else if (submissionPhase === 'wallet') {
+      $('send').textContent = '等待钱包确认';
+      $('submission-progress').textContent = `已向所选钱包发出确认请求，已等待 ${elapsed} 秒。若没有弹窗，请打开浏览器扩展中的钱包查看待处理请求；请勿重复提交。`;
+    } else {
+      $('send').textContent = '正在核对钱包';
+      $('submission-progress').textContent = '正在核对钱包账户与 X Layer 网络，尚未请求交易；单次钱包状态查询最多等待 15 秒。';
+    }
+  } else $('send').textContent = '在钱包中确认这一笔';
   if (verifyingSince !== null) {
     const elapsed = Math.floor((Date.now() - verifyingSince) / 1000);
     const remaining = Math.max(0, Math.ceil(CHECK_TIMEOUT_MS / 1000) - elapsed);
@@ -132,8 +147,8 @@ setTimeout(() => {
 }, 500);
 $('wallet').addEventListener('change', () => { removeObservers(); invalidateWallet(); });
 async function assertWallet(provider, expectedGeneration) {
-  const accounts = await provider.request({ method: 'eth_accounts' });
-  const chain = await provider.request({ method: 'eth_chainId' });
+  const accounts = await walletRead(provider, 'eth_accounts', []);
+  const chain = await walletRead(provider, 'eth_chainId', []);
   if (generation !== expectedGeneration || !Array.isArray(accounts) ||
       typeof accounts[0] !== 'string' || accounts[0].toLowerCase() !== context.publisher.toLowerCase() ||
       typeof chain !== 'string' || !/^0x[0-9a-f]+$/i.test(chain) || BigInt(chain) !== 196n)
@@ -204,6 +219,10 @@ function validateReserved(attempt, expected) {
     throw new Error('待签交易与预览不一致，停止上传');
 }
 $('send').addEventListener('click', () => run(async () => {
+  let walletRequested = false;
+  $('submission-progress').hidden = false;
+  submissionSince = Date.now(); submissionPhase = 'wallet-check'; controls();
+  try {
   if (!navigator.locks) throw new Error('浏览器不支持上传互斥锁，请使用当前版本的 Chrome');
   await navigator.locks.request('tapeexit-publication-wallet', { ifAvailable: true }, async lock => {
     if (!lock) throw new Error('另一页面正在请求钱包，请先处理旧请求');
@@ -212,22 +231,40 @@ $('send').addEventListener('click', () => run(async () => {
     if (!expected || !provider || expected.expiresAt <= Date.now()) throw new Error('本笔预览已过期，请刷新');
     await assertWallet(provider, version);
     status('正在重新检查并保存本笔上传记录');
-    const attempt = await api('reserve', { previewId: expected.id });
+    submissionSince = Date.now(); submissionPhase = 'recheck'; controls();
+    let attempt;
+    try { attempt = await api('reserve', { previewId: expected.id }); }
+    finally { submissionSince = Date.now(); submissionPhase = 'wallet-check'; controls(); }
     validateReserved(attempt, expected);
     await refreshContext();
     await assertWallet(provider, version);
     if (expected.expiresAt <= Date.now() || !context.authorization || context.authorization.expiresAt <= Date.now())
       throw new Error('确认已过期，已保留待核验记录；未继续请求钱包');
     status('请在 OKX 钱包中核对并确认这一笔上传');
+    walletRequested = true;
+    submissionSince = Date.now(); submissionPhase = 'wallet'; controls();
     const hash = await provider.request({ method: 'eth_sendTransaction', params: [attempt.transaction] });
     if (typeof hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(hash))
       throw new Error('钱包未返回有效交易哈希，保持停止并检查钱包记录');
     $('tx-hash').value = hash;
     try { localStorage.setItem(`tapeexit-publish:${context.contextId}`, JSON.stringify({ id: attempt.id, hash })); } catch { /* Server retains reservation. */ }
     await api('hash', { attemptId: attempt.id, hash });
+    submissionSince = null;
+    $('submission-progress').textContent = '钱包已返回交易哈希并保存，正在核验交易和文件；无需再次提交。';
     await refreshContext();
     await reconcileWithFeedback();
   });
+  } catch (error) {
+    let message = error instanceof Error ? error.message : '提交未完成';
+    if (/Upload preview expired|本笔预览已过期/.test(message))
+      message = '本笔报价已过期，请点击“准备 / 刷新下一笔”重新核对';
+    else if (/Upload state or quote changed/.test(message))
+      message = '链上状态或费用已变化，请重新准备并核对报价';
+    $('submission-progress').textContent = `${message}。${walletRequested
+      ? '钱包请求已发出；请检查扩展钱包及交易记录，勿重复发送。'
+      : '尚未发起钱包交易调用。如页面已有待核验记录，请先处理该记录。'}`;
+    throw new Error(message);
+  } finally { submissionSince = null; submissionPhase = ''; controls(); }
 }));
 async function walletRead(provider, method, params) {
   let timer;

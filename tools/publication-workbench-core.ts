@@ -279,7 +279,8 @@ export class PublicationWorkbench {
     if (this.reservedCost() + cost > BigInt(this.profile.maxUploadCostWei)) throw new Error('Remaining upload budget insufficient');
     await this.rpc.assertBlock(plan.block);
     await this.rpc.assertBlock(identity.block);
-    return { id: randomUUID(), expiresAt: this.now() + 30_000, operation, remaining: plan.transactions.length,
+    // Full migration readback is repeated before reservation and can exceed 30 seconds.
+    return { id: randomUUID(), expiresAt: this.now() + 180_000, operation, remaining: plan.transactions.length,
       file: op.file, chunk: op.chunk, maximumCostWei: cost.toString(), block: plan.block,
       transaction: { ...base, chainId: '0xc4', nonce: latest, gas: hex(gas), gasPrice: hex(price) } };
   }

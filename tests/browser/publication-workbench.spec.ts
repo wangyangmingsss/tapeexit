@@ -30,7 +30,7 @@ async function install(page: Page, mode = 'success') {
     calls.push(action);
     let value: unknown = context;
     if (action === 'authorize') context.authorization = { expiresAt: Date.now() + 3600000 };
-    if (action === 'preview') value = { id: 'preview', expiresAt: Date.now() + 30000,
+    if (action === 'preview') value = { id: 'preview', expiresAt: Date.now() + 180000,
       operation: 0, remaining: 31, file: 'LICENSE.txt', chunk: 0, maximumCostWei: '2520000000000', transaction };
     if (action === 'bundle') context.attempts[0].batch!.bundleId = route.request().postDataJSON().bundleId;
     if (action === 'reserve') {
@@ -103,6 +103,29 @@ test('publication fixture requires fee consent and signs exactly one reserved tr
   expect(calls.indexOf('reserve')).toBeLessThan(calls.indexOf('hash'));
   await expect(page.locator('#send')).toBeDisabled();
   await page.screenshot({ path: `test-results/${test.info().project.name}-publication-workbench-desktop.png`, fullPage: true });
+});
+test('slow submission recheck shows its countdown and still requests the wallet exactly once', async ({ page }) => {
+  await page.clock.install();
+  const { context } = await install(page); await ready(page);
+  let release!: () => void;
+  const waiting = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/reserve', async route => {
+    await waiting;
+    const transaction = { from: publisher, to: context.registry,
+      data: '0x12345678', value: '0x0', chainId: '0xc4', gas: '0x1d4c0', gasPrice: '0x1406f40', nonce: '0x0' };
+    const attempt = { id: 'attempt', operation: 0, status: 'reserved', transaction };
+    context.attempts.push(attempt); context.unresolved = attempt.id;
+    await route.fulfill({ json: attempt });
+  });
+  await page.locator('#send').click();
+  await expect(page.locator('#submission-progress')).toContainText('尚未请求钱包');
+  await expect(page.locator('#send')).toContainText('提交前复核');
+  await page.clock.fastForward(45000);
+  await expect(page.locator('#send')).toContainText('45 秒');
+  expect(await sends(page)).toBe(0);
+  release();
+  await expect(page.locator('#attempts')).toContainText('交易与文件已核验');
+  expect(await sends(page)).toBe(1);
 });
 test('unknown wallet result remains blocked across page reload without resending', async ({ page }) => {
   await install(page, 'unknown'); await ready(page);

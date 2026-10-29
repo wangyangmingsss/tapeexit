@@ -117,6 +117,68 @@ async function connectedClient() {
   return { provider, fetcher, context, publisher, events, tick: () => tick(), timeout: () => timeout() };
 }
 
+async function submissionClient() {
+  const f = await connectedClient();
+  const ctx = f.context as unknown as Record<string, any>;
+  const transaction = { from: f.publisher, to: '0x2000000000000000000000000000000000000002',
+    data: '0x12345678', value: '0x0', chainId: '0xc4', gas: '0x5208', gasPrice: '0x1', nonce: '0x0' };
+  Object.assign(ctx, { registry: transaction.to, maxGas: '7000000', maxGasPriceWei: '30000000',
+    authorization: { expiresAt: Date.now() + 3600000 } });
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: {
+    request: async (_name: string, _options: unknown, callback: (lock: object) => Promise<unknown>) => callback({}),
+  } });
+  const hash = `0x${'ab'.repeat(32)}`;
+  f.provider.request.mockImplementation(async ({ method }: { method: string }) => {
+    if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [f.publisher];
+    if (method === 'eth_chainId') return '0xc4';
+    if (method === 'eth_sendTransaction') return hash;
+    throw new Error('Unexpected wallet method');
+  });
+  let finish!: (response: Response) => void;
+  const reserved = new Promise<Response>(resolve => { finish = resolve; });
+  const attempt = { id: 'attempt', operation: 0, status: 'reserved', transaction };
+  f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
+    if (url.endsWith('/preview')) return Response.json({ id: 'preview', expiresAt: Date.now() + 180000,
+      operation: 0, remaining: 31, file: 'LICENSE.txt', chunk: 0, maximumCostWei: '21000', transaction });
+    if (url.endsWith('/reserve')) return reserved;
+    if (url.endsWith('/hash')) ctx.attempts[0].hash = JSON.parse(String(options?.body)).hash;
+    if (url.endsWith('/reconcile')) { ctx.attempts[0].status = 'confirmed'; ctx.unresolved = null; }
+    return Response.json(ctx);
+  });
+  (document.getElementById('refresh') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect((document.getElementById('send') as HTMLButtonElement).disabled).toBe(false));
+  return { ...f, ctx, finish: () => {
+    ctx.attempts.push(attempt); ctx.unresolved = attempt.id; finish(Response.json(attempt));
+  } };
+}
+
+it('shows the submission recheck countdown and sends once after a 45-second recheck', async () => {
+  let now = Date.now();
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  const f = await submissionClient(), button = document.getElementById('send') as HTMLButtonElement;
+  button.click(); button.click();
+  await vi.waitFor(() => expect(button.textContent).toContain('提交前复核'));
+  expect(document.getElementById('submission-progress')!.textContent).toContain('尚未请求钱包');
+  now += 45000; f.tick();
+  expect(button.textContent).toContain('45 秒');
+  expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
+  f.finish();
+  await vi.waitFor(() => expect(f.ctx.attempts[0].status).toBe('confirmed'));
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
+  expect(document.getElementById('submission-progress')!.textContent).toContain('交易哈希并保存');
+});
+
+it('reports a hung wallet state query beside the submit button without reserving or sending', async () => {
+  const f = await submissionClient();
+  f.provider.request.mockImplementation(() => new Promise(() => {}));
+  (document.getElementById('send') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('send')!.textContent).toContain('正在核对钱包'));
+  f.timeout();
+  await vi.waitFor(() => expect(document.getElementById('submission-progress')!.textContent).toContain('钱包状态查询超时'));
+  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/reserve'))).toBe(false);
+  expect(f.ctx.attempts).toHaveLength(0);
+});
+
 it('exposes only single upload controls and does not detect capabilities on connection', async () => {
   const f = await connectedClient();
   for (const id of ['detect-batch', 'prepare-batch', 'send-batch', 'batch-consent'])
