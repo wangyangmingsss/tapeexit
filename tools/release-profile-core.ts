@@ -188,6 +188,12 @@ export function verifyReleaseEvidence(profile: ReleaseProfile, inputs: Record<st
       !recovery.balances.every(asset => asset.matches && profile.assets.some(reviewed =>
         getAddress(reviewed.address) === getAddress(asset.address) && reviewed.decimals === asset.decimals)))
     throw new Error('Actual recovery assets differ from the reviewed release asset policy');
+  const minedAt = BigInt(recovery.afterBlock.timestamp) * 1000n;
+  // Block timestamps have second precision; allow only that rounding at the review boundary.
+  if (minedAt < BigInt(Date.parse(review.reviewedAt)) - 999n ||
+      minedAt > BigInt(now + 60_000) || minedAt > BigInt(Date.parse(
+        releaseReport(profile, 'wallet', inputs.wallet, now).observedAt)) + 60_000n)
+    throw new Error('Actual exit must follow the signed review and precede wallet acceptance observation');
   return { schemaVersion: 1, status: 'EVIDENCE_CONSISTENT_REQUIRES_HUMAN_APPROVAL', sourceCommit: profile.sourceCommit,
     manifestSha256: profile.manifestSha256, container: profile.container, observedAt: new Date(now).toISOString(),
     signingApproved: false, review, recovery, scope: 'Checks identity, digests, freshness, pinned-key review ' +

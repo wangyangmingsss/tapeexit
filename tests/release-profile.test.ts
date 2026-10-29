@@ -30,7 +30,7 @@ function fixture(change: Record<string, Record<string, unknown>> = {},
   };
   const packet = Buffer.from(JSON.stringify(packetData));
   const report = Buffer.from(JSON.stringify({
-    ...packetData, packetSha256: digest(packet), reviewedAt: new Date(now).toISOString(),
+    ...packetData, packetSha256: digest(packet), reviewedAt: new Date(now - 1800_000).toISOString(),
     reviewer: { name: 'Synthetic reviewer for unit tests', contact: 'test@example.invalid',
       independent: true, independenceStatement: 'Synthetic declaration for tests only' },
     surfaces: REVIEW_SURFACES.map(id => ({ id, reviewed: true, evidence: 'Synthetic evidence' })),
@@ -61,8 +61,8 @@ function fixture(change: Record<string, Record<string, unknown>> = {},
     recovery: { state: 'block-state-matched', hash, account, tokenId: '1', identityMatches: true,
       receipt: { hash, blockHash, blockNumber: '16', amount0: '10', amount1: '20',
         state: 'received-checked', safe: true, finalized: true },
-      beforeBlock: { number: '0xf', hash: blockHash, timestamp: '0x1' },
-      afterBlock: { number: '0x10', hash: blockHash, timestamp: '0x2' },
+      beforeBlock: { number: '0xf', hash: blockHash, timestamp: `0x${((BigInt(now) - 132_000n) / 1000n).toString(16)}` },
+      afterBlock: { number: '0x10', hash: blockHash, timestamp: `0x${((BigInt(now) - 120_000n) / 1000n).toString(16)}` },
       balances: assets.map((asset, index) => ({
         address: asset.address as `0x${string}`, symbol: 'SYNTHETIC', decimals: asset.decimals,
         before: '100', after: index ? '120' : '110', delta: index ? '20' : '10',
@@ -208,6 +208,27 @@ describe('formal preflight cannot substitute declared review and recovery', () =
       expect(() => verifyReleaseEvidence(profile, inputs, now, proof)).toThrow('Actual recovery assets');
     },
   );
+  it.each([
+    ['predates-review', now - 3600_000],
+    ['future-block', now + 61_000],
+  ] as const)('rejects actual exit chronology %s', (_name, time) => {
+    const { profile, inputs, proof } = fixture();
+    if (proof.recovery.state !== 'block-state-matched') throw new Error('Invalid synthetic fixture');
+    proof.recovery.afterBlock.timestamp = `0x${(BigInt(time) / 1000n).toString(16)}`;
+    expect(() => verifyReleaseEvidence(profile, inputs, now, proof)).toThrow('must follow');
+  });
+  it('rejects a wallet observation which predates the actual exit beyond clock tolerance', () => {
+    const { profile, inputs, proof } = fixture({
+      wallet: { observedAt: new Date(now - 600_000).toISOString() },
+    });
+    expect(() => verifyReleaseEvidence(profile, inputs, now, proof)).toThrow('must follow');
+  });
+  it('permits only subsecond block timestamp rounding at the review boundary', () => {
+    const { profile, inputs, proof } = fixture({}, { reviewedAt: new Date(now - 119_001).toISOString() });
+    expect(verifyReleaseEvidence(profile, inputs, now, proof).signingApproved).toBe(false);
+    const tooLate = fixture({}, { reviewedAt: new Date(now - 119_000).toISOString() });
+    expect(() => verifyReleaseEvidence(tooLate.profile, tooLate.inputs, now, tooLate.proof)).toThrow('must follow');
+  });
 });
 describe('fresh verification orchestration', () => {
   it('calls the chain inspector with the exact declared exit after signed review checks', async () => {

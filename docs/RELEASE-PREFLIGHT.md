@@ -90,6 +90,9 @@ declared account, NFT and hash. Pending, reverted, reorged, mismatched or unavai
 prevents success. A historical publication transaction fails the manager/calldata checks.
 Both actual recovered token addresses and precisions must occur in the reviewed release asset policy.
 This does not independently establish token source correspondence or future proxy/issuer governance.
+The receipt block timestamp must follow the signed review, allowing only subsecond rounding, and cannot
+be future-dated or later than the wallet observation beyond the existing 60-second clock tolerance.
+Rechecking an exit which predates the signed review cannot qualify as a reviewed-release task.
 
 The output retains the authenticated review statement and fresh chain observations. Source/build identity
 is checked again after RPC reads. Failed attempts remove the prior preflight result. The command does
