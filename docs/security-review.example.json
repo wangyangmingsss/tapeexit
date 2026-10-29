@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "sourceCommit": null,
+  "manifestSha256": null,
+  "container": null,
+  "observedAt": null,
+  "status": null,
+  "reviewer": null,
+  "unresolvedCritical": null,
+  "unresolvedHigh": null,
+  "attestation": {
+    "packet": { "path": "release-artifacts/review/packet.json", "sha256": null },
+    "report": { "path": "release-artifacts/review/report.json", "sha256": null },
+    "signature": { "path": "release-artifacts/review/report.sig", "sha256": null },
+    "publicKey": { "path": "release-artifacts/review/reviewer-public.pem", "sha256": null }
+  }
+}

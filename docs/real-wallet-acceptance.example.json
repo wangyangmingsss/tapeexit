@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "sourceCommit": null,
+  "manifestSha256": null,
+  "container": null,
+  "observedAt": null,
+  "status": null,
+  "synthetic": null,
+  "origin": null,
+  "chainObserved": null,
+  "browserVersion": null,
+  "walletVersion": null,
+  "exit": {
+    "account": null,
+    "tokenId": null,
+    "transactionHash": null
+  },
+  "rawBrowserAndWalletEvidence": null,
+  "faultTasks": null
+}

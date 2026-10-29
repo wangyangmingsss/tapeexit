@@ -107,7 +107,7 @@ Playwright 已配置演示、生产恢复、备用恢复、发布台和只读钱
 - `report:users`：只汇总实际同意的用户记录；无数据时明确输出零证据。
 - `report:readiness`：绑定当前发行和依赖审计，保持主网未批准状态。
 - `verify:gateways`：两个实际 HTTPS 入口的客户端身份与全部发行字节核对，备用入口测试时阻断主入口。
-- `preflight:release`：绑定干净源提交、容器、资产、钱包、网关与审阅证据；拒绝混用、过期或被篡改的记录，保持签名关闭。输入和验收边界见 [正式发行检查](docs/RELEASE-PREFLIGHT.md)。
+- `preflight:release`：绑定干净源提交、容器、资产、钱包和网关，重新验证审阅者原始签名及独立确认的公钥摘要，并实时核对真实退出交易；状态字段或历史核验报告不能替代原始证据。保持签名关闭，输入和边界见 [正式发行检查](docs/RELEASE-PREFLIGHT.md)。
 
 公开演示可由 GitHub Pages 工作流发布；其模拟环境标签与生产隔离不变。网关 HTTPS 模板和独立审阅资料分别位于 `deploy/` 与 `docs/SECURITY-REVIEW-PACKET.md`，并不代表已经部署或审阅。
 

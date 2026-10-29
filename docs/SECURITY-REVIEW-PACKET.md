@@ -83,7 +83,9 @@ remediation evidence and dates. Request-changes, exclusions and unresolved or ac
 findings cannot qualify. Failed verification removes the previous output instead of leaving a stale pass.
 Successful verification only authenticates a statement against the caller-pinned key: human confirmation
 of identity, independence, competence and claims is still necessary. This is an additional review intake
-tool; the formal release evidence preflight remains separate. Neither command opens production signing.
+tool; formal release preflight separately reloads and verifies the original signed artifacts against
+a separately supplied public-key digest. A saved verification receipt cannot replace those inputs.
+Neither command opens production signing.
 
 Any source change requires a new packet and review. A review of this disabled candidate does not approve
 a later change to its signing gates. Real-wallet tasks must identify the exact separately reviewed

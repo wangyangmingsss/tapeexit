@@ -1,21 +1,16 @@
 import { execFileSync } from 'node:child_process';
-import { readFile, mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
 import { digest, loadPublication } from './publish-core';
 import { validateReviewPacket, verifyReviewStatement } from './review-handoff-core';
+import { readBoundedFile as boundedRead } from './evidence-files';
 
 const output = 'release-artifacts/independent-review-verification.json';
 await rm(output, { force: true });
 const [directory, reportFile, signatureFile, publicKeyFile, keyDigest, ...extra] = process.argv.slice(2);
 if (!directory || !reportFile || !signatureFile || !publicKeyFile || !keyDigest || extra.length)
   throw new Error('Usage: npm run verify:review -- <packet-directory> <report.json> <binary-signature> <public-key.pem> <trusted-public-key-sha256>');
-async function boundedRead(path: string, limit: number) {
-  if ((await stat(path)).size > limit) throw new Error('Review file exceeds size limit');
-  const bytes = await readFile(path);
-  if (bytes.length > limit) throw new Error('Review file grew beyond size limit');
-  return bytes;
-}
 const packetBytes = await boundedRead(resolve(directory, 'packet.json'), 64_000);
 const packet = JSON.parse(packetBytes.toString());
 validateReviewPacket(packet);

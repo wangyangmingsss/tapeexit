@@ -72,6 +72,11 @@ finalized receipt. Pending, reverted, mismatched, unavailable archive state and 
 Block-end comparisons cannot isolate other same-block activity. A discrepancy requires investigation,
 not an automatic resend. Even matching state is corroboration, not proof of sole transaction attribution.
 The checker never deletes the browser submission lock or asks for a signature.
+Formal release preflight now requires the actual exit hint and re-runs this inspection live instead of
+trusting a saved success file. It first validates original signed review artifacts and the separately
+confirmed reviewer key digest, then requires finality and asset-policy correspondence. See
+`RELEASE-PREFLIGHT.md`. Chain evidence cannot establish the actual signing frontend or extension;
+browser and wallet acceptance observations remain necessary.
 
 ## 4. Fault Tasks And Evidence
 
