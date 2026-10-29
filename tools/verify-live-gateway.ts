@@ -41,7 +41,7 @@ const report: Record<string, any> = {
   gateways: [],
   bootstrap: [],
   views: [],
-  scope: 'Two public gateway origins, fresh desktop/mobile Chromium contexts and pinned original publication bytes. ' +
+  scope: 'Two public gateway origins, fresh desktop/mobile Chromium contexts and exact publication bytes pinned by the selected profile. ' +
     'Netlify HTTPS CONNECT is blocked during Vercel checks, including Service Worker traffic. ' +
     'Does not authenticate gateway operator independence or upstream worker code, test wallet extension behavior, ' +
     'approve signing or protect against future origin changes.',
@@ -167,7 +167,7 @@ try {
           }
           await page.screenshot({ path: `${directory}/${gateway.operator}-${view.name}.png`, fullPage: true });
           observed.blockedPrimaryConnections = proxy?.blockedCount() ?? 0;
-          observed.status = 'ORIGINAL_RELEASE_BYTES_CHECKED';
+          observed.status = 'PINNED_RELEASE_BYTES_CHECKED';
         } catch (error) {
           observed.status = 'FAILED';
           observed.error = error instanceof Error ? error.message : String(error);

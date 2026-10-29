@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: 'Candidate requires updated chain publication; historical checks the original release only'
+        description: 'Published checks the pinned uploaded release; candidate rebuilds HEAD; historical checks the original release'
         type: choice
-        options: [candidate, historical]
-        default: candidate
+        options: [published, candidate, historical]
+        default: published
 permissions:
   contents: read
 jobs:
@@ -22,6 +22,8 @@ jobs:
       - run: npm ci
       - run: npm run build:gateway
       - run: npx playwright install --with-deps chromium
+      - if: inputs.release == 'published'
+        run: npx tsx tools/verify-live-gateway.ts docs/published-gateway-profile.json docs/gateway-recovery-task-67042.json
       - if: inputs.release == 'candidate'
         run: |
           npm run build
