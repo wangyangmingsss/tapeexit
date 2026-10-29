@@ -12,6 +12,7 @@ import { loadHistory } from '../src/core/storage';
 import { DEMO_OWNER, demoSnapshot } from '../src/demo/engine';
 import { runtimeStatus, type RuntimeStatus } from '../src/core/runtime';
 import { inspectRecoveryOutcome } from '../src/core/recovery-outcome';
+import { WOKB } from '../src/config';
 vi.mock('../src/core/recovery-outcome', () => ({ inspectRecoveryOutcome: vi.fn() }));
 vi.mock('../src/config', async importOriginal => ({
   ...await importOriginal<typeof import('../src/config')>(), RELEASE_APPROVED: true,
@@ -77,6 +78,22 @@ async function confirm() {
   await user.click(screen.getByRole('button', { name: '在钱包中确认' }));
   return user;
 }
+it('keeps a WOKB position visible but blocks preview even under the test-only signing gate', async () => {
+  const snapshot = await demoSnapshot(12n, 'none');
+  vi.spyOn(V3Adapter.prototype, 'snapshot').mockResolvedValue({
+    ...snapshot, token1: { ...snapshot.token1, address: WOKB, verified: true },
+  });
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: '连接钱包' }));
+  await user.click(screen.getByRole('button', { name: 'Test wallet' }));
+  await user.type(screen.getByLabelText('仓位 Token ID'), '12');
+  await user.click(screen.getByRole('button', { name: '读取仓位' }));
+  await screen.findByText(/当前版本不支持 WOKB 仓位交易/);
+  expect(screen.getByRole('button', { name: '预演退出' }).hasAttribute('disabled')).toBe(true);
+  expect(V3Adapter.prototype.simulate).not.toHaveBeenCalled();
+  expect(sendGuarded).not.toHaveBeenCalled();
+});
 it('shows progress and state corroboration without making another wallet request', async () => {
   vi.mocked(reconcileSubmission).mockImplementation(async () => {
     localStorage.removeItem(SUBMISSION_KEY);

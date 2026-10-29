@@ -55,5 +55,8 @@ export const DEPLOYMENT: Deployment = {
 // Trading remains disabled until the deployment and each supported asset have
 // independent review evidence. Read-only access does not imply asset approval.
 export const SUPPORTED_TOKENS: readonly Address[] = [];
+// Retained above solely to verify the manager's wrapped-native identity.
+// WOKB positions are no longer candidates for this release's execution path.
+export const EXCLUDED_ASSETS: readonly Address[] = [WOKB];
 export const RELEASE_APPROVED = false;
 export const RELEASE = typeof __RELEASE__ === 'undefined' ? '0.1.0-development' : __RELEASE__;

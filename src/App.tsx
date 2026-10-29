@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { formatUnits, getAddress, type Address, type Hex } from 'viem';
 import { CHAIN_ID, DEPLOYMENT, MANAGER, RELEASE, RELEASE_APPROVED, SOURCES, SUPPORTED_TOKENS } from './config';
+import { isExcludedAsset } from './core/asset-policy';
 import { StrictRpc, ExitError } from './core/rpc';
 import type { Plan, Preview, Snapshot } from './core/protocol';
 import { V3Adapter } from './core/adapter';
@@ -263,6 +264,7 @@ export default function App() {
       CALCULATION: '计算模块加载失败，请核对恢复包或入口并刷新后重试。',
       OWNER: '当前钱包不是该仓位的直接持有人。', STALE: '快照或预览已过期，请重新读取。',
       UNSUPPORTED: '该资产尚未通过当前发行验证，暂时只读。', 4001: '你已取消钱包确认。',
+      ASSET_EXCLUDED: '当前版本不支持 WOKB 仓位交易，请使用替代验收仓位。',
       4100: '钱包尚未授权此站点，请在钱包中检查连接权限。',
       4200: '钱包不支持所请求的方法，请更换兼容钱包。',
       4900: '钱包已断开，请重新连接。',
@@ -570,7 +572,8 @@ export default function App() {
     finally { outcomeLock.current = false; setCheckingOutcome(false); }
   }
   const own = account && snapshot && getAddress(account) === snapshot.owner;
-  const canPreview = !!own && !!snapshot?.token0.verified && !!snapshot.token1.verified && (DEMO || RELEASE_APPROVED);
+  const excludedPosition = snapshot && [snapshot.token0, snapshot.token1].some(asset => isExcludedAsset(asset.address));
+  const canPreview = !excludedPosition && !!own && !!snapshot?.token0.verified && !!snapshot.token1.verified && (DEMO || RELEASE_APPROVED);
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
       <a className="brand" href="./" aria-label="TapeExit"><img src="./icon.png" width="31" height="31" alt="" /><span>Tape<span className="brand-light">Exit</span></span></a>
@@ -651,6 +654,9 @@ export default function App() {
               </div>}
               {snapshot ? <>
                 <div className="position-identity"><div className="asset-pair"><AssetBadge symbol={snapshot.token0.symbol} index={0} /><AssetBadge symbol={snapshot.token1.symbol} index={1} /></div><div><h3>{snapshot.token0.symbol} / {snapshot.token1.symbol}</h3><span>#{snapshot.tokenId.toString()} <span className="middot">·</span> {snapshot.fee / 10000}%</span></div><span className="success-tag">{own ? <><Check size={12} />{lang === 'zh' ? '直接持有' : 'Directly owned'}</> : t.readOnly}</span></div>
+                {excludedPosition && <p role="status" className="field-hint">{lang === 'zh'
+                  ? '当前版本不支持 WOKB 仓位交易。此仓位仍可查看，验收请使用替代代币对。'
+                  : 'WOKB positions are view-only in this release. Use the replacement token pair for acceptance.'}</p>}
                 <dl className="position-facts"><div><dt>{t.owner}</dt><dd><AddressValue value={snapshot.owner} /></dd></div><div><dt>{t.pool}</dt><dd><AddressValue value={snapshot.pool} /></dd></div><div><dt>{t.range}</dt><dd><code>{snapshot.tickLower} → {snapshot.tickUpper}</code><span className="small-tag">{snapshot.tick >= snapshot.tickLower && snapshot.tick < snapshot.tickUpper ? (lang === 'zh' ? '区间内' : 'In range') : (lang === 'zh' ? '区间外' : 'Out of range')}</span></dd></div><div><dt>{t.liquidity}</dt><dd><code>{snapshot.liquidity.toLocaleString()}</code></dd></div></dl>
                 <div className="exit-controls"><div className="control-heading"><label htmlFor="exit-range">{t.amount}</label><strong>{bps / 100}%</strong></div>
                   <input id="exit-range" className="range" type="range" min="1" max="10000" step="1" value={bps} disabled={busy || collectOnly || stage === 'unknown'} onChange={e => { setBps(Number(e.target.value)); invalidate(); }} />

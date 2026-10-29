@@ -4,6 +4,7 @@ import { DEPLOYMENT, managerAbi, factoryAbi, poolAbi, tokenAbi, type Deployment 
 import { StrictRpc, ExitError, type Block } from './rpc';
 import type { Asset, Snapshot, Plan, Preview } from './protocol';
 import { loadPlan } from './plan-loader';
+import { isExcludedAsset } from './asset-policy';
 
 export class V3Adapter {
   constructor(public rpc: StrictRpc, public deployment: Deployment = DEPLOYMENT,
@@ -31,7 +32,8 @@ export class V3Adapter {
       throw new ExitError('DEPLOYMENT', 'Manager configuration mismatch');
   }
   async asset(address: Address, block: Block): Promise<Asset> {
-    const verified = this.supported.some(a => a.toLowerCase() === address.toLowerCase());
+    const verified = !isExcludedAsset(address, this.deployment.chainId) &&
+      this.supported.some(a => a.toLowerCase() === address.toLowerCase());
     const decimals = Number(await this.read<number>(tokenAbi, address, 'decimals', [], block));
     if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36)
       throw new ExitError('UNSUPPORTED', 'Unsupported token precision');

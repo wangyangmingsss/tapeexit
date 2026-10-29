@@ -3,6 +3,7 @@ import { digest, type PublishFile } from './publish-core';
 import { parseTokenId } from '../src/core/token-id';
 import type { inspectRecoveryOutcome } from '../src/core/recovery-outcome';
 import { verifyReviewStatement } from './review-handoff-core';
+import { isExcludedAsset } from '../src/core/asset-policy';
 
 export interface EvidenceReference { path: string; sha256: string }
 export type ReviewAttachment = 'packet' | 'report' | 'signature' | 'publicKey';
@@ -85,6 +86,7 @@ export function parseReleaseProfile(input: unknown): ReleaseProfile {
   if (!Array.isArray(p.assets) || !p.assets.length || p.assets.length > 20) throw new Error('Reviewed assets required');
   const assets = p.assets.map((input: unknown) => {
     const a = object(input);
+    if (isExcludedAsset(address(a.address))) throw new Error('WOKB is excluded from this release asset policy');
     if (!/^0x[a-f0-9]{64}$/.test(a.codeHash) || /^0x0{64}$/.test(a.codeHash) || !sha(a.reviewSha256) ||
         !Number.isInteger(a.decimals) || a.decimals < 0 || a.decimals > 36) throw new Error('Invalid reviewed asset');
     return { address: address(a.address), codeHash: a.codeHash, decimals: a.decimals, reviewSha256: a.reviewSha256 };

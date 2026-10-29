@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { decodeFunctionData, encodeFunctionData, getAddress, maxUint128 } from 'viem';
-import { managerAbi } from '../src/config';
+import { managerAbi, WOKB } from '../src/config';
+import { isExcludedAsset } from '../src/core/asset-policy';
 import { makePlan, parseTokenId, validatePlan } from '../src/core/protocol';
 import { StrictRpc, type Requester } from '../src/core/rpc';
 import { demoSnapshot, DEMO_OWNER } from '../src/demo/engine';
@@ -33,6 +34,19 @@ describe('strict independent reads', () => {
   });
 });
 describe('position parsing and safe plans', () => {
+  it('excludes WOKB in either position leg even when metadata claims verification', async () => {
+    const snapshot = await demoSnapshot(1n, 'none');
+    for (const key of ['token0', 'token1'] as const) {
+      const excluded = { ...snapshot, [key]: { ...snapshot[key], address: WOKB, verified: true } };
+      for (const collectOnly of [false, true])
+        expect(() => makePlan(excluded, DEMO_OWNER, 100, 50, collectOnly))
+          .toThrow('excludes WOKB');
+      const existing = makePlan(snapshot, DEMO_OWNER, 100, 50);
+      expect(() => validatePlan({ ...existing, snapshot: excluded })).toThrow('excludes WOKB');
+    }
+    expect(isExcludedAsset(WOKB.toLowerCase() as typeof WOKB)).toBe(true);
+    expect(isExcludedAsset(WOKB, 1)).toBe(false);
+  });
   it('handles the entire uint256 range exactly', () => {
     expect(parseTokenId((2n ** 256n - 1n).toString())).toBe(2n ** 256n - 1n);
     for (const text of ['-1', '1.1', '01', '1e3', (2n ** 256n).toString()])

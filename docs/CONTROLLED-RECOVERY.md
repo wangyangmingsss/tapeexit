@@ -4,6 +4,17 @@ The development workflow is implemented. An independent review and an actual ext
 external evidence, not outputs a developer can manufacture. The production gate and token list remain closed.
 Keep publication receipts separate from exit receipts.
 
+## Current Route
+
+The WOKB source investigation has been discontinued as an acceptance blocker.
+Use `ACCEPTANCE-ASSETS.md`: two fixed-supply assets with fully embedded source
+replace the original USDt0/WOKB acceptance pair. WOKB positions remain readable
+but new plans and release asset policies exclude them. Its address is retained
+only for original-manager identity verification. The old position and all
+historical evidence are preserved. The sections below describe the original
+investigation; their WOKB proposal is historical, not the current task.
+Independent review and reviewed executable-release wallet tasks are still open.
+
 ## 1. Asset Evidence
 
 `ASSET-REVIEW-66666.md` records the prior USDt0 source observations, issuer/proxy risks and seven isolated

@@ -7,6 +7,7 @@ import {
 } from 'viem';
 import { DEPLOYMENT, managerAbi, RELEASE, type Deployment } from '../config';
 import { ExitError, type Block } from './rpc';
+import { isExcludedAsset } from './asset-policy';
 export { V3Adapter } from './adapter';
 export { parseTokenId } from './token-id';
 
@@ -26,6 +27,8 @@ export interface Plan {
 export interface Preview { amount0: bigint; amount1: bigint; gas: bigint; gasPrice: bigint }
 export function makePlan(s: Snapshot, account: Address, bps: number, slippageBps: number,
   collectOnly = false, deployment = DEPLOYMENT): Plan {
+  if ([s.token0, s.token1].some(asset => isExcludedAsset(asset.address, deployment.chainId)))
+    throw new ExitError('ASSET_EXCLUDED', 'This release excludes WOKB positions; use the replacement acceptance pair');
   if (getAddress(account) !== s.owner) throw new ExitError('OWNER', 'Only the direct NFT owner can exit');
   if (!s.token0.verified || !s.token1.verified) throw new ExitError('UNSUPPORTED', 'Assets are not approved for this release');
   if (!Number.isInteger(bps) || bps < 1 || bps > 10000 ||
@@ -70,6 +73,8 @@ function planHash(chain: number, from: Address, to: Address, data: Hex) {
   return keccak256(encodeAbiParameters(parseAbiParameters('uint256,address,address,bytes'), [BigInt(chain), from, to, data]));
 }
 export function validatePlan(p: Plan, deployment = DEPLOYMENT) {
+  if ([p.snapshot.token0, p.snapshot.token1].some(asset => isExcludedAsset(asset.address, deployment.chainId)))
+    throw new ExitError('ASSET_EXCLUDED', 'This release excludes WOKB positions');
   const fail = () => { throw new ExitError('PLAN', 'Transaction plan integrity check failed'); };
   if (p.chainId !== deployment.chainId || p.manager !== deployment.manager || p.value !== 0n ||
       p.releaseId !== RELEASE || !['decrease-and-collect', 'collect-only'].includes(p.mode) ||

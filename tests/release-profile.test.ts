@@ -5,6 +5,7 @@ import { assertProfileManifest, parseGatewayProfile, parseReleaseProfile, checkG
   parseReviewAttachments, verifyReleaseEvidence, verifyLiveReleaseEvidence, type ReleaseProof,
 } from '../tools/release-profile-core';
 import { REVIEW_SURFACES } from '../tools/review-handoff-core';
+import { WOKB } from '../src/config';
 
 const now = Date.parse('2026-10-28T00:00:00Z');
 const identity = { schemaVersion: 1, chainId: 196, sourceCommit: 'a'.repeat(40), manifestSha256: 'b'.repeat(64),
@@ -75,6 +76,12 @@ function fixture(change: Record<string, Record<string, unknown>> = {},
   return { profile: parseReleaseProfile({ ...identity, assets, evidence }), inputs, proof };
 }
 describe('formal release evidence binding', () => {
+  it('rejects a reviewed-asset declaration that attempts to reintroduce excluded WOKB', () => {
+    const { profile } = fixture();
+    expect(() => parseReleaseProfile({ ...profile, assets: [
+      { ...profile.assets[0], address: WOKB.toLowerCase() },
+    ] })).toThrow('WOKB is excluded');
+  });
   it('rejects an old internal source commit even if the supplied manifest digest is correct', () => {
     const manifest = { app: 'TapeExit', schemaVersion: 1, chainId: 196, signingApproved: false,
       sourceDirty: false, sourceCommit: identity.sourceCommit };

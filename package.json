@@ -29,6 +29,7 @@
     "verify:review": "tsx tools/verify-review.ts",
     "verify:recovery": "tsx tools/verify-recovery.ts",
     "prepare:recovery": "tsx tools/prepare-recovery.ts",
+    "prepare:acceptance-assets": "tsx tools/prepare-acceptance-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",
     "report:users": "node tools/user-validation.mjs",
     "report:pilots": "node tools/pilot-validation.mjs",
@@ -78,6 +79,7 @@
   },
   "devDependencies": {
     "@foundry-rs/anvil": "1.7.1",
+    "@openzeppelin/contracts": "3.4.2-solc-0.7",
     "@playwright/test": "1.64.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
