@@ -82,7 +82,7 @@ it.each(['confirmed', 'reverted'])('counts down verification, preserves errors a
   expect(fetcher.mock.calls.every(([url]) => /\/api\/(context|reconcile)$/.test(url))).toBe(true);
 });
 
-async function connectedClient() {
+async function connectedClient(initiallyAuthorized = false) {
   const base = `${process.cwd()}/tools/publication-workbench/`;
   const template = document.createElement('template');
   template.innerHTML = await readFile(`${base}index.html`, 'utf8');
@@ -90,7 +90,8 @@ async function connectedClient() {
   document.body.replaceChildren(template.content);
   const publisher = '0x1000000000000000000000000000000000000001';
   const context = { contextId: 'release', publisher, fileCount: 9, totalBytes: 587736, totalOperations: 31,
-    maximumWei: '7000000000000000', reservedWei: '0', attempts: [], unresolved: null };
+    maximumWei: '7000000000000000', reservedWei: '0', attempts: [], unresolved: null,
+    authorization: initiallyAuthorized ? { expiresAt: Date.now() + 3600000 } : null };
   const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => {
     return Response.json(context);
   });
@@ -236,6 +237,46 @@ it('exposes only single upload controls and does not detect capabilities on conn
   expect(f.provider.request.mock.calls.every(([r]) =>
     ['eth_requestAccounts', 'eth_accounts', 'eth_chainId'].includes(r.method))).toBe(true);
   expect(f.fetcher.mock.calls.every(([url]) => url === '/api/context')).toBe(true);
+});
+
+it('resumes automatic preparation after reconnecting with existing fee consent', async () => {
+  const f = await connectedClient(true);
+  expect(document.getElementById('automatic-status')!.textContent).toContain('自动准备下一笔');
+  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/preview'))).toBe(false);
+  f.fetcher.mockImplementation(async (url: string) => Response.json(url.endsWith('/preview')
+    ? { complete: true } : f.context));
+  f.automatic();
+  await vi.waitFor(() => expect(document.getElementById('automatic-status')!.textContent).toContain('自动衔接已完成'));
+  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview'))).toHaveLength(1);
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign/i.test(r.method))).toBe(false);
+});
+
+it('starts automatic preparation after renewing expired or missing fee consent', async () => {
+  const f = await connectedClient();
+  expect(document.getElementById('automatic-status')!.textContent).toContain('等待确认上传费用');
+  f.fetcher.mockImplementation(async (url: string) => {
+    if (url.endsWith('/authorize')) f.context.authorization = { expiresAt: Date.now() + 3600000 };
+    return Response.json(url.endsWith('/preview') ? { complete: true } : f.context);
+  });
+  (document.getElementById('consent') as HTMLInputElement).checked = true;
+  document.getElementById('consent')!.dispatchEvent(new Event('change'));
+  (document.getElementById('authorize') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('automatic-status')!.textContent).toContain('自动准备下一笔'));
+  f.automatic();
+  await vi.waitFor(() => expect(document.getElementById('automatic-status')!.textContent).toContain('自动衔接已完成'));
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign/i.test(r.method))).toBe(false);
+});
+
+it('shows preparation failures instead of silently stopping or scheduling endless retries', async () => {
+  const f = await connectedClient(true);
+  f.fetcher.mockImplementation(async (url: string) => url.endsWith('/preview')
+    ? Response.json({ error: 'Independent RPC responses unavailable' }, { status: 409 })
+    : Response.json(f.context));
+  f.automatic();
+  await vi.waitFor(() => expect(document.getElementById('automatic-status')!.textContent)
+    .toContain('自动衔接已暂停：Independent RPC'));
+  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview'))).toHaveLength(1);
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign/i.test(r.method))).toBe(false);
 });
 
 async function legacyClient(mode = 'success') {

@@ -8,6 +8,7 @@ let activationPreview = null, activationSince = null, activationAction = '';
 const CHECK_TIMEOUT_MS = 90_000;
 const NEXT_CHECK_DELAY_MS = 3000;
 let automaticTimer = null, automaticAction = null, automaticAt = null, verificationRetries = 0;
+let publicationComplete = false, automaticError = '';
 const status = text => { $('status').textContent = text; };
 const coin = wei => {
   const n = BigInt(wei), whole = n / 10n ** 18n;
@@ -57,6 +58,21 @@ function controls() {
     if (automaticAction === 'prepare') $('refresh').textContent = `${seconds} 秒后自动准备下一笔`;
     if (automaticAction === 'reconcile') $('reconcile').textContent = `${seconds} 秒后自动再次核验`;
   }
+  const autoStatus = $('automatic-status');
+  if (automaticAt !== null) {
+    const seconds = Math.max(0, Math.ceil((automaticAt - Date.now()) / 1000));
+    autoStatus.textContent = `${seconds} 秒后自动${automaticAction === 'prepare' ? '准备下一笔' : '再次核验已有交易'}；钱包确认仍由你操作。`;
+  } else if (preparingSince !== null) autoStatus.textContent = '自动衔接正在准备：链上读取进行中，3 秒是启动间隔，实际读取时间以 RPC 返回为准。';
+  else if (verifyingSince !== null) autoStatus.textContent = '自动衔接等待本次核验完成。';
+  else if (automaticError) autoStatus.textContent = `自动衔接已暂停：${automaticError}`;
+  else if (publicationComplete) autoStatus.textContent = '全部文件及入口已核验，自动衔接已完成。';
+  else if (!connectedProvider) autoStatus.textContent = '自动衔接等待连接原发布钱包。';
+  else if (context?.activation?.unresolved) autoStatus.textContent = '自动衔接暂停：请先处理待核验的激活请求。';
+  else if (context?.unresolved) autoStatus.textContent = '自动衔接暂停：请先核验已有钱包请求，尚未准备下一笔。';
+  else if (!(context?.authorization?.expiresAt > Date.now())) autoStatus.textContent = '自动衔接等待确认上传费用范围。';
+  else if (preview) autoStatus.textContent = '本笔已准备完成，等待你点击“在钱包中确认这一笔”；不会自动签名。';
+  else if (busy) autoStatus.textContent = '自动衔接等待当前操作完成。';
+  else autoStatus.textContent = '自动衔接已就绪。';
   const authorized = context?.authorization?.expiresAt > Date.now();
   $('connect').disabled = busy || !wallets.size || !context;
   $('wallet').disabled = busy;
@@ -146,14 +162,30 @@ function startAutomaticTimer() {
     controls();
   }, Math.max(0, automaticAt - Date.now()));
 }
-async function run(action) {
+async function run(action, resumeAfterConnection = false) {
   if (busy) return;
   cancelAutomatic();
+  automaticError = '';
+  let succeeded = false;
   busy = true; controls();
-  try { await action(); }
-  catch (error) { status(error instanceof Error ? error.message : '操作未完成，上传保持停止'); }
+  try { await action(); succeeded = true; }
+  catch (error) {
+    automaticError = error instanceof Error ? error.message : '操作未完成，上传保持停止';
+    status(automaticError);
+  }
   finally {
-    try { await refreshContext(); } catch { status('无法读取上传记录，停止操作并检查本地服务'); preview = null; cancelAutomatic(); }
+    try { await refreshContext(); } catch {
+      automaticError = '无法读取上传记录，请检查本地服务';
+      status(automaticError); preview = null; cancelAutomatic(); succeeded = false;
+    }
+    // Reconnection and renewed fee consent resume read-only preparation after reload.
+    if (succeeded && resumeAfterConnection && !automaticAction && connectedProvider && !context?.activation?.unresolved) {
+      if (!context?.unresolved && context?.authorization?.expiresAt > Date.now() && !preview && !publicationComplete)
+        scheduleAutomatic('prepare');
+      else if (context?.unresolved && verificationRetries < 4 &&
+          context.attempts.find(a => a.id === context.unresolved)?.hash)
+        scheduleAutomatic('reconcile');
+    }
     busy = false; controls();
     startAutomaticTimer();
   }
@@ -202,14 +234,14 @@ $('connect').addEventListener('click', () => run(async () => {
   account = context.publisher; connectedProvider = provider;
   $('account').textContent = `${selected.name} · ${account} · X Layer`;
   status('发布账户已匹配；尚未请求交易签名');
-}));
+}, true));
 $('consent').addEventListener('change', controls);
 $('authorize').addEventListener('click', () => run(async () => {
   if (!$('consent').checked || !connectedProvider) throw new Error('请先连接发布账户并确认费用范围');
   await assertWallet(connectedProvider, generation);
   await api('authorize', { contextId: context.contextId, maximumWei: context.maximumWei });
   status('费用范围已确认；仅在你点击提交并在钱包确认后发送');
-}));
+}, true));
 $('refresh').addEventListener('click', () => run(async () => {
   preview = null; preparingSince = Date.now(); controls();
   $('preview').replaceChildren();
@@ -228,9 +260,11 @@ $('refresh').addEventListener('click', () => run(async () => {
   }
   $('preview').replaceChildren();
   if (result.complete) {
+    publicationComplete = true;
     field('preview', '完成', '所有发行文件及 fallback 已回读核验；激活另行处理');
     status('实际上传文件回读通过；容器激活状态以回读报告为准'); return;
   }
+  publicationComplete = false;
   preview = result;
   for (const [name, value] of [
     ['步骤', `${result.operation + 1} / ${context.totalOperations}，剩余 ${result.remaining} 笔`],

@@ -104,6 +104,28 @@ test('publication fixture requires fee consent and signs exactly one reserved tr
   await expect(page.locator('#send')).toBeDisabled();
   await page.screenshot({ path: `test-results/${test.info().project.name}-publication-workbench-desktop.png`, fullPage: true });
 });
+test('three-second preparation resumes after fee consent and reconnecting after reload', async ({ page }) => {
+  await page.clock.install();
+  const { calls } = await install(page);
+  await page.locator('#connect').click();
+  await expect(page.locator('#automatic-status')).toContainText('等待确认上传费用范围');
+  await page.locator('#consent').check();
+  await page.locator('#authorize').click();
+  await expect(page.locator('#automatic-status')).toContainText('自动准备下一笔');
+  await page.clock.fastForward(3000);
+  await expect(page.locator('#preview')).toContainText('LICENSE.txt');
+  await expect(page.locator('#automatic-status')).toContainText('本笔已准备完成');
+  expect(await sends(page)).toBe(0);
+  const beforeReload = calls.filter(action => action === 'preview').length;
+  await page.reload();
+  await expect(page.locator('#automatic-status')).toContainText('等待连接原发布钱包');
+  await page.locator('#connect').click();
+  await expect(page.locator('#automatic-status')).toContainText('自动准备下一笔');
+  await page.clock.fastForward(3000);
+  await expect(page.locator('#preview')).toContainText('LICENSE.txt');
+  expect(calls.filter(action => action === 'preview')).toHaveLength(beforeReload + 1);
+  expect(await sends(page)).toBe(0);
+});
 test('slow submission recheck shows its countdown and still requests the wallet exactly once', async ({ page }) => {
   await page.clock.install();
   const { context } = await install(page); await ready(page);
