@@ -1,0 +1,10 @@
+{
+  "tokenId": "67042",
+  "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+  "hash": "0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5",
+  "remainingLiquidity": "1980854",
+  "assets": [
+    { "address": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736", "decimals": 6, "delta": "20016" },
+    { "address": "0xB6CEceAB302E2E4948951eE7843FC24E92933061", "decimals": 6, "delta": "19999" }
+  ]
+}

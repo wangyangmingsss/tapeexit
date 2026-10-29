@@ -18,3 +18,7 @@
 .submission-hash label{display:block;font-size:12px;margin-bottom:6px}
 .submission-hash input{width:100%;min-width:0;padding:10px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--ink);font-family:Consolas,monospace;font-size:12px}
 .submission-hash input[aria-invalid=true]{border-color:#9a4840}
+.recovery-check { margin-top: 24px; padding-block: 20px; border-top: 1px solid var(--border, #d7dfd9); }
+.recovery-check form { display: grid; gap: 8px; }
+.recovery-check input { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; font: inherit; border: 1px solid #a6b5ac; border-radius: 4px; }
+.recovery-check dd { margin: 0 0 12px; overflow-wrap: anywhere; }

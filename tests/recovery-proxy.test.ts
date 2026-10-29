@@ -13,6 +13,17 @@ async function tunnel(proxy: string, authority: string) {
   });
 }
 describe('network proxy recovery boundary', () => {
+  it('blocks both public gateways and counts each host without connecting upstream', async () => {
+    const proxy = await createRecoveryProxy(['primary.example', 'backup.example'],
+      () => { throw new Error('Unexpected upstream'); });
+    try {
+      for (const host of ['primary.example', 'backup.example']) {
+        const response = await tunnel(proxy.url, `${host}:443`);
+        expect(response.status).toBe(403); response.socket.destroy();
+      }
+      expect(proxy.blockedByHost()).toEqual({ 'primary.example': 1, 'backup.example': 1 });
+    } finally { await proxy.close(); }
+  });
   it('blocks the primary host before opening any upstream socket, including case and trailing-dot aliases', async () => {
     let calls = 0;
     const proxy = await createRecoveryProxy('primary.example', () => { calls++; throw new Error('Unexpected upstream'); });

@@ -38,6 +38,7 @@ function address(value: unknown): Address {
   return result;
 }
 export interface PublishProfile {
+  previousManifestSha256?: string;
   schemaVersion: 1; chainId: 196; publisher: Address; container: Address;
   processorIndex: string; circuitId: string;
   maxGasPerTransaction: string; maxFeePerGasWei: string; maxUploadCostWei: string;
@@ -46,6 +47,8 @@ export interface PublishProfile {
 export function parsePublishProfile(input: unknown): PublishProfile {
   const p = input as PublishProfile | null;
   if (!p || p.schemaVersion !== 1 || p.chainId !== 196) throw new Error('Expected X Layer publication profile');
+  if (p.previousManifestSha256 !== undefined && !/^[a-f0-9]{64}$/.test(p.previousManifestSha256))
+    throw new Error('Invalid trusted previous manifest digest');
   uint(p.processorIndex, 'processor index', 1_000_000_000n);
   uint(p.circuitId, 'circuit ID', 10n ** 18n);
   if (uint(p.maxGasPerTransaction, 'maxGasPerTransaction') === 0n)

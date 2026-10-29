@@ -20,6 +20,7 @@ import { clearHistory, downloadJson, importRecoveryCard, loadHistory, recoveryCa
 import { assertSigningRuntime, canSignRuntime, manifestDigest, runtimeStatus, type RuntimeStatus } from './core/runtime';
 import type { DemoEngine, Fault } from './demo/engine';
 import { discoverPositions, type PositionPage } from './core/discovery';
+import RecoveryCheck from './RecoveryCheck';
 
 const DEMO = import.meta.env.VITE_DEMO === 'true';
 const demoModule = DEMO ? import('./demo/engine') : null;
@@ -693,6 +694,7 @@ export default function App() {
         </>}
         {tab === 'history' && <section className="history-section"><div className="section-top"><h2>{t.history}</h2><button className="text-link" onClick={() => { historyGeneration.current++; clearHistory(); setHistory([]); setHistoryChecks({}); }}>{t.clear}</button></div>{history.length ? <div className="history-list">{history.map(h => <div key={h.hash}><span className="history-icon"><ArrowDownLeft size={18} /></span><div><strong>#{h.tokenId}</strong><span>{new Date(h.time).toLocaleString()} · {h.environment}</span><span className="history-verification" role="status">{historyChecks[h.hash] || (h.environment === 'demo' ? (lang === 'zh' ? '模拟记录' : 'Simulated record') : (lang === 'zh' ? '已保存，尚未重新核对' : 'Saved; not rechecked'))}</span></div><code title={h.hash}>{short(h.hash)}</code><span className="neutral-tag">{h.state}</span><div className="history-actions">{h.environment === 'mainnet' && <button className="icon-button" title={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} aria-label={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} disabled={historyLocks.current.has(h.hash)} onClick={() => void verifyHistory(h)}><RefreshCw size={16} /></button>}<button className="icon-button" title={t.export} aria-label={t.export} onClick={() => downloadJson('tapeexit-history.json', h)}><Download size={16} /></button></div></div>)}</div> : <div className="empty-history"><History size={28} /><p>{t.nothing}</p></div>}</section>}
         {tab === 'recovery' && <section className="recovery-section"><div className="recovery-header"><LockKeyhole size={27} /><div><h2>{t.recoveryTitle}</h2><p>{t.recoverySub}</p></div></div><div className="recovery-facts"><div><span>{t.version}</span><code>{RELEASE}</code></div><div><span>{t.target}</span><AddressValue value={MANAGER} /></div><div><span>{t.origin}</span><strong>{runtime.label}</strong></div></div><div className="recovery-actions"><button className="primary-button" onClick={() => void saveCard()}><Download size={16} />{t.saveCard}</button><button className="secondary-button" onClick={() => importInput.current?.click()}><Upload size={16} />{t.importCard}</button></div><div className="local-bundle"><h3>{t.local}</h3><p>{t.localSub}</p><code>node tools/local-server.mjs</code></div></section>}
+        {tab === 'recovery' && !DEMO && <RecoveryCheck lang={lang} />}
         <footer><span><ShieldCheck size={15} />{t.scope}</span><code>{RELEASE}</code></footer>
       </main>
     </div>

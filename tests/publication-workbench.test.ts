@@ -8,6 +8,7 @@ import { inspectPublication, parsePublishProfile } from '../tools/operations-cor
 import { resumePublication } from '../tools/resume-publication-core';
 import { verifyPublication } from '../tools/verify-publication-core';
 import { batchData, checkBatchCode, BATCH_CONSENT, BATCH_IMPLEMENTATION } from '../tools/publication-batch';
+import * as migration from '../tools/resume-publication-update';
 
 vi.mock('../tools/operations-core', async original => ({
   ...await original<typeof import('../tools/operations-core')>(), inspectPublication: vi.fn(),
@@ -33,6 +34,38 @@ const profile = parsePublishProfile({ schemaVersion: 1, chainId: 196, publisher,
   maxFeePerGasWei: '30000000', maxUploadCostWei: '7000000000000000',
   expectedCodeHashes: Object.fromEntries(['processor', 'container', 'opener', 'registry', 'binding', 'factory']
     .map(name => [name, keccak256('0x6000')])) });
+it('binds migration to its old manifest and persists removal reservations before any wallet request', async () => {
+  const f = fixture(), bytes = Buffer.from('old manifest');
+  const previous = { manifestSha256: digest(bytes), contents: [{ bytes, file: {
+    path: 'release-manifest.json', size: bytes.length, sha256: digest(bytes), contentType: 'text/plain',
+  } }] };
+  const input = { ...profile, previousManifestSha256: previous.manifestSha256 };
+  const contextId = PublicationWorkbench.contextId(input, publication.manifestSha256);
+  expect(contextId).not.toBe(PublicationWorkbench.contextId(profile, publication.manifestSha256));
+  const journal: UploadJournal = { schemaVersion: 1, contextId, authorization: null, attempts: [] };
+  const operation = migration.updateRemovals(container, publication, previous)[0];
+  vi.spyOn(migration, 'resumePublicationUpdate').mockResolvedValue({ schemaVersion: 1,
+    status: 'UNSIGNED_EXACT_OLD_FILE_REMOVALS', container, block, manifestSha256: publication.manifestSha256,
+    previousManifestSha256: previous.manifestSha256, checked: [], transactions: [operation], transactionCount: 1, scope: '' });
+  expect(() => new PublicationWorkbench(f.rpc, input, publication, journal, f.store)).toThrow('exact trusted');
+  const bench = new PublicationWorkbench(f.rpc, input, publication, journal, f.store, Date.now, previous);
+  await bench.authorize(contextId, input.maxUploadCostWei);
+  const preview = await bench.prepareNext() as UploadPreview;
+  expect(preview.chunk).toBe(-1);
+  expect(bench.context().migration?.siteMayBeUnavailableDuringUpdate).toBe(true);
+  const reservation = await bench.reserve(preview.id);
+  expect(f.writes.at(-1)?.attempts[0]).toEqual(reservation);
+  const restarted = new PublicationWorkbench(f.rpc, input, publication, structuredClone(f.writes.at(-1)!), f.store, Date.now, previous);
+  await expect(restarted.prepareNext()).rejects.toThrow('unresolved');
+  await restarted.attachHash(reservation.id, txHash); f.mine(reservation);
+  await expect(restarted.reconcile()).rejects.toThrow('did not produce matching');
+  vi.mocked(migration.resumePublicationUpdate).mockResolvedValueOnce({ schemaVersion: 1,
+    status: 'UNSIGNED_EXACT_OLD_FILE_REMOVALS', container, block, manifestSha256: publication.manifestSha256,
+    previousManifestSha256: previous.manifestSha256, checked: [], transactions: [], transactionCount: 0, scope: '' });
+  expect((await restarted.reconcile()).attempts[0].status).toBe('confirmed');
+  expect(f.requests.some(m => /send|sign/i.test(m))).toBe(false);
+  vi.mocked(migration.resumePublicationUpdate).mockRestore();
+});
 const block: Block = { number: '0x10', hash: `0x${'cd'.repeat(32)}`, timestamp: '0x123' };
 beforeEach(() => {
   vi.resetAllMocks();

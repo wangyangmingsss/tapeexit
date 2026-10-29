@@ -7,13 +7,14 @@ import { openPublicationJournal } from './publication-journal';
 import { createPublicationWorkbenchServer } from './publication-workbench-server';
 import { PublicationActivation, type ActivationJournal } from './publication-activation';
 
-if (process.argv.length < 5 || process.argv.length > 7)
-  throw new Error('Usage: npm run publish:wallet -- <profile.json> <trusted-manifest-sha256> <journal.json> [port] [publication-directory]');
-const [profilePath, trustedDigest, journalPath, portInput = '4183', publicationDirectory = 'dist'] = process.argv.slice(2);
+if (process.argv.length < 5 || process.argv.length > 8)
+  throw new Error('Usage: npm run publish:wallet -- <profile.json> <trusted-manifest-sha256> <journal.json> [port] [publication-directory] [previous-publication-directory]');
+const [profilePath, trustedDigest, journalPath, portInput = '4183', publicationDirectory = 'dist', previousDirectory] = process.argv.slice(2);
 const profile = JSON.parse(await readFile(profilePath, 'utf8'));
 if (profile.purpose === 'LOCAL_REHEARSAL_ONLY_NOT_APPROVED')
   throw new Error('Local rehearsal funding profiles cannot be used for wallet publication');
 const publication = await loadPublication(publicationDirectory);
+const previousPublication = previousDirectory ? await loadPublication(previousDirectory) : undefined;
 if (!/^[a-f0-9]{64}$/.test(trustedDigest) || publication.manifestSha256 !== trustedDigest)
   throw new Error('Release manifest differs from the independently supplied digest');
 const contextId = PublicationWorkbench.contextId(profile, trustedDigest);
@@ -21,7 +22,7 @@ const store = await openPublicationJournal(journalPath, contextId);
 let activationStore: Awaited<ReturnType<typeof openPublicationJournal<ActivationJournal>>> | undefined;
 try {
   const rpc = new StrictRpc(SOURCES);
-  const workbench = new PublicationWorkbench(rpc, profile, publication, store.journal, store);
+  const workbench = new PublicationWorkbench(rpc, profile, publication, store.journal, store, Date.now, previousPublication);
   const activationId = PublicationActivation.contextId(workbench);
   activationStore = await openPublicationJournal<ActivationJournal>(`${journalPath}.activation.json`, activationId,
     { schemaVersion: 1, contextId: activationId, attempts: [] });

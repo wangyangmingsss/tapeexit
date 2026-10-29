@@ -66,7 +66,9 @@ function render() {
     ['单笔 Gas 上限', context.maxGas], ['Gas 单价上限 / wei', context.maxGasPriceWei],
     ['本次费用确认到期', context.authorization ? new Date(context.authorization.expiresAt).toISOString() : '未确认'],
   ]) field('identity', name, value);
-  $('consent-label').textContent = `我确认向上述容器上传这一发行，EVM Gas 总预算最多 ${coin(context.maximumWei)}，确认有效期一小时；不含激活及链特有附加费用。`;
+  $('consent-label').textContent = `${context.migration
+    ? `本次升级会逐笔移除 ${context.migration.removalCount} 个已核对的旧文件，迁移期间网站可能暂时不可用。旧版备份已保留。` : ''
+  }我确认向上述容器上传这一发行，EVM Gas 总预算最多 ${coin(context.maximumWei)}，确认有效期一小时；不含激活及链特有附加费用。`;
   const pending = context.attempts.find(a => a.id === context.unresolved);
   $('pending-section').hidden = !pending;
   $('bundle-label').hidden = !pending?.batch;
@@ -184,7 +186,8 @@ $('refresh').addEventListener('click', () => run(async () => {
   preview = result;
   for (const [name, value] of [
     ['步骤', `${result.operation + 1} / ${context.totalOperations}，剩余 ${result.remaining} 笔`],
-    ['文件', result.file], ['分块序号', result.chunk], ['Gas 上限', BigInt(result.transaction.gas)],
+    ['文件', result.file], ['操作', result.chunk === -1 ? '移除已核验的旧文件' : '上传文件分块'],
+    ['分块序号', result.chunk === -1 ? '不适用' : result.chunk], ['Gas 上限', BigInt(result.transaction.gas)],
     ['Gas 单价 / wei', BigInt(result.transaction.gasPrice)], ['本笔 EVM 费用上限', coin(result.maximumCostWei)],
     ['报价到期', new Date(result.expiresAt).toISOString()],
   ]) field('preview', name, value);

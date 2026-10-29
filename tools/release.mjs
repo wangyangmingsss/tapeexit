@@ -19,7 +19,8 @@ for (const path of (await files(root)).sort()) {
   const bytes = await readFile(path);
   list.push({ path: relative(root, path).replaceAll('\\', '/'), size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), contentType: mime[extname(path)] || 'application/octet-stream' });
 }
-const manifest = { schemaVersion: 1, app: 'TapeExit', version: '0.1.0', sourceCommit: commit, sourceDirty,
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const manifest = { schemaVersion: 1, app: 'TapeExit', version, sourceCommit: commit, sourceDirty,
   tapekitCommit: '37c617e7e332787c8a32a81e4d7d05a28a06c156',
   chainId: 196, signingApproved: false, files: list };
 await writeFile(resolve(root, 'release-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

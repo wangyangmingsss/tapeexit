@@ -1,6 +1,12 @@
 name: Verify public TapeExit gateways
 on:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Candidate requires updated chain publication; historical checks the original release only'
+        type: choice
+        options: [candidate, historical]
+        default: candidate
 permissions:
   contents: read
 jobs:
@@ -16,7 +22,13 @@ jobs:
       - run: npm ci
       - run: npm run build:gateway
       - run: npx playwright install --with-deps chromium
-      - run: npx tsx tools/verify-live-gateway.ts
+      - if: inputs.release == 'candidate'
+        run: |
+          npm run build
+          npm run prepare:gateway-update
+          npx tsx tools/verify-live-gateway.ts release-artifacts/gateway-update/profile.json docs/gateway-recovery-task-67042.json
+      - if: inputs.release == 'historical'
+        run: npx tsx tools/verify-live-gateway.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -10,6 +10,7 @@ export const publishAbi = parseAbi([
   'function putFile(address container,string path,string contentType,bytes32 sha256Hash,bytes data)',
   'function appendChunk(address container,string path,uint256 expectIndex,bytes data)',
   'function setFallback(address container,string path)',
+  'function removeFile(address container,string path)',
 ]);
 export interface PublishFile { path: string; contentType: string; size: number; sha256: string }
 export interface PublishTransaction { file: string; chunk: number; to: Address; value: '0'; data: Hex }

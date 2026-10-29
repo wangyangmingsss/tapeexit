@@ -7,6 +7,7 @@ import { inspectPublication, parsePublishProfile, type PublishProfile } from './
 import { resumePublication } from './resume-publication-core';
 import { verifyPublication } from './verify-publication-core';
 import { batchData, BATCH_CONSENT, BATCH_IMPLEMENTATION, checkBatchCode } from './publication-batch';
+import { resumePublicationUpdate, updateRemovals } from './resume-publication-update';
 
 type Publication = Awaited<ReturnType<typeof loadPublication>>;
 export interface UploadTransaction {
@@ -66,9 +67,14 @@ export class PublicationWorkbench {
   private busy = false;
   private fault = false;
   constructor(private rpc: StrictRpc, input: unknown, private publication: Publication,
-    private journal: UploadJournal, private store: JournalStore, private now = Date.now) {
+    private journal: UploadJournal, private store: JournalStore, private now = Date.now,
+    private previousPublication?: Publication) {
     this.profile = parsePublishProfile(input);
-    this.operations = [...publication.contents.flatMap(c => encodePublishFile(this.profile.container, c.file, c.bytes)),
+    if (!!this.profile.previousManifestSha256 !== !!previousPublication ||
+        previousPublication && previousPublication.manifestSha256 !== this.profile.previousManifestSha256)
+      throw new Error('Migration requires the exact trusted previous publication');
+    this.operations = [...(previousPublication ? updateRemovals(this.profile.container, publication, previousPublication) : []),
+      ...publication.contents.flatMap(c => encodePublishFile(this.profile.container, c.file, c.bytes)),
       fallbackTransaction(this.profile.container)];
     if (!this.operations.length || this.operations.length > 1000) throw new Error('Unbounded upload plan');
     const p = this.profile;
@@ -84,6 +90,7 @@ export class PublicationWorkbench {
       processorIndex: p.processorIndex, circuitId: p.circuitId,
       maxGasPerTransaction: p.maxGasPerTransaction, maxFeePerGasWei: p.maxFeePerGasWei,
       maxUploadCostWei: p.maxUploadCostWei,
+      ...(p.previousManifestSha256 ? { previousManifestSha256: p.previousManifestSha256 } : {}),
       codeHashes: Object.entries(p.expectedCodeHashes).sort(([a], [b]) => a.localeCompare(b)) })));
   }
   private validateJournal() {
@@ -193,6 +200,11 @@ export class PublicationWorkbench {
       authorization: this.journal.authorization, attempts: structuredClone(this.journal.attempts),
       unresolved: this.unresolved()?.id ?? null,
       uploadMode: 'single-transaction',
+      migration: this.previousPublication ? {
+        previousManifestSha256: this.previousPublication.manifestSha256,
+        removalCount: updateRemovals(this.profile.container, this.publication, this.previousPublication).length,
+        siteMayBeUnavailableDuringUpdate: true,
+      } : null,
       scope: 'Upload registry calls only. No activation, token approval, liquidity or app funds operations. ' +
         'Observed code pins are not an independent security review. EVM gas cap excludes chain-specific fees.',
     };
@@ -228,10 +240,16 @@ export class PublicationWorkbench {
       return verifyPublication(this.rpc, this.profile.container, this.publication, this.publication.manifestSha256);
     });
   }
+  private async continuation() {
+    return this.previousPublication
+      ? await resumePublicationUpdate(this.rpc, this.profile.container, this.publication,
+        this.previousPublication, this.profile.previousManifestSha256!)
+      : await resumePublication(this.rpc, this.profile.container, this.publication);
+  }
   private async prepare(): Promise<UploadPreview | { complete: true; readback: unknown }> {
     if (this.unresolved()) throw new Error('Previous wallet request unresolved; do not resend');
     await this.checkHistory();
-    const plan = await resumePublication(this.rpc, this.profile.container, this.publication);
+    const plan = await this.continuation();
     for (const a of this.journal.attempts) {
       if (a.status === 'confirmed' && (a.batch?.operations ?? [a.operation])
         .some(n => plan.transactions.some(op => equal(op, this.operations[n]))))
@@ -414,7 +432,7 @@ export class PublicationWorkbench {
         }
       }
       await this.rpc.assertBlock(block);
-      const continuation = await resumePublication(this.rpc, this.profile.container, this.publication);
+      const continuation = await this.continuation();
       if (receipt.status === '0x1' && (a.batch?.operations ?? [a.operation])
         .some(n => continuation.transactions.some(item => equal(item, this.operations[n]))))
         throw new Error('Confirmed transaction did not produce matching publication bytes');

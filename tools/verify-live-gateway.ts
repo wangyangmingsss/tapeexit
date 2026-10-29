@@ -5,9 +5,11 @@ import { assertProfileManifest, checkGatewayFile, parseGatewayProfile } from './
 import { digest, validatePublishManifest } from './publish-core';
 import { readGatewayResource } from './gateway-resource';
 import { createRecoveryProxy } from './recovery-proxy';
+import { parseGatewayRecoveryTask } from './gateway-recovery-task';
+import { verifyBrowserRecovery } from './gateway-recovery-browser';
 
 // This is the immutable release already uploaded and activated, not today's dist.
-const profile = parseGatewayProfile({
+const historicalProfile = {
   schemaVersion: 1,
   chainId: 196,
   sourceCommit: '733ca795d9216ea43038e386ee652c1a84f112b5',
@@ -18,7 +20,11 @@ const profile = parseGatewayProfile({
     { origin: 'https://2-2-289.netlify.app', operator: 'netlify' },
     { origin: 'https://2-2-289.vercel.app', operator: 'vercel' },
   ],
-});
+};
+const [profilePath, taskPath, ...extra] = process.argv.slice(2);
+if (extra.length) throw new Error('Usage: verify-live-gateway.ts [profile.json] [read-only-task.json]');
+const profile = parseGatewayProfile(profilePath ? JSON.parse(await readFile(profilePath, 'utf8')) : historicalProfile);
+const task = taskPath ? parseGatewayRecoveryTask(JSON.parse(await readFile(taskPath, 'utf8'))) : null;
 const primary = profile.gateways[0].origin;
 const directory = 'release-artifacts/live-gateway';
 await mkdir(directory, { recursive: true });
@@ -30,6 +36,8 @@ const report: Record<string, any> = {
   primaryBlockedDuringRecovery: false,
   walletTested: false,
   signingApproved: false,
+  recoveryTask: task,
+  recoveryTaskCompleted: false,
   gateways: [],
   bootstrap: [],
   views: [],
@@ -153,6 +161,10 @@ try {
           if (layout.scrollWidth > layout.width + 1 || !layout.text.includes('TapeExit') ||
               !/READ ONLY|主网只读/.test(layout.text))
             throw new Error('Expected usable read-only application layout');
+          if (task) {
+            observed.recoveryTask = await verifyBrowserRecovery(page, task, view.isMobile,
+              `${directory}/${gateway.operator}-${view.name}-recovery.json`);
+          }
           await page.screenshot({ path: `${directory}/${gateway.operator}-${view.name}.png`, fullPage: true });
           observed.blockedPrimaryConnections = proxy?.blockedCount() ?? 0;
           observed.status = 'ORIGINAL_RELEASE_BYTES_CHECKED';
@@ -177,6 +189,8 @@ try {
   }
   report.status = 'TWO_GATEWAYS_CHECKED';
   report.primaryBlockedDuringRecovery = true;
+  report.recoveryTaskCompleted = !!task && report.views.length === 4 &&
+    report.views.every((v: any) => v.recoveryTask?.status === 'FINALIZED_READ_ONLY_RECOVERY_MATCHED');
   report.blockMechanism = 'HTTPS_CONNECT_PROXY';
   console.log(JSON.stringify({ status: report.status, gateways: report.gateways,
     sourceCommit: profile.sourceCommit,

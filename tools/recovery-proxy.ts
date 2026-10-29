@@ -2,9 +2,12 @@ import { createServer } from 'node:http';
 import { connect, type Socket } from 'node:net';
 import type { Duplex } from 'node:stream';
 
-export async function createRecoveryProxy(blockedHost: string,
+export async function createRecoveryProxy(blockedHost: string | readonly string[],
   connector: (host: string, port: number) => Socket = (host, port) => connect({ host, port })) {
   const sockets = new Set<Duplex>();
+  const blockedHosts = new Set((typeof blockedHost === 'string' ? [blockedHost] : blockedHost)
+    .map(host => host.toLowerCase().replace(/\.$/, '')));
+  const blockedByHost: Record<string, number> = {};
   let blocked = 0;
   const server = createServer((_req, res) => { res.writeHead(405); res.end(); });
   server.on('connect', (request, client, head) => {
@@ -22,8 +25,10 @@ export async function createRecoveryProxy(blockedHost: string,
       client.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
       return;
     }
-    if (target.hostname.toLowerCase().replace(/\.$/, '') === blockedHost.toLowerCase().replace(/\.$/, '')) {
+    const hostname = target.hostname.toLowerCase().replace(/\.$/, '');
+    if (blockedHosts.has(hostname)) {
       blocked++;
+      blockedByHost[hostname] = (blockedByHost[hostname] || 0) + 1;
       client.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
@@ -48,6 +53,7 @@ export async function createRecoveryProxy(blockedHost: string,
   return {
     url: `http://127.0.0.1:${(server.address() as { port: number }).port}`,
     blockedCount: () => blocked,
+    blockedByHost: () => ({ ...blockedByHost }),
     async close() {
       for (const socket of sockets) socket.destroy();
       await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
