@@ -115,12 +115,37 @@ export class StrictRpc {
   async block(tag: Hex | 'safe' | 'finalized'): Promise<Block> {
     if (tag !== 'safe' && tag !== 'finalized' && !isQuantity(tag))
       throw new ExitError('RPC_INVALID', 'Invalid requested block height');
+    if (tag === 'safe' || tag === 'finalized') {
+      const answers = await Promise.allSettled(this.sources.map(async source => ({
+        operator: source.operator, block: await this.requestOne(source, 'eth_getBlockByNumber', [tag, false]) as Block,
+      })));
+      const good = answers.flatMap(answer => answer.status === 'fulfilled' ? [answer.value] : []);
+      if (new Set(good.map(answer => answer.operator)).size < 2)
+        throw new ExitError('QUORUM', 'Independent finality responses unavailable');
+      for (const { block } of good)
+        if (!block || !isQuantity(block.number) || !isQuantity(block.timestamp) ||
+            typeof block.hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(block.hash))
+          throw new ExitError('RPC_INVALID', 'Invalid finality block');
+      // Tags advance asynchronously. Pin every reported height across the same RPC quorum,
+      // then use the lowest reported safe/finalized height; never substitute the latest head.
+      const heights = [...new Set(good.map(answer => BigInt(answer.block.number).toString()))];
+      const pinned = new Map(await Promise.all(heights.map(async height =>
+        [height, await this.block(`0x${BigInt(height).toString(16)}`)] as const)));
+      for (const { block } of good) {
+        const exact = pinned.get(BigInt(block.number).toString())!;
+        if (exact.hash.toLowerCase() !== block.hash.toLowerCase() ||
+            BigInt(exact.timestamp) !== BigInt(block.timestamp))
+          throw new ExitError('CONFLICT', 'Finality tag differs from the canonical block');
+      }
+      const minimum = heights.map(BigInt).reduce((a, b) => a < b ? a : b);
+      return pinned.get(minimum.toString())!;
+    }
     const block = await this.request<Block>('eth_getBlockByNumber', [tag, false],
       b => b ? ({ number: b.number, hash: b.hash, timestamp: b.timestamp }) : null);
     if (!block || !isQuantity(block.number) || !isQuantity(block.timestamp) ||
         typeof block.hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(block.hash))
       throw new ExitError('RPC_INVALID', 'Invalid or unavailable block');
-    if (tag !== 'safe' && tag !== 'finalized' && BigInt(block.number) !== BigInt(tag))
+    if (BigInt(block.number) !== BigInt(tag))
       throw new ExitError('RPC_INVALID', 'RPC returned a different block height');
     return { number: block.number, hash: block.hash, timestamp: block.timestamp };
   }

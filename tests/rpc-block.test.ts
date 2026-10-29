@@ -44,6 +44,36 @@ describe('block identity and snapshot freshness', () => {
     await expect(new StrictRpc(sources, async () => ({ ...block, hash: null })).block(tag))
       .rejects.toMatchObject({ code: 'RPC_INVALID' });
   });
+  it.each(['safe', 'finalized'] as const)('uses the lower %s height after independently pinning both reported heights', async tag => {
+    const seen: unknown[] = [];
+    const rpc = new StrictRpc(sources, async (source, _method, params) => {
+      seen.push(params[0]);
+      const number = params[0] === tag ? source.operator === 'a' ? '0x10' : '0x12' : params[0];
+      return { ...block, number, hash: number === '0x10' ? hash : otherHash };
+    });
+    expect(await rpc.block(tag)).toEqual(block);
+    expect(seen.filter(v => v === '0x10')).toHaveLength(2);
+    expect(seen.filter(v => v === '0x12')).toHaveLength(2);
+  });
+  it.each(['safe', 'finalized'] as const)('rejects a %s tag whose reported hash differs from the pinned height', async tag => {
+    const rpc = new StrictRpc(sources, async (_source, _method, params) =>
+      ({ ...block, hash: params[0] === tag ? otherHash : hash }));
+    await expect(rpc.block(tag)).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+  it('does not bypass a conflicting canonical height when finality tags differ', async () => {
+    const rpc = new StrictRpc(sources, async (source, _method, params) => {
+      if (params[0] === 'finalized') return { ...block, number: source.operator === 'a' ? '0x10' : '0x12' };
+      return { ...block, number: params[0], hash: source.operator === 'a' ? hash : otherHash };
+    });
+    await expect(rpc.block('finalized')).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+  it('requires two finality operator responses instead of accepting a single available provider', async () => {
+    const rpc = new StrictRpc(sources, async source => {
+      if (source.operator === 'b') throw new Error('Unavailable');
+      return block;
+    });
+    await expect(rpc.block('finalized')).rejects.toMatchObject({ code: 'QUORUM' });
+  });
   it('still distinguishes disagreeing hashes and a canonical block changing during recheck', async () => {
     await expect(new StrictRpc(sources, async source => ({
       ...block, hash: source.operator === 'a' ? hash : otherHash,

@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test';
-import task from '../../docs/gateway-recovery-task-67042.json';
+import task from '../../docs/gateway-recovery-task-67042.json' with { type: 'json' };
 
 for (const width of [360, 1440]) test(`read-only transaction recovery survives primary failure and rejects unavailable RPC at ${width}px`, async ({ page }) => {
   const methods: string[] = [];
   await page.setViewportSize({ width, height: 960 });
-  await page.route('https://failed-primary.example/**', route => route.abort('connectionrefused'));
-  await expect(page.goto('https://failed-primary.example')).rejects.toThrow();
+  await page.context().route('https://failed-primary.example/**', route => route.abort('connectionrefused'));
+  const probe = await page.context().newPage();
+  await expect(probe.goto('https://failed-primary.example')).rejects.toThrow();
+  await probe.close();
   await page.route(/^https:\/\/(?:rpc\.xlayer\.tech|xlayer\.drpc\.org)\/?$/, async route => {
     methods.push(route.request().postDataJSON().method);
     await route.fulfill({ status: 503, body: 'RPC unavailable fixture' });
