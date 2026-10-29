@@ -7,19 +7,10 @@ import { V3Adapter } from '../src/core/adapter';
 import { minimumAmounts, type Snapshot } from '../src/core/protocol';
 import { decodeStorageAddress, IMPL_SLOT } from './proxy-identity-core';
 import { inspectForkOwner } from './fork-owner';
+import { TEST_POLICY } from './controlled-test-scope';
 
 // Explicit one-position user test scope. None of these observations approve an asset.
-export const TEST_POLICY = {
-  chainId: 196, tokenId: '67042',
-  account: getAddress('0x101fd328a0b2fd9e853909651dab1c0b55947c03'),
-  token0: getAddress('0x779Ded0c9e1022225f8E0630b35a9b54bE713736'),
-  token1: getAddress('0xB6CEceAB302E2E4948951eE7843FC24E92933061'),
-  pool: getAddress('0xEEeB3C1F61DC3070C675c2670a3f2188A060012D'),
-  baselineLiquidity: '2000862', removeLiquidity: '20008', basisPoints: 100,
-  maximumCollectionPerToken: '50000', decimals: 6, slippageBps: 50,
-  gasCap: '1000000', gasPriceCapWei: '30000000',
-  consent: 'MAINNET_TEST_67042_ONE_PERCENT_UNREVIEWED',
-} as const;
+export { TEST_POLICY };
 const usdcImplementationSlot = keccak256(toHex('org.zeppelinos.proxy.implementation'));
 const usdcAdminSlot = keccak256(toHex('org.zeppelinos.proxy.admin'));
 const riskAbi = parseAbi([

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { TEST_POLICY } from '../../tools/controlled-test-policy';
+import { TEST_POLICY } from '../../tools/controlled-test-scope';
 import { MANAGER } from '../../src/config';
 
 async function install(page: Page, mode = 'success') {
