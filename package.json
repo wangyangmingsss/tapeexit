@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "test:tapekit": "tsx --test tests/tapekit-compat.test.mjs",
     "test:wallet": "tsx tools/controlled-test.ts",
+    "recover:test": "tsx tools/controlled-recovery.ts",
     "verify:test-fork": "tsx tools/verify-controlled-test-fork.ts",
     "verify:deployment": "tsx tools/verify-deployment.ts",
     "verify:publication": "tsx tools/verify-publication.ts",

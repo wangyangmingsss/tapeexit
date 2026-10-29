@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TapeExit · 恢复核验</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/client.js"></script>
+</head>
+<body>
+  <header><strong>TapeExit</strong><span>USDt0 / USDC</span><span>只读恢复</span></header>
+  <main>
+    <h1>仓位 #67042 · 恢复核验</h1>
+    <p id="status" role="status" aria-live="polite">正在读取已保存记录</p>
+    <p id="progress" role="status" aria-live="polite"></p>
+    <dl id="record"></dl>
+    <div class="toolbar">
+      <button id="check" disabled>重新核验</button>
+      <button id="export" disabled>导出恢复核验记录</button>
+      <label><input id="auto" type="checkbox" checked>每 30 秒重新检查</label>
+    </div>
+    <p>本次结果来自保存记录与链上数据。原测试记录保留；生产签名关闭，独立安全审阅未完成。</p>
+  </main>
+</body>
+</html>

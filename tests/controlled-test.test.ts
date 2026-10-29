@@ -201,6 +201,29 @@ it('records a revert, requires cancellation evidence, and stops after journal fa
   await expect(broken.bench.reserve(q.id, p.consent, q.maximumGasCostWei)).rejects.toThrow('disk full');
   await expect(broken.bench.preview()).rejects.toThrow('Journal write failed');
 });
+it('reports finality progress without persisting success and completes only after finality advances', async () => {
+  const f = fixture(), a = await f.reserve();
+  await f.bench.attachHash(a.id, txHash); f.mine(a);
+  const writes = f.writes.length;
+  vi.mocked(f.rpc.block).mockImplementation(async tag => tag === 'finalized' ? { ...block, number: '0xe' } : block);
+  await expect(f.bench.reconcile()).rejects.toThrow('not finalized');
+  expect(f.bench.context()).toMatchObject({ complete: false, freshlyVerified: false, unresolved: a.id,
+    finality: { hash: txHash, receiptBlock: '16', finalizedBlock: '14', remainingBlocks: '2' } });
+  expect(f.writes.length).toBe(writes);
+  expect(inspectRecoveryOutcome).not.toHaveBeenCalled();
+  vi.mocked(f.rpc.block).mockResolvedValue(block);
+  expect(await f.bench.reconcile()).toMatchObject({ complete: true, freshlyVerified: true,
+    finality: { remainingBlocks: '0' } });
+  expect(f.methods.some(m => /send|sign/i.test(m))).toBe(false);
+});
+it('never reports finality progress for a receipt on a noncanonical block', async () => {
+  const f = fixture(), a = await f.reserve();
+  await f.bench.attachHash(a.id, txHash); const { receipt } = f.mine(a);
+  receipt.blockHash = `0x${'ef'.repeat(32)}`;
+  await expect(f.bench.reconcile()).rejects.toThrow();
+  expect(f.bench.context().finality).toBeNull();
+  expect(f.bench.context().complete).toBe(false);
+});
 it('rejects corrupt restored calldata and fee evidence', async () => {
   const f = fixture(), a = await f.reserve();
   const saved = structuredClone(f.writes.at(-1)!);

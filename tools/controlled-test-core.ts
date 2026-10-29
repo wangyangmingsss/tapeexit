@@ -42,6 +42,7 @@ export class ControlledTest {
   private busy = false;
   private fault = false;
   private freshlyVerified = false;
+  private finality: { hash: Hex; receiptBlock: string; finalizedBlock: string; remainingBlocks: string; observedAt: string } | null = null;
   constructor(private rpc: StrictRpc, private journal: TestJournal,
     private store: { save(journal: TestJournal): Promise<void> }, private now = Date.now) {
     if (journal.schemaVersion !== 1 || journal.contextId !== ControlledTest.contextId ||
@@ -107,6 +108,7 @@ export class ControlledTest {
       productionSigningApproved: false, independentReview: 'NOT_COMPLETED', assetApproval: 'NOT_APPROVED',
       unresolved: this.pending()?.id ?? null, complete: this.journal.attempts.some(a => a.status === 'confirmed'),
       freshlyVerified: this.freshlyVerified,
+      finality: this.finality && { ...this.finality },
       attempts: structuredClone(this.journal.attempts) };
   }
   private async snapshot() {
@@ -198,6 +200,7 @@ export class ControlledTest {
   reconcile() {
     return this.exclusive(async () => {
       this.freshlyVerified = false;
+      this.finality = null;
       const a = this.pending() ?? this.journal.attempts.find(a => a.status === 'confirmed');
       if (!a?.hash) throw new Error('Supply the wallet transaction hash first');
       await this.rpc.checkChain(196);
@@ -219,7 +222,13 @@ export class ControlledTest {
           price !== quantity(actual.gasPrice) || price > quantity(tx.gasPrice))
         throw new Error('Actual test transaction or settled fee differs from the consent');
       const block = await this.rpc.block(receipt.blockNumber), final = await this.rpc.block('finalized');
-      if (block.hash !== receipt.blockHash || BigInt(final.number) < BigInt(block.number))
+      if (block.hash !== receipt.blockHash) throw new Error('Receipt block is no longer canonical');
+      await this.rpc.assertBlock(block); await this.rpc.assertBlock(final);
+      const remaining = BigInt(block.number) - BigInt(final.number);
+      this.finality = { hash: a.hash, receiptBlock: BigInt(block.number).toString(),
+        finalizedBlock: BigInt(final.number).toString(), remainingBlocks: (remaining > 0n ? remaining : 0n).toString(),
+        observedAt: new Date(this.now()).toISOString() };
+      if (remaining > 0n)
         throw new Error('Receipt not finalized; check again without resending');
       let outcome: TestAttempt['outcome'];
       if (receipt.status === '0x1') {

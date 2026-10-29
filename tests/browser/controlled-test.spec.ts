@@ -105,9 +105,56 @@ test('tampered reservation never reaches the wallet', async ({ page }) => {
 });
 test('pending finality preserves the hash and permits only read-only recovery', async ({ page }) => {
   await install(page, 'pending'); await ready(page); await page.locator('#send').click();
-  await expect(page.locator('#status')).toContainText('not finalized');
+  await expect(page.locator('#status')).toContainText('等待网络最终确认');
   await expect(page.locator('#hash')).toHaveValue(`0x${'ab'.repeat(32)}`);
   await page.locator('#reconcile').click(); expect(await sends(page)).toBe(1);
+});
+test('read-only recovery displays finality progress and recovers after reload without requesting a wallet', async ({ page }) => {
+  const [html, js, css] = await Promise.all([
+    readFile('tools/controlled-test/recovery.html', 'utf8'), readFile('tools/controlled-test/recovery.js', 'utf8'),
+    readFile('tools/publication-workbench/styles.css', 'utf8'),
+  ]);
+  const context = { readOnly: true, policy: TEST_POLICY, sourceCommit: 'b'.repeat(40),
+    freshlyVerified: false, complete: false, attempts: [{ status: 'reserved', hash: `0x${'ab'.repeat(32)}` }],
+    finality: { receiptBlock: '100', finalizedBlock: '98', remainingBlocks: '2', observedAt: new Date().toISOString() } };
+  let finalized = false;
+  const actions: string[] = [];
+  await page.route('**/readonly-recovery', r => r.fulfill({ contentType: 'text/html', body: html }));
+  await page.route('**/client.js', r => r.fulfill({ contentType: 'text/javascript', body: js }));
+  await page.route('**/styles.css', r => r.fulfill({ contentType: 'text/css', body: css }));
+  await page.route('**/api/*', async route => {
+    const action = new URL(route.request().url()).pathname.split('/').at(-1)!;
+    actions.push(action);
+    if (action === 'reconcile' && !finalized)
+      return route.fulfill({ status: 409, json: { error: 'Receipt not finalized; check again without resending' } });
+    if (action === 'reconcile') Object.assign(context, { complete: true, freshlyVerified: true,
+      attempts: [{ status: 'confirmed', hash: context.attempts[0].hash,
+        outcome: { balances: [{ symbol: 'USDt0', delta: '20016' }, { symbol: 'USDC', delta: '19999' }],
+          liquidity: { after: '1980854' } } }],
+      finality: { ...context.finality, finalizedBlock: '101', remainingBlocks: '0' } });
+    await route.fulfill({ json: context });
+  });
+  await page.addInitScript(() => {
+    (window as any).walletCalls = [];
+    (window as any).okxwallet = { request: ({ method }: any) => { (window as any).walletCalls.push(method); throw Error('Forbidden'); } };
+    window.addEventListener('eip6963:requestProvider', () => (window as any).walletCalls.push('discovery'));
+  });
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.goto('/readonly-recovery');
+  await expect(page.locator('#status')).toContainText('等待网络最终确认');
+  await expect(page.locator('#record')).toContainText('98');
+  await expect(page.locator('#progress')).toContainText('秒后重新检查');
+  await page.locator('#auto').uncheck();
+  await page.reload();
+  await expect(page.locator('#status')).toContainText('等待网络最终确认');
+  finalized = true;
+  await page.locator('#check').click();
+  await expect(page.locator('#status')).toContainText('恢复核验完成');
+  await expect(page.locator('#record')).toContainText('0.020016');
+  await expect(page.locator('#record')).toContainText('0.019999');
+  expect(await page.evaluate(() => (window as any).walletCalls)).toEqual([]);
+  expect(actions.every(a => ['context', 'reconcile'].includes(a))).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test('wallet change invalidates preview and mobile layout preserves all controls', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 900 });

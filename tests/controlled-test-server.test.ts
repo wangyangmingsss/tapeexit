@@ -32,3 +32,23 @@ it('rejects foreign origins, extra parameters, large bodies and arbitrary broadc
   expect((await post('reserve', { previewId: 'q', consent: 'c', maximumGasCostWei: '1' })).status).toBe(200);
   expect(bench.reserve).toHaveBeenCalledWith('q', 'c', '1');
 });
+it('read-only recovery exposes verification while refusing every write operation', async () => {
+  const recoveryPort = 14736, recoveryOrigin = `http://127.0.0.1:${recoveryPort}`;
+  const recovery = await createControlledTestServer(bench as unknown as ControlledTest,
+    recoveryPort, 'cd'.repeat(20), { readOnly: true });
+  try {
+    const page = await (await fetch(recoveryOrigin)).text();
+    expect(page).toContain('只读恢复');
+    expect(page).not.toContain('id="send"');
+    const js = await (await fetch(recoveryOrigin + '/client.js')).text();
+    expect(js).not.toMatch(/eth_send|eth_requestAccounts|eip6963|okxwallet/);
+    expect(await (await fetch(recoveryOrigin + '/api/context')).json()).toMatchObject({ readOnly: true });
+    const post = (path: string) => fetch(recoveryOrigin + '/api/' + path, { method: 'POST',
+      headers: { ...headers, origin: recoveryOrigin }, body: '{}' });
+    for (const operation of ['preview', 'reserve', 'hash', 'cancel', 'broadcast'])
+      expect((await post(operation)).status).toBe(405);
+    expect((await post('reconcile')).status).toBe(200);
+  } finally {
+    await new Promise<void>(resolve => { recovery.close(() => resolve()); recovery.closeAllConnections(); });
+  }
+});

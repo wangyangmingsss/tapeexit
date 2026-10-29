@@ -53,6 +53,11 @@ function render() {
     $('hash').value = pending.hash || (saved?.id === pending.id && saved.hash) || '';
   }
   $('record').replaceChildren();
+  if (context.finality) {
+    field('record', '交易所在区块', context.finality.receiptBlock);
+    field('record', '网络已最终确认至', context.finality.finalizedBlock);
+    field('record', '最终确认尚差区块数', context.finality.remainingBlocks);
+  }
   for (const a of context.attempts) {
     field('record', { reserved: '待核验，请勿重发', confirmed: context.freshlyVerified
       ? '到账、余额、剩余流动性与最终确认已核验' : '历史成功记录，本次会话尚未重新核验',
@@ -70,7 +75,9 @@ async function run(name, action) {
   if (busy) return;
   busy = true; since = Date.now(); actionName = name; $('progress').hidden = false; controls();
   try { await action(); }
-  catch (error) { status(`${error.message || '检查未完成'}。已有请求记录保留，请勿重复发送。`); }
+  catch (error) { status(error.message?.startsWith('Receipt not finalized')
+    ? '交易已上链，正在等待网络最终确认。请稍后重新核验，无需重发交易。'
+    : `${error.message || '检查未完成'}。已有请求记录保留，请勿重复发送。`); }
   finally {
     try { await refresh(); } catch { quote = null; status('无法读取测试记录，停止发送并检查本地服务'); }
     busy = false; since = 0; $('progress').hidden = true; controls();

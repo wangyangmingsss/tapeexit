@@ -2,7 +2,8 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import type { ControlledTest } from './controlled-test-core';
 
-export async function createControlledTestServer(bench: ControlledTest, port: number, sourceCommit: string) {
+export async function createControlledTestServer(bench: ControlledTest, port: number, sourceCommit: string,
+  options: { readOnly?: boolean } = {}) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid test port');
   const origin = `http://127.0.0.1:${port}`;
   const headers = {
@@ -13,7 +14,8 @@ export async function createControlledTestServer(bench: ControlledTest, port: nu
   };
   const files = new Map();
   for (const [route, name, type] of [
-    ['/', 'index.html', 'text/html'], ['/client.js', 'client.js', 'text/javascript'],
+    ['/', options.readOnly ? 'recovery.html' : 'index.html', 'text/html'],
+    ['/client.js', options.readOnly ? 'recovery.js' : 'client.js', 'text/javascript'],
     ['/styles.css', '../publication-workbench/styles.css', 'text/css'],
   ]) files.set(route, { bytes: await readFile(new URL(`./controlled-test/${name}`, import.meta.url)), type });
   const server = http.createServer(async (req, res) => {
@@ -28,11 +30,13 @@ export async function createControlledTestServer(bench: ControlledTest, port: nu
       res.writeHead(200, { ...headers, 'content-type': `${type}; charset=utf-8` }); return res.end(bytes);
     }
     if (req.method === 'GET' && req.url === '/api/context')
-      return reply(200, { ...bench.context(), sourceCommit });
+      return reply(200, { ...bench.context(), sourceCommit, readOnly: !!options.readOnly });
     if (req.method !== 'POST') return reply(405, { error: 'Method not allowed' });
     if (req.headers.origin !== origin || req.headers['x-tapeexit-client'] !== 'controlled-test' ||
         req.headers['content-type'] !== 'application/json')
       return reply(403, { error: 'Same-origin JSON required' });
+    if (options.readOnly && req.url !== '/api/reconcile')
+      return reply(405, { error: 'Read-only recovery: operation disabled' });
     try {
       let size = 0;
       const chunks: Buffer[] = [];
