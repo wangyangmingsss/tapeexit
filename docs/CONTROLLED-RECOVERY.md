@@ -19,6 +19,13 @@ npm run verify:runtime-source -- input.json TRUSTED_SHA256 EXACT_INSTALLED_SOLC_
 The repository currently pins solc 0.7.6 for local protocol fixtures. This does not establish WOKB's compiler.
 Do not change compiler settings or install an unverified remote compiler just to obtain a match.
 WOKB source/runtime correspondence is still unresolved; the latest Sourcify response had `match: null`.
+`npm run inspect:runtime-metadata -- ADDRESS DECIMAL_BLOCK` now preserves the complete runtime, code hash,
+fixed block and any recognized legacy Solidity bzzr0 metadata pointer through the existing two-RPC
+quorum. It never strips metadata or infers a compiler from that pointer. The WOKB pointer is
+`1acd4c242aa9e7d3204e3739c65c4f1f467447774834e66773b0ac0e7b3dfe9e`.
+The queried Swarm gateways did not return its metadata. A WETH-like interface or official token-list
+address cannot establish exact source correspondence. A source/compiler/settings record from the
+deployer or explorer is still needed before the complete runtime verifier can resolve this blocker.
 The official `okx/xlayer-docs` token table lists the WOKB address, which is identity documentation, not a source audit.
 USDt0 owner/admin powers include blocking, destruction of blocked funds and upgrades; a current unblocked
 observation cannot establish future transfer safety or governance thresholds.
@@ -42,6 +49,8 @@ Before a real task, obtain review of the exact source/manifest/dependencies and 
 and read back that reviewed candidate, confirm extension behavior at its actual origin, and obtain the
 user's explicit removed-liquidity, minimum-output, recipient, gas ceiling and expiry approval.
 Read and simulate again just before the wallet request. Do not reuse this proposal as signed calldata.
+Use `prepare:review` and the signed intake described in `SECURITY-REVIEW-PACKET.md` to freeze this handoff.
+There is no alternate hidden signer, temporary token allowlist or development bypass for a real exit.
 
 ## 3. Transaction Acceptance
 

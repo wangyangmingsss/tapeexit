@@ -61,3 +61,30 @@ evidenceDigest:
 ```
 
 Leave this blank until a real reviewer provides the evidence. Internal engineering checks must not be labelled independent review.
+
+## Frozen Packet And Signed Intake
+
+After committing and building a clean source, run `npm run prepare:review`.
+This freezes the exact Git archive, dependency lock, production manifest and all candidate files under
+`release-artifacts/independent-review/<source-commit>/`. Existing packets cannot be overwritten.
+The deliberately incomplete `review-template.json` is for an actual external reviewer to complete.
+All eight surfaces require evidence, including recovery and asset governance.
+
+The reviewer supplies a separate JSON report, detached 64-byte Ed25519 signature and PEM public key.
+They keep their private key. Confirm the SHA-256 of the public-key file with the reviewer through a
+separately trusted channel; a digest copied from an untrusted report does not authenticate the reviewer.
+
+```sh
+npm run verify:review -- PACKET_DIRECTORY report.json report.sig reviewer-public.pem TRUSTED_PUBLIC_KEY_SHA256
+```
+
+The verifier checks raw signed bytes, packet/source/build/lock identity, all review surfaces, findings,
+remediation evidence and dates. Request-changes, exclusions and unresolved or accepted critical/high
+findings cannot qualify. Failed verification removes the previous output instead of leaving a stale pass.
+Successful verification only authenticates a statement against the caller-pinned key: human confirmation
+of identity, independence, competence and claims is still necessary. This is an additional review intake
+tool; the formal release evidence preflight remains separate. Neither command opens production signing.
+
+Any source change requires a new packet and review. A review of this disabled candidate does not approve
+a later change to its signing gates. Real-wallet tasks must identify the exact separately reviewed
+executable release, actual origin and asset policy rather than silently modifying this packet.

@@ -23,6 +23,7 @@ jobs:
       - run: npm run report:dependencies
       - run: npm run report:dependency-scope
       - run: npm run verify:reproducibility
+      - run: npm run prepare:review
       - run: npm run build:demo
       - run: npm run print:card
       - run: npx playwright install --with-deps chromium firefox webkit

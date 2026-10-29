@@ -97,6 +97,8 @@ Playwright 已配置演示、生产恢复、备用恢复、发布台和只读钱
 
 - `inspect:assets`：采集候选代币代码、精度和代理槽，不自动批准资产。
 - `verify:runtime-source`：按输入摘要和精确安装编译器核对完整部署 runtime，不裁剪元数据，不批准资产。
+- `inspect:runtime-metadata`：双 RPC 保存完整字节码和旧版 Swarm 元数据指针，不据此推断源码或编译器。
+- `prepare:review` / `verify:review`：冻结源码、依赖锁与发行文件，校验外部审阅者签名的报告；身份和独立性仍需人工确认，不打开签名门禁。详见 [审阅交接](docs/SECURITY-REVIEW-PACKET.md)。
 - `prepare:recovery`：只读核对真实仓位、资产身份与 USDt0 冻结状态，生成 1% 提议和待审条件，不生成签名调用。
 - `verify:recovery`：退出后复核真实交易、收据及相邻区块末余额/流动性；记录同区块其他操作可能影响比较的限制。
 - `inspect:publication`：核对容器/处理器/持有人、固定实现和显式预算，只模拟首笔。
