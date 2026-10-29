@@ -13,8 +13,6 @@ describe('loopback-only publication server', () => {
     prepareNext: vi.fn(async () => ({ operation: 0 })),
     reserve: vi.fn(async () => ({ status: 'reserved' })),
     attachHash: vi.fn(async () => ({})), reconcile: vi.fn(async () => ({})),
-    recordCapabilities: vi.fn(async () => ({ recorded: true })),
-    reserveBatch: vi.fn(async () => ({ attempt: {}, request: {} })),
     recordBundle: vi.fn(async () => ({})), recordBatchFailure: vi.fn(async () => ({})),
   };
   const headers = { origin, 'content-type': 'application/json', 'x-tapeexit-client': 'publication-workbench' };
@@ -64,24 +62,21 @@ describe('loopback-only publication server', () => {
     expect(bench.attachHash).toHaveBeenCalledWith('a', 'hash');
     expect((await post('/api/preview', { extra: 'x'.repeat(5000) })).status).toBe(413);
   });
-  it('records only scoped capability observations and never accepts a batch submission', async () => {
+  it('rejects removed batch creation and capability endpoints without preparing or reserving anything', async () => {
     const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
-    const report = { contextId: 'release', publisher: 'publisher', chainId: 196, outcome: 'reported', atomicStatus: 'supported' };
-    expect((await post('/api/capabilities', report)).status).toBe(200);
-    expect(bench.recordCapabilities).toHaveBeenCalledWith('release', 'publisher', 196, 'reported', 'supported');
-    expect((await post('/api/capabilities', { ...report, calls: [] })).status).toBe(409);
-    expect((await post('/api/sendCalls', { calls: [] })).status).toBe(404);
+    const prepares = bench.prepareNext.mock.calls.length, reserves = bench.reserve.mock.calls.length;
+    for (const path of ['capabilities', 'batch-preview', 'batch-reserve', 'sendCalls'])
+      expect((await post(`/api/${path}`, {})).status).toBe(404);
+    expect(bench.prepareNext.mock.calls).toHaveLength(prepares);
+    expect(bench.reserve.mock.calls).toHaveLength(reserves);
   });
-  it('accepts exact batch preview, reservation and recovery fields without a broadcast endpoint', async () => {
+  it('accepts only exact historical batch recovery fields', async () => {
     const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
-    expect((await post('/api/batch-preview', {})).status).toBe(200);
-    expect(bench.prepareNext).toHaveBeenCalledWith(true);
-    expect((await post('/api/batch-reserve', { previewId: 'p', consent: 'c' })).status).toBe(200);
-    expect(bench.reserveBatch).toHaveBeenCalledWith('p', 'c');
     expect((await post('/api/bundle', { attemptId: 'a', bundleId: 'b' })).status).toBe(200);
     expect(bench.recordBundle).toHaveBeenCalledWith('a', 'b');
     expect((await post('/api/batch-failure', { attemptId: 'a', reason: 'USER_REJECTED_4001' })).status).toBe(200);
-    expect((await post('/api/batch-reserve', { previewId: 'p', consent: 'c', calls: [] })).status).toBe(409);
+    expect((await post('/api/bundle', { attemptId: 'a', bundleId: 'b', calls: [] })).status).toBe(409);
+    expect((await post('/api/batch-failure', { attemptId: 'a', reason: 'WALLET_STATUS_400', calls: [] })).status).toBe(409);
   });
   it('requires exact activation fields and the same origin without accepting supplied calldata', async () => {
     const post = (path: string, body: object, custom = headers) =>

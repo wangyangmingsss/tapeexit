@@ -39,6 +39,6 @@ try {
   process.once('SIGINT', stop);
   process.once('SIGTERM', stop);
   console.log(`TapeExit wallet publication: http://127.0.0.1:${port}/`);
-  console.log('Wallet confirmation required for each upload or separately consented batch. Server has no signer or broadcast endpoint.');
+  console.log('Confirm each upload separately in the wallet. Server has no signer or broadcast endpoint.');
   console.log(`Manifest: ${trustedDigest}`);
 } catch (error) { await Promise.all([store.close(), activationStore?.close()]); throw error; }

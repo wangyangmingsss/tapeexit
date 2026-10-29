@@ -7,7 +7,7 @@ import { digest, encodePublishFile, fallbackTransaction, REGISTRY } from '../too
 import { inspectPublication, parsePublishProfile } from '../tools/operations-core';
 import { resumePublication } from '../tools/resume-publication-core';
 import { verifyPublication } from '../tools/verify-publication-core';
-import { simulateBatch, checkBatchCode, BATCH_CONSENT, BATCH_IMPLEMENTATION } from '../tools/publication-batch';
+import { batchData, checkBatchCode, BATCH_CONSENT, BATCH_IMPLEMENTATION } from '../tools/publication-batch';
 
 vi.mock('../tools/operations-core', async original => ({
   ...await original<typeof import('../tools/operations-core')>(), inspectPublication: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('../tools/resume-publication-core', () => ({ resumePublication: vi.fn() 
 vi.mock('../tools/verify-publication-core', () => ({ verifyPublication: vi.fn() }));
 vi.mock('../tools/publication-batch', async original => ({
   ...await original<typeof import('../tools/publication-batch')>(),
-  simulateBatch: vi.fn(), checkBatchCode: vi.fn(),
+  checkBatchCode: vi.fn(),
 }));
 const testSigner = privateKeyToAccount(`0x${'02'.repeat(32)}`);
 const publisher = testSigner.address;
@@ -36,7 +36,6 @@ const profile = parsePublishProfile({ schemaVersion: 1, chainId: 196, publisher,
 const block: Block = { number: '0x10', hash: `0x${'cd'.repeat(32)}`, timestamp: '0x123' };
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(simulateBatch).mockResolvedValue({ needsUpgrade: true, estimate: 10_000_000n });
   vi.mocked(checkBatchCode).mockResolvedValue(false);
 });
 
@@ -91,64 +90,64 @@ function fixture(saved?: UploadJournal) {
   };
 }
 describe('bounded browser-wallet publication coordinator', () => {
-  async function batch(f = fixture()) {
-    await f.authorize();
-    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'ready');
-    const p = await f.bench.prepareNext(true) as UploadPreview;
-    return { f, p };
+  function legacyBatch() {
+    const now = Date.now();
+    const a: UploadAttempt = { id: 'legacy', operation: 0, createdAt: now, status: 'reserved',
+      transaction: { from: publisher, to: publisher, data: batchData(ops.slice(0, 2)), value: '0x0',
+        chainId: '0xc4', gas: '0xd59f80', gasPrice: '0x1c9c380', nonce: '0x0' },
+      batch: { operations: [0, 1], requestId: '11111111-1111-4111-8111-111111111111',
+        consent: BATCH_CONSENT, consentAt: now, needsUpgrade: true } };
+    const f = fixture({ schemaVersion: 1,
+      contextId: PublicationWorkbench.contextId(profile, publication.manifestSha256),
+      authorization: { grantedAt: now, expiresAt: now + 3600000, maximumWei: profile.maxUploadCostWei },
+      attempts: [a] });
+    return { f, a };
   }
-  it('previews two ordered operations and requires separate batch consent without altering single caps', async () => {
-    const { f, p } = await batch();
-    expect(p.batch?.operations).toEqual([0, 1]);
-    expect(p.maximumCostWei).toBe((14_000_000n * 30_000_000n).toString());
-    expect(p.transaction.to).toBe(publisher);
-    expect(f.bench.context().maxGas).toBe('7000000');
-    await expect(f.bench.reserveBatch(p.id, 'yes')).rejects.toThrow('consent');
-    expect(f.journal.attempts).toHaveLength(0);
-    expect(f.requests.some(m => /send|sign/.test(m))).toBe(false);
+  it('ignores historical capability claims when preparing new single registry transactions', async () => {
+    const f = fixture();
+    f.journal.walletCapabilities = { publisher, chainId: 196, checkedAt: Date.now(),
+      outcome: 'reported', atomicStatus: 'supported' };
+    const restarted = fixture(structuredClone(f.journal));
+    await restarted.authorize();
+    const preview = await restarted.prepare();
+    const a = await restarted.bench.reserve(preview.id);
+    expect(restarted.bench.context().uploadMode).toBe('single-transaction');
+    expect(a.transaction.to).toBe(REGISTRY);
+    expect(a.batch).toBeUndefined();
+    expect(BigInt(a.transaction.gas)).toBeLessThanOrEqual(7000000n);
+    expect(restarted.writes.at(-1)?.walletCapabilities).toEqual(f.journal.walletCapabilities);
+    expect(restarted.requests.some(m => /send|sign|capabilit/i.test(m))).toBe(false);
   });
-  it('persists a recoverable app bundle ID before returning exact EIP-5792 calls and verifies both operations', async () => {
-    const { f, p } = await batch();
-    const { attempt: a, request } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
-    expect(request).toMatchObject({ version: '2.0.0', id: a.batch?.requestId, atomicRequired: true, from: publisher });
-    expect(request.calls).toEqual(p.batch?.calls);
-    expect(f.writes.at(-1)?.attempts.at(-1)).toEqual(a);
-    const restart = new PublicationWorkbench(f.rpc, profile, publication, structuredClone(f.writes.at(-1)!), f.store);
-    await expect(restart.prepareNext()).rejects.toThrow('unresolved');
-    await f.bench.recordBundle(a.id, 'wallet-bundle-1');
+  it('recovers an existing batch across restart, verifies bytes and resumes with a single transaction', async () => {
+    const { f, a } = legacyBatch();
+    await expect(f.bench.prepareNext()).rejects.toThrow('unresolved');
+    await f.bench.recordBundle(a.id, 'old-wallet-bundle');
     await expect(f.bench.recordBundle(a.id, 'different')).rejects.toThrow('Bundle ID');
+    expect(() => new PublicationWorkbench(f.rpc, profile, publication,
+      structuredClone(f.writes.at(-1)!), f.store)).not.toThrow();
     await f.bench.attachHash(a.id, txHash); f.mine(a);
     await f.bench.reconcile();
     expect(f.bench.context().unresolved).toBeNull();
-    expect((await f.prepare()).operation).toBe(2);
+    const p = await f.prepare();
+    expect(p.operation).toBe(2);
+    expect(p.transaction.to).toBe(REGISTRY);
     expect(checkBatchCode).toHaveBeenCalledWith(f.rpc, publisher, block, false);
-    expect(() => fixture(structuredClone(f.writes.at(-1)!))).not.toThrow();
   });
-  it('refuses missing capability, failed simulation, excessive estimates and changed upgrade state', async () => {
-    const f = fixture();
-    await expect(f.bench.prepareNext(true)).rejects.toThrow('Detect');
-    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'ready');
-    vi.mocked(simulateBatch).mockRejectedValueOnce(new Error('implementation pin mismatch'));
-    await expect(f.bench.prepareNext(true)).rejects.toThrow('pin');
-    vi.mocked(simulateBatch).mockResolvedValueOnce({ needsUpgrade: true, estimate: 14_000_000n });
-    await expect(f.bench.prepareNext(true)).rejects.toThrow('gas estimate');
-    const { f: g, p } = await batch();
-    vi.mocked(simulateBatch).mockResolvedValueOnce({ needsUpgrade: false, estimate: 10_000_000n });
-    await expect(g.bench.reserveBatch(p.id, BATCH_CONSENT)).rejects.toThrow('changed');
-    expect(g.journal.attempts).toHaveLength(0);
-  });
-  it('does not cancel unknown batches; explicit rejection still checks nonce and retains the whole budget', async () => {
-    const { f, p } = await batch();
-    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+  it('blocks unknown legacy cancellation and retains its entire budget after explicit rejection', async () => {
+    const { f, a } = legacyBatch();
     await expect(f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE')).rejects.toThrow('Unknown batch');
     await f.bench.recordBatchFailure(a.id, 'USER_REJECTED_4001');
     await f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE');
-    expect(f.bench.context().reservedWei).toBe(p.maximumCostWei);
-    expect(f.bench.context().attempts[0].status).toBe('cancelled-by-user');
+    const cost = 14000000n * 30000000n;
+    expect(f.bench.context().reservedWei).toBe(String(cost));
+    const p = await f.prepare();
+    await f.bench.reserve(p.id);
+    expect(f.bench.context().reservedWei).toBe(String(cost + BigInt(p.maximumCostWei)));
+    expect(f.bench.context().maximumWei).toBe(profile.maxUploadCostWei);
+    expect(() => fixture(structuredClone(f.writes.at(-1)!))).not.toThrow();
   });
-  it('rejects partial byte progress, unsupported implementation and wrapper input without falsely completing a batch', async () => {
-    const { f, p } = await batch();
-    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+  it('rejects partial bytes, changed implementation and wrapper input in historical batches', async () => {
+    const { f, a } = legacyBatch();
     await f.bench.attachHash(a.id, txHash);
     const { actual } = f.mine(a); f.next(1);
     await expect(f.bench.reconcile()).rejects.toThrow('matching publication bytes');
@@ -159,86 +158,41 @@ describe('bounded browser-wallet publication coordinator', () => {
     await expect(f.bench.reconcile()).rejects.toThrow('differs');
     expect(f.bench.context().unresolved).toBe(a.id);
   });
-  it('retains a reverted batch and rejects corrupt persisted batch operations', async () => {
-    const { f, p } = await batch();
-    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
+  it('retains reverted batch costs and rejects corrupt historical operation order', async () => {
+    const { f, a } = legacyBatch();
     await f.bench.attachHash(a.id, txHash); f.mine(a, '0x0');
     await f.bench.reconcile();
     expect(f.bench.context().attempts[0].status).toBe('reverted');
-    expect(f.bench.context().reservedWei).toBe(p.maximumCostWei);
+    expect(f.bench.context().reservedWei).toBe(String(14000000n * 30000000n));
     const saved = structuredClone(f.writes.at(-1)!);
     saved.attempts[0].batch!.operations = [0, 2];
     expect(() => fixture(saved)).toThrow('batch reservation');
   });
-  it.each(['wrong-signer', 'extra-authorization', 'wrong-chain', 'wrong-target'])('rejects unsafe EIP-7702 authorization: %s', async mode => {
-    const { f, p } = await batch();
-    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
-    await f.bench.attachHash(a.id, txHash);
-    const { actual } = f.mine(a);
-    const signer = privateKeyToAccount(`0x${'01'.repeat(32)}`);
-    const signed = await signer.signAuthorization({ contractAddress: BATCH_IMPLEMENTATION, chainId: 196, nonce: 1 });
-    const auth = { ...signed, chainId: '0xc4', nonce: '0x1', yParity: `0x${signed.yParity}` };
-    if (mode === 'wrong-chain') auth.chainId = '0x1';
-    if (mode === 'wrong-target') auth.address = container;
-    Object.assign(actual, { type: '0x4', maxFeePerGas: a.transaction.gasPrice, maxPriorityFeePerGas: '0x1',
-      authorizationList: mode === 'extra-authorization' ? [auth, auth] : [auth] });
-    await expect(f.bench.reconcile()).rejects.toThrow(/authorization/i);
-    expect(f.bench.context().unresolved).toBe(a.id);
-  });
-  it('verifies the publisher signature on a pinned EIP-7702 self-upgrade before completing both calls', async () => {
-    const { f, p } = await batch();
-    const { attempt: a } = await f.bench.reserveBatch(p.id, BATCH_CONSENT);
-    await f.bench.attachHash(a.id, txHash);
-    const { actual } = f.mine(a);
-    const signed = await testSigner.signAuthorization({ contractAddress: BATCH_IMPLEMENTATION, chainId: 196, nonce: 1 });
-    Object.assign(actual, { type: '0x4', maxFeePerGas: a.transaction.gasPrice, maxPriorityFeePerGas: '0x1',
-      authorizationList: [{ ...signed, chainId: '0xc4', nonce: '0x1', yParity: `0x${signed.yParity}` }] });
-    await f.bench.reconcile();
-    expect(f.bench.context().attempts[0].status).toBe('confirmed');
-  });
-  it('shares the original budget across batches and cancellations without silently increasing it', async () => {
-    const { f, p } = await batch();
-    let preview = p;
-    for (let i = 0; i < 16; i++) {
-      const { attempt: a } = await f.bench.reserveBatch(preview.id, BATCH_CONSENT);
-      await f.bench.recordBatchFailure(a.id, 'USER_REJECTED_4001');
-      await f.bench.acknowledgeCancellation(a.id, 'WALLET_REQUEST_CANCELLED_NO_PENDING_SIGNATURE');
-      if (i < 15) preview = await f.bench.prepareNext(true) as UploadPreview;
-    }
-    expect(f.bench.context().maximumWei).toBe(profile.maxUploadCostWei);
-    expect(f.bench.context().reservedWei).toBe((16n * 14_000_000n * 30_000_000n).toString());
-    await expect(f.bench.prepareNext(true)).rejects.toThrow('budget insufficient');
-    expect(f.journal.attempts).toHaveLength(16);
-    expect(() => fixture(structuredClone(f.writes.at(-1)!))).not.toThrow();
-  });
-  it('persists capability observations without granting fees, reserving uploads or trusting browser claims', async () => {
+  it.each(['wrong-signer', 'extra-authorization', 'wrong-chain', 'wrong-target', 'valid'])(
+    'checks historical EIP-7702 signatures before accepting a batch: %s', async mode => {
+      const { f, a } = legacyBatch();
+      await f.bench.attachHash(a.id, txHash);
+      const { actual } = f.mine(a);
+      const signer = mode === 'valid' ? testSigner : privateKeyToAccount(`0x${'01'.repeat(32)}`);
+      const signed = await signer.signAuthorization({ contractAddress: BATCH_IMPLEMENTATION, chainId: 196, nonce: 1 });
+      const auth = { ...signed, chainId: '0xc4', nonce: '0x1', yParity: `0x${signed.yParity}` };
+      if (mode === 'wrong-chain') auth.chainId = '0x1';
+      if (mode === 'wrong-target') auth.address = container;
+      Object.assign(actual, { type: '0x4', maxFeePerGas: a.transaction.gasPrice, maxPriorityFeePerGas: '0x1',
+        authorizationList: mode === 'extra-authorization' ? [auth, auth] : [auth] });
+      if (mode === 'valid') {
+        await f.bench.reconcile();
+        expect(f.bench.context().attempts[0].status).toBe('confirmed');
+      } else {
+        await expect(f.bench.reconcile()).rejects.toThrow(/authorization/i);
+        expect(f.bench.context().unresolved).toBe(a.id);
+      }
+    });
+  it('still rejects malformed capability metadata in historical journals', () => {
     const f = fixture();
-    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'reported', 'supported');
-    expect(f.bench.context()).toMatchObject({ reservedWei: '0', authorization: null, attempts: [],
-      walletCapabilities: { publisher, chainId: 196, outcome: 'reported', atomicStatus: 'supported' } });
-    expect(f.requests).toHaveLength(0);
-    const restarted = fixture(structuredClone(f.writes.at(-1)!));
-    expect(restarted.bench.context().walletCapabilities).toEqual(f.bench.context().walletCapabilities);
-    await expect(restarted.bench.reserve((await restarted.prepare()).id)).rejects.toThrow('consent');
-  });
-  it.each([
-    ['other-release', publisher, 196, 'reported', 'supported'],
-    [null, container, 196, 'reported', 'supported'],
-    [null, publisher, 1, 'reported', 'supported'],
-    [null, publisher, 196, 'reported', 'unknown'],
-    [null, publisher, 196, 'timeout', 'supported'],
-    [null, publisher, 196, 'reported', null],
-  ])('rejects capability claims outside the current context: %j', async (context, address, chain, outcome, atomic) => {
-    const f = fixture();
-    await expect(f.bench.recordCapabilities(context ?? f.bench.contextId, address, chain, outcome, atomic)).rejects.toThrow('observation');
-    expect(f.writes).toHaveLength(0);
-  });
-  it('rejects corrupt saved capability observations and accepts a method-unavailable result', async () => {
-    const f = fixture();
-    await f.bench.recordCapabilities(f.bench.contextId, publisher, 196, 'method-unavailable', null);
-    const saved = structuredClone(f.writes.at(-1)!);
-    saved.walletCapabilities!.chainId = 1 as 196;
-    expect(() => fixture(saved)).toThrow('capability observation');
+    f.journal.walletCapabilities = { publisher, chainId: 1 as 196, checkedAt: Date.now(),
+      outcome: 'reported', atomicStatus: 'supported' };
+    expect(() => fixture(f.journal)).toThrow('capability observation');
   });
   it('quotes without signing and refuses reserve until explicit exact fee consent', async () => {
     const f = fixture(), preview = await f.prepare();

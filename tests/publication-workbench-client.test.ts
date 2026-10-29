@@ -82,7 +82,7 @@ it.each(['confirmed', 'reverted'])('counts down verification, preserves errors a
   expect(fetcher.mock.calls.every(([url]) => /\/api\/(context|reconcile)$/.test(url))).toBe(true);
 });
 
-async function capabilityClient(read: () => Promise<unknown>) {
+async function connectedClient() {
   const base = `${process.cwd()}/tools/publication-workbench/`;
   const template = document.createElement('template');
   template.innerHTML = await readFile(`${base}index.html`, 'utf8');
@@ -90,16 +90,14 @@ async function capabilityClient(read: () => Promise<unknown>) {
   document.body.replaceChildren(template.content);
   const publisher = '0x1000000000000000000000000000000000000001';
   const context = { contextId: 'release', publisher, fileCount: 9, totalBytes: 587736, totalOperations: 31,
-    maximumWei: '7000000000000000', reservedWei: '0', attempts: [], unresolved: null, walletCapabilities: null };
-  const fetcher = vi.fn(async (_url: string, options?: RequestInit) => {
-    if (_url.endsWith('/capabilities')) context.walletCapabilities = JSON.parse(String(options?.body));
+    maximumWei: '7000000000000000', reservedWei: '0', attempts: [], unresolved: null };
+  const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => {
     return Response.json(context);
   });
   const events = new Map<string, () => void>();
-  const provider = { request: vi.fn(async ({ method }: { method: string }) => {
+  const provider = { request: vi.fn(async ({ method }: { method: string }): Promise<unknown> => {
     if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [publisher];
     if (method === 'eth_chainId') return '0xc4';
-    if (method === 'wallet_getCapabilities') return read();
     throw new Error(`Unexpected wallet method ${method}`);
   }), on: (event: string, callback: () => void) => events.set(event, callback),
   removeListener: (event: string) => events.delete(event) };
@@ -111,109 +109,31 @@ async function capabilityClient(read: () => Promise<unknown>) {
     return 0;
   }, () => {});
   window.dispatchEvent(new CustomEvent('eip6963:announceProvider', {
-    detail: { info: { uuid: 'capability-test-wallet', name: 'Capability test wallet' }, provider },
+    detail: { info: { uuid: 'test-wallet', name: 'Test wallet' }, provider },
   }));
-  const button = document.getElementById('detect-batch') as HTMLButtonElement;
-  expect(button.disabled).toBe(true);
+  const button = document.getElementById('connect') as HTMLButtonElement;
   (document.getElementById('connect') as HTMLButtonElement).click();
   await vi.waitFor(() => expect(button.disabled).toBe(false));
-  return { button, provider, fetcher, context, publisher, events,
-    tick: () => tick(), timeout: () => timeout(), result: document.getElementById('batch-capability')! };
+  return { provider, fetcher, context, publisher, events, tick: () => tick(), timeout: () => timeout() };
 }
 
-it.each([
-  [{ '0xc4': { atomic: { status: 'supported' } } }, 'reported', 'supported'],
-  [{ '0xc4': { atomic: { status: 'ready' } } }, 'reported', 'ready'],
-  [{ '0xC4': { atomic: { status: 'unsupported' } } }, 'reported', 'unsupported'],
-  [{ '0x1': { atomic: { status: 'supported' } } }, 'not-reported', null],
-  [{ '0x0': { atomic: { status: 'supported' } } }, 'not-reported', null],
-  [{ '0xc4': {} }, 'not-reported', null],
-  [{ '0xc4': { atomic: { status: true } } }, 'invalid-response', null],
-  [[], 'invalid-response', null],
-  [null, 'invalid-response', null],
-  [{ '0xc4': { atomic: { status: 'supported' } }, '0xC4': { atomic: { status: 'unsupported' } } }, 'invalid-response', null],
-])('records only explicit X Layer capability observations: %j', async (value, outcome, atomicStatus) => {
-  const f = await capabilityClient(async () => value);
-  f.button.click();
-  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
-  expect(f.context.walletCapabilities).toMatchObject({ outcome, atomicStatus });
-  expect(f.provider.request).toHaveBeenCalledWith({
-    method: 'wallet_getCapabilities', params: [f.publisher, ['0xc4']],
-  });
-  expect(f.provider.request.mock.calls.every(([request]) =>
-    ['eth_requestAccounts', 'eth_accounts', 'eth_chainId', 'wallet_getCapabilities'].includes(request.method))).toBe(true);
-  expect(f.fetcher.mock.calls.every(([url]) => /\/api\/(context|capabilities)$/.test(url))).toBe(true);
-  expect(f.result.textContent).toContain(['ready', 'supported'].includes(String(atomicStatus))
-    ? '可准备两步批量' : '当前上传仍采用逐笔确认');
+it('exposes only single upload controls and does not detect capabilities on connection', async () => {
+  const f = await connectedClient();
+  for (const id of ['detect-batch', 'prepare-batch', 'send-batch', 'batch-consent'])
+    expect(document.getElementById(id)).toBeNull();
+  expect(f.provider.request.mock.calls.every(([r]) =>
+    ['eth_requestAccounts', 'eth_accounts', 'eth_chainId'].includes(r.method))).toBe(true);
+  expect(f.fetcher.mock.calls.every(([url]) => url === '/api/context')).toBe(true);
 });
 
-it('shows a countdown, prevents duplicate detection and ignores a late result after timeout', async () => {
-  let settle!: (value: unknown) => void;
-  const pending = new Promise(resolve => { settle = resolve; });
-  const f = await capabilityClient(() => pending);
-  const now = Date.now();
-  vi.spyOn(Date, 'now').mockReturnValue(now);
-  f.button.click(); f.button.click();
-  await vi.waitFor(() => expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_getCapabilities')).toHaveLength(1));
-  expect(f.button.textContent).toContain('15 秒');
-  vi.mocked(Date.now).mockReturnValue(now + 5000); f.tick();
-  expect(f.button.textContent).toContain('10 秒');
-  f.timeout();
-  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
-  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'timeout', atomicStatus: null });
-  settle({ '0xc4': { atomic: { status: 'supported' } } });
-  await Promise.resolve(); await Promise.resolve();
-  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'timeout' });
-  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/capabilities'))).toHaveLength(1);
-});
-
-it('does not persist capability results from a wallet that changed during detection', async () => {
-  let settle!: (value: unknown) => void;
-  const f = await capabilityClient(() => new Promise(resolve => { settle = resolve; }));
-  f.button.click();
-  await vi.waitFor(() => expect(settle).toBeDefined());
-  f.events.get('accountsChanged')!();
-  settle({ '0xc4': { atomic: { status: 'supported' } } });
-  await vi.waitFor(() => expect(document.getElementById('status')!.textContent).toMatch(/变化|不匹配/));
-  expect(f.context.walletCapabilities).toBeNull();
-  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/capabilities'))).toBe(false);
-});
-
-it('reports an unsupported wallet method without falling back to any transaction request', async () => {
-  const f = await capabilityClient(async () => { throw Object.assign(new Error('Method not found'), { code: -32601 }); });
-  f.button.click();
-  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
-  expect(f.context.walletCapabilities).toMatchObject({ outcome: 'method-unavailable', atomicStatus: null });
-  expect(f.result.textContent).toContain('未提供能力检测接口');
-  expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
-});
-
-async function batchClient(mode = 'success') {
-  const f = await capabilityClient(async () => ({ '0xc4': { atomic: { status: 'ready' } } }));
-  f.button.click();
-  await vi.waitFor(() => expect(f.button.disabled).toBe(false));
+async function legacyClient(mode = 'success') {
+  const f = await connectedClient();
   const ctx = f.context as unknown as Record<string, any>;
-  const registry = '0x2000000000000000000000000000000000000002';
-  Object.assign(ctx, { registry, maxGas: '7000000', maxGasPriceWei: '30000000',
-    authorization: { expiresAt: Date.now() + 3600000 }, batch: { consent: 'batch-consent' } });
-  const calls = [0, 1].map(n => ({ to: registry, data: `0x1234560${n}`, value: '0x0' }));
-  const transaction = { from: f.publisher, to: f.publisher, data: '0xabcdef12', value: '0x0',
-    chainId: '0xc4', gas: '0xd59f80', gasPrice: '0x1c9c380', nonce: '0x0' };
-  const preview = { id: 'preview', expiresAt: Date.now() + 60000, operation: 0, remaining: 31,
-    maximumCostWei: '420000000000000', transaction,
-    batch: { operations: [0, 1], files: [{ file: 'index.js', chunk: 1 }, { file: 'index.js', chunk: 2 }],
-      calls, estimatedGas: '10000000', needsUpgrade: true, implementation: registry } };
+  ctx.attempts = [{ id: 'legacy', operation: 0, status: 'reserved',
+    batch: { operations: [0, 1], requestId: 'app-id', bundleId: 'wallet-id', needsUpgrade: true } }];
+  ctx.unresolved = 'legacy';
   f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
     const body = options?.body ? JSON.parse(String(options.body)) : {};
-    if (url.endsWith('/batch-preview')) return Response.json(preview);
-    if (url.endsWith('/batch-reserve')) {
-      const attempt = { id: 'a', operation: 0, status: 'reserved', transaction, batch: {
-        operations: [0, 1], requestId: 'app-id', needsUpgrade: true } };
-      ctx.attempts = [attempt]; ctx.unresolved = attempt.id;
-      return Response.json({ attempt, request: { version: '2.0.0', id: 'app-id', from: f.publisher,
-        chainId: '0xc4', atomicRequired: true,
-        calls: mode === 'tampered' ? [{ ...calls[0], data: '0x00' }, calls[1]] : calls } });
-    }
     if (url.endsWith('/bundle')) ctx.attempts[0].batch.bundleId = body.bundleId;
     if (url.endsWith('/hash')) ctx.attempts[0].hash = body.hash;
     if (url.endsWith('/batch-failure')) ctx.attempts[0].batch.offchainFailure = true;
@@ -223,56 +143,40 @@ async function batchClient(mode = 'success') {
   f.provider.request.mockImplementation(async ({ method }: { method: string }) => {
     if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [f.publisher];
     if (method === 'eth_chainId') return '0xc4';
-    if (method === 'wallet_sendCalls') {
+    if (method === 'wallet_getCallsStatus') {
       if (mode === 'unknown') throw new Error('wallet response lost');
-      if (mode === 'rejected') throw Object.assign(new Error('User rejected'), { code: 4001 });
-      return { id: 'wallet-id' };
+      return { version: '2.0.0', id: mode === 'mismatch' ? 'wrong-id' : 'wallet-id', chainId: '0xc4',
+        status: mode === 'partial' ? 600 : mode === 'pending' ? 100 : mode === 'failed' ? 400 : 200,
+        atomic: true, receipts: mode === 'failed' ? [] : [{ transactionHash: `0x${'ab'.repeat(32)}` }] };
     }
-    if (method === 'wallet_getCallsStatus') return { version: '2.0.0', id: 'wallet-id', chainId: '0xc4',
-      status: mode === 'partial' ? 600 : mode === 'pending' ? 100 : 200, atomic: true,
-      receipts: [{ transactionHash: `0x${'ab'.repeat(32)}` }] };
     throw new Error('unexpected wallet method');
   });
-  Object.defineProperty(navigator, 'locks', { configurable: true, value: {
-    request: async (_name: string, _options: unknown, fn: (lock: object) => Promise<void>) => fn({}),
-  } });
-  (document.getElementById('prepare-batch') as HTMLButtonElement).click();
-  await vi.waitFor(() => expect(document.getElementById('batch-preview')!.textContent).toContain('index.js'));
-  await vi.waitFor(() => expect((document.getElementById('prepare-batch') as HTMLButtonElement).disabled).toBe(false));
-  const send = document.getElementById('send-batch') as HTMLButtonElement;
-  expect(send.disabled).toBe(true);
-  const consent = document.getElementById('batch-consent') as HTMLInputElement;
-  consent.checked = true; consent.dispatchEvent(new Event('change'));
-  expect(send.disabled).toBe(false);
-  return { ...f, send, ctx };
+  (document.getElementById('connect') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
+  return { ...f, ctx, recover: document.getElementById('recover-batch') as HTMLButtonElement };
 }
-it('submits one durable atomic batch, checks wallet status and counts two verified steps', async () => {
-  const f = await batchClient();
-  f.send.click(); f.send.click();
+it('recovers an existing batch read-only and counts both verified operations', async () => {
+  const f = await legacyClient(); f.recover.click(); f.recover.click();
   await vi.waitFor(() => expect(document.getElementById('verification-result')!.textContent).toContain('本批 2 步'));
   expect(document.getElementById('confirmed')!.textContent).toBe('2 / 31 步');
-  expect(document.getElementById('batch-progress')!.textContent).toContain('核验成功');
-  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_sendCalls')).toHaveLength(1);
-  expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_getCallsStatus')).toHaveLength(1);
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
   const paths = f.fetcher.mock.calls.map(([url]) => url);
-  expect(paths.indexOf('/api/batch-reserve')).toBeLessThan(paths.indexOf('/api/bundle'));
   expect(paths.indexOf('/api/hash')).toBeLessThan(paths.indexOf('/api/reconcile'));
 });
-it.each(['unknown', 'rejected', 'tampered', 'partial', 'pending'])('preserves unresolved batch without fallback: %s', async mode => {
-  const f = await batchClient(mode);
-  f.send.click();
-  await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
-  expect(f.ctx.unresolved).toBe('a');
-  expect((document.getElementById('refresh') as HTMLButtonElement).disabled).toBe(true);
-  expect(f.provider.request.mock.calls.some(([r]) => r.method === 'eth_sendTransaction')).toBe(false);
-  expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/reconcile'))).toBe(false);
-  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'wallet_sendCalls'))
-    .toHaveLength(mode === 'tampered' ? 0 : 1);
-  if (mode === 'rejected' || mode === 'tampered') expect(f.ctx.attempts[0].batch.offchainFailure).toBe(true);
-});
+it.each(['unknown', 'partial', 'pending', 'mismatch', 'failed'])(
+  'keeps historical batch recovery blocked without new sends: %s', async mode => {
+    const f = await legacyClient(mode); f.recover.click();
+    await vi.waitFor(() => expect((document.getElementById('connect') as HTMLButtonElement).disabled).toBe(false));
+    expect(f.ctx.unresolved).toBe('legacy');
+    expect((document.getElementById('refresh') as HTMLButtonElement).disabled).toBe(true);
+    expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
+    expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/reconcile'))).toBe(false);
+    expect(!!f.ctx.attempts[0].batch.offchainFailure).toBe(mode === 'failed');
+  });
 
 async function activationClient(mode = 'success') {
-  const f = await capabilityClient(async () => ({}));
+  const f = await connectedClient();
   const ctx = f.context as unknown as Record<string, any>;
   const binding = '0x3000000000000000000000000000000000000003';
   const transaction = { from: f.publisher, to: binding, data: '0x12345678', value: '0x0',
@@ -284,8 +188,9 @@ async function activationClient(mode = 'success') {
     observed: null, attempts: [] } as Record<string, any>;
   ctx.activation = a;
   // Preserve completed upload history while all activation transitions use a separate record.
-  ctx.attempts = [{ id: 'upload', operation: 30, status: 'confirmed',
-    batch: { operations: Array.from({ length: 31 }, (_, n) => n) } }];
+  ctx.attempts = Array.from({ length: 31 }, (_, operation) => ({
+    id: `upload-${operation}`, operation, status: 'confirmed',
+  }));
   let settle!: () => void;
   const waiting = new Promise<void>(resolve => { settle = resolve; });
   f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
@@ -337,7 +242,7 @@ it('requires a separate activation checkbox, submits exactly once and preserves 
   await vi.waitFor(() => expect(document.getElementById('activation-result')!.textContent).toContain('激活核验成功'));
   expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
   expect(document.getElementById('confirmed')!.textContent).toBe('31 / 31 步');
-  expect(f.ctx.attempts).toHaveLength(1);
+  expect(f.ctx.attempts).toHaveLength(31);
   expect(f.a.attempts).toHaveLength(1);
   const paths = f.fetcher.mock.calls.map(([url]) => url);
   expect(paths.indexOf('/api/activation/reserve')).toBeLessThan(paths.indexOf('/api/activation/hash'));

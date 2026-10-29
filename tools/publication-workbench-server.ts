@@ -77,15 +77,11 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
           default: return reply(404, { error: 'Unknown activation operation' });
         }
       }
-      if (activation?.context().unresolved && ['/api/reserve', '/api/batch-reserve'].includes(path ?? ''))
+      if (activation?.context().unresolved && path === '/api/reserve')
         throw new Error('Resolve pending activation before requesting another wallet transaction');
       switch (path) {
         case '/api/preview':
           exactKeys([]); return reply(200, await workbench.prepareNext());
-        case '/api/batch-preview':
-          exactKeys([]); return reply(200, await workbench.prepareNext(true));
-        case '/api/batch-reserve':
-          exactKeys(['previewId', 'consent']); return reply(200, await workbench.reserveBatch(body.previewId, body.consent));
         case '/api/bundle':
           exactKeys(['attemptId', 'bundleId']); return reply(200, await workbench.recordBundle(body.attemptId, body.bundleId));
         case '/api/batch-failure':
@@ -98,10 +94,6 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
           exactKeys(['attemptId', 'hash']); return reply(200, await workbench.attachHash(body.attemptId, body.hash));
         case '/api/reconcile':
           exactKeys([]); return reply(200, await workbench.reconcile());
-        case '/api/capabilities':
-          exactKeys(['contextId', 'publisher', 'chainId', 'outcome', 'atomicStatus']);
-          return reply(200, await workbench.recordCapabilities(body.contextId, body.publisher, body.chainId,
-            body.outcome, body.atomicStatus));
         case '/api/cancel-request':
           exactKeys(['attemptId', 'acknowledgement']);
           return reply(200, await workbench.acknowledgeCancellation(body.attemptId, body.acknowledgement));

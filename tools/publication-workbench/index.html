@@ -23,8 +23,6 @@
     <h2>OKX 钱包</h2>
     <div class="toolbar"><select id="wallet" aria-label="钱包"></select><button id="connect" disabled>连接钱包</button></div>
     <p id="account" role="status">等待钱包</p>
-    <div class="toolbar"><button id="detect-batch" disabled>检测批量支持</button></div>
-    <p id="batch-capability" role="status" aria-live="polite">尚未检测当前钱包的 X Layer 批量能力</p>
     <section id="activation-section" hidden>
       <h2>容器激活 · 30 天</h2>
       <p id="activation-state" role="status" aria-live="polite">尚未读取链上激活状态</p>
@@ -51,17 +49,11 @@
     <h2>下一笔上传</h2>
     <dl id="preview"><dt>状态</dt><dd>尚未准备</dd></dl>
     <div class="toolbar"><button id="refresh" disabled>准备 / 刷新下一笔</button><button id="send" disabled>在钱包中确认这一笔</button></div>
-    <h2>批量上传</h2>
-    <p>每批最多两个步骤，按顺序原子执行。首次可能需要在钱包确认升级账户；升级费用另计。钱包可能要求多次确认。批量接口不能强制钱包费用上限，请核对钱包最终费用。</p>
-    <dl id="batch-preview"><dt>状态</dt><dd>尚未准备批量</dd></dl>
-    <label class="consent"><input id="batch-consent" type="checkbox"><span>我同意本批展示的费用范围，并自行核对钱包选用的账户升级方案和费用；如钱包参数超出范围，我会拒绝签名。观察到的实现代码尚未经过独立安全审阅。</span></label>
-    <div class="toolbar"><button id="prepare-batch" disabled>准备两步批量</button><button id="send-batch" disabled>在钱包中确认本批</button></div>
-    <p id="batch-progress" role="status" aria-live="polite"></p>
     <section id="pending-section" hidden>
       <h2>待核验的钱包请求</h2>
       <p id="pending-status"></p>
       <label id="bundle-label" hidden>钱包批量请求 ID<input id="bundle-id" type="text" autocomplete="off" spellcheck="false" maxlength="512"></label>
-      <div class="toolbar"><button id="recover-batch" hidden>保存 ID 并查询批量结果</button></div>
+      <div class="toolbar"><button id="recover-batch" hidden>恢复历史批量请求</button></div>
       <label>钱包交易哈希<input id="tx-hash" type="text" autocomplete="off" spellcheck="false" placeholder="0x…" maxlength="66"></label>
       <div class="toolbar"><button id="attach">保存交易哈希</button><button id="reconcile">核验交易和文件</button></div>
       <p id="verification-progress" role="status" aria-live="polite" hidden></p>

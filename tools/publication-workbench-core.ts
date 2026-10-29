@@ -6,7 +6,7 @@ import { digest, REGISTRY, encodePublishFile, fallbackTransaction, type loadPubl
 import { inspectPublication, parsePublishProfile, type PublishProfile } from './operations-core';
 import { resumePublication } from './resume-publication-core';
 import { verifyPublication } from './verify-publication-core';
-import { batchData, BATCH_CONSENT, BATCH_IMPLEMENTATION, BATCH_CODE_HASH, checkBatchCode, simulateBatch } from './publication-batch';
+import { batchData, BATCH_CONSENT, BATCH_IMPLEMENTATION, checkBatchCode } from './publication-batch';
 
 type Publication = Awaited<ReturnType<typeof loadPublication>>;
 export interface UploadTransaction {
@@ -42,8 +42,6 @@ export interface JournalStore { save(journal: UploadJournal): Promise<void> }
 export interface UploadPreview {
   id: string; expiresAt: number; operation: number; remaining: number; file: string; chunk: number;
   maximumCostWei: string; block: Block; transaction: UploadTransaction;
-  batch?: { operations: number[]; files: { file: string; chunk: number }[]; needsUpgrade: boolean;
-    estimatedGas: string; implementation: string; codeHash: string; calls: { to: string; data: Hex; value: '0x0' }[] };
 }
 const hex = (n: bigint): Hex => `0x${n.toString(16)}`;
 function quantity(value: unknown): bigint {
@@ -194,24 +192,10 @@ export class PublicationWorkbench {
       maxGasPriceWei: this.profile.maxFeePerGasWei, reservedWei: this.reservedCost().toString(),
       authorization: this.journal.authorization, attempts: structuredClone(this.journal.attempts),
       unresolved: this.unresolved()?.id ?? null,
-      walletCapabilities: this.journal.walletCapabilities ? structuredClone(this.journal.walletCapabilities) : null,
-      batch: { maximumOperations: 2, implementation: BATCH_IMPLEMENTATION, codeHash: BATCH_CODE_HASH,
-        consent: BATCH_CONSENT },
+      uploadMode: 'single-transaction',
       scope: 'Upload registry calls only. No activation, token approval, liquidity or app funds operations. ' +
         'Observed code pins are not an independent security review. EVM gas cap excludes chain-specific fees.',
     };
-  }
-  recordCapabilities(contextId: unknown, publisher: unknown, chainId: unknown, outcome: unknown, atomicStatus: unknown) {
-    return this.exclusive(async () => {
-      if (contextId !== this.contextId || publisher !== this.profile.publisher || chainId !== 196 ||
-          !validCapabilityResult(outcome, atomicStatus))
-        throw new Error('Wallet capability observation does not match upload context');
-      // Browser observations are informational; they never authorize signing or fees.
-      this.journal.walletCapabilities = { publisher: this.profile.publisher, chainId: 196, checkedAt: this.now(),
-        outcome: outcome as CapabilityOutcome, atomicStatus: atomicStatus as AtomicStatus | null };
-      await this.persist();
-      return this.context();
-    });
   }
   authorize(contextId: unknown, maximumWei: unknown) {
     return this.exclusive(async () => {
@@ -244,7 +228,7 @@ export class PublicationWorkbench {
       return verifyPublication(this.rpc, this.profile.container, this.publication, this.publication.manifestSha256);
     });
   }
-  private async prepare(batchMode = false): Promise<UploadPreview | { complete: true; readback: unknown }> {
+  private async prepare(): Promise<UploadPreview | { complete: true; readback: unknown }> {
     if (this.unresolved()) throw new Error('Previous wallet request unresolved; do not resend');
     await this.checkHistory();
     const plan = await resumePublication(this.rpc, this.profile.container, this.publication);
@@ -268,31 +252,6 @@ export class PublicationWorkbench {
     ]);
     if (quantity(latest) !== quantity(pending)) throw new Error('Publisher has pending transactions; resolve them first');
     if (price > BigInt(this.profile.maxFeePerGasWei)) throw new Error('Current gas price exceeds cap');
-    if (batchMode) {
-      const capability = this.journal.walletCapabilities;
-      if (!capability || !['ready', 'supported'].includes(capability.atomicStatus ?? '') ||
-          this.now() - capability.checkedAt > 3_600_000)
-        throw new Error('Detect current wallet atomic batch support first');
-      const selected = plan.transactions.slice(0, 2);
-      const indices = selected.map(item => this.operations.findIndex(o => equal(item, o)));
-      if (indices.some((n, i) => n < 0 || (i > 0 && n !== indices[i - 1] + 1)))
-        throw new Error('Noncontiguous batch continuation');
-      const data = batchData(selected), gas = BigInt(this.profile.maxGasPerTransaction) * BigInt(selected.length);
-      const simulation = await simulateBatch(this.rpc, this.profile.publisher, data, hex(gas), plan.block);
-      if ((simulation.estimate * 120n + 99n) / 100n > gas) throw new Error('Batch gas estimate exceeds cap; use single upload');
-      // EIP-5792 has no standard fee cap fields. Reserve the full displayed envelope.
-      const cost = gas * BigInt(this.profile.maxFeePerGasWei);
-      if (this.reservedCost() + cost > BigInt(this.profile.maxUploadCostWei)) throw new Error('Remaining upload budget insufficient');
-      await this.rpc.assertBlock(plan.block); await this.rpc.assertBlock(identity.block);
-      return { id: randomUUID(), expiresAt: this.now() + 60_000, operation, remaining: plan.transactions.length,
-        file: op.file, chunk: op.chunk, maximumCostWei: cost.toString(), block: plan.block,
-        transaction: { from: this.profile.publisher, to: this.profile.publisher, data, value: '0x0',
-          chainId: '0xc4', nonce: latest, gas: hex(gas), gasPrice: hex(BigInt(this.profile.maxFeePerGasWei)) },
-        batch: { operations: indices, files: selected.map(({ file, chunk }) => ({ file, chunk })),
-          needsUpgrade: simulation.needsUpgrade, estimatedGas: simulation.estimate.toString(),
-          implementation: BATCH_IMPLEMENTATION, codeHash: BATCH_CODE_HASH,
-          calls: selected.map(item => ({ to: REGISTRY, data: item.data, value: '0x0' as const })) } };
-    }
     const base = { from: this.profile.publisher, to: REGISTRY, data: op.data, value: '0x0' as const };
     await this.rpc.request('eth_call', [base, plan.block.number]);
     const estimate = await this.rpc.estimate({ ...base, gasPrice: hex(price), nonce: latest });
@@ -306,28 +265,25 @@ export class PublicationWorkbench {
       file: op.file, chunk: op.chunk, maximumCostWei: cost.toString(), block: plan.block,
       transaction: { ...base, chainId: '0xc4', nonce: latest, gas: hex(gas), gasPrice: hex(price) } };
   }
-  prepareNext(batchMode = false) {
+  prepareNext() {
     return this.exclusive(async () => {
       this.preview = null;
-      const result = await this.prepare(batchMode);
+      const result = await this.prepare();
       if (!('complete' in result)) this.preview = result;
       return result;
     });
   }
-  reserve(previewId: unknown, batchConsent?: unknown, batchOnly = false) {
+  reserve(previewId: unknown) {
     return this.exclusive(async () => {
       this.authorized();
       const previous = this.preview;
       this.preview = null;
       if (!previous || previewId !== previous.id || previous.expiresAt <= this.now())
         throw new Error('Upload preview expired; refresh before signing');
-      if (batchOnly && !previous.batch) throw new Error('Batch preview required');
-      if (previous.batch && batchConsent !== BATCH_CONSENT) throw new Error('Explicit batch and upgrade consent required');
-      const fresh = await this.prepare(!!previous.batch);
+      const fresh = await this.prepare();
       if ('complete' in fresh || fresh.operation !== previous.operation ||
           fresh.transaction.nonce !== previous.transaction.nonce ||
           fresh.transaction.data !== previous.transaction.data ||
-          fresh.batch?.needsUpgrade !== previous.batch?.needsUpgrade ||
           quantity(fresh.transaction.gas) > quantity(previous.transaction.gas) ||
           quantity(fresh.transaction.gasPrice) > quantity(previous.transaction.gasPrice))
         throw new Error('Upload state or quote changed; refresh before signing');
@@ -335,24 +291,9 @@ export class PublicationWorkbench {
       if (this.now() >= previous.expiresAt) throw new Error('Upload preview expired during recheck');
       const attempt: UploadAttempt = { id: randomUUID(), operation: previous.operation, createdAt: this.now(),
         status: 'reserved', transaction: previous.transaction };
-      if (previous.batch) attempt.batch = { operations: previous.batch.operations, requestId: randomUUID(),
-        consent: BATCH_CONSENT, consentAt: attempt.createdAt, needsUpgrade: previous.batch.needsUpgrade };
       this.journal.attempts.push(attempt);
       await this.persist();
       return structuredClone(attempt);
-    });
-  }
-  batchRequest(a: UploadAttempt) {
-    if (!a.batch) throw new Error('Not a batch reservation');
-    return { version: '2.0.0', id: a.batch.requestId, from: this.profile.publisher, chainId: '0xc4',
-      atomicRequired: true, calls: a.batch.operations.map(n => ({
-        to: REGISTRY, data: this.operations[n].data, value: '0x0',
-      })) };
-  }
-  reserveBatch(previewId: unknown, consent: unknown) {
-    return this.reserve(previewId, consent, true).then(attempt => {
-      if (!attempt.batch) throw new Error('Batch preview required');
-      return { attempt, request: this.batchRequest(attempt) };
     });
   }
   recordBundle(attemptId: unknown, bundleId: unknown) {
