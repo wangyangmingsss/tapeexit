@@ -6,6 +6,7 @@ import { parseTokenId } from '../src/core/token-id';
 import { V3Adapter } from '../src/core/adapter';
 import { startLocalEvm } from './local-evm';
 import { runAssetForkMatrix } from './asset-fork-matrix';
+import { inspectForkOwner } from './fork-owner';
 
 const output = 'release-artifacts/asset-fork-matrix.json';
 await mkdir('release-artifacts', { recursive: true }); await rm(output, { force: true });
@@ -17,6 +18,7 @@ const mainnet = new StrictRpc(SOURCES);
 await mainnet.checkChain(196);
 const block = process.argv[3] ? await mainnet.block(`0x${BigInt(process.argv[3].slice(8)).toString(16)}`) : await mainnet.pin();
 const snapshot = await new V3Adapter(mainnet).snapshotAt(tokenId, block);
+const upstreamOwnerAccount = await inspectForkOwner(mainnet, snapshot.owner, block);
 const evm = await startLocalEvm({ url: SOURCES[0].url, block });
 try {
   await evm.request('evm_setNextBlockTimestamp', [Math.max(Math.floor(Date.now() / 1000), Number(BigInt(block.timestamp)) + 1)]);
@@ -28,6 +30,8 @@ try {
       fork.token0.address !== snapshot.token0.address || fork.token1.address !== snapshot.token1.address)
     throw new Error('Fork position differs from independently observed baseline');
   const report = await runAssetForkMatrix(evm.request, rpc, DEPLOYMENT, tokenId);
+  if (JSON.stringify(report.ownerAccount) !== JSON.stringify(upstreamOwnerAccount))
+    throw new Error('Fork owner code differs from independently observed baseline');
   await mainnet.assertBlock(block);
   await writeFile(output, JSON.stringify({ schemaVersion: 1, status: 'ISOLATED_ASSET_FORK_MATRIX_PASSED',
     chainId: 196, sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -35,6 +39,7 @@ try {
     observedAt: new Date().toISOString(), block, manager: DEPLOYMENT.manager, ...report,
     limitations: ['Local fork only; no mainnet writes and no production asset approval',
       'Owner impersonated and funded only in the disposable child EVM',
+      'Owner delegation code is preserved and pinned; impersonation does not test extension signing or delegate execution',
       'Both local source labels share one EVM; upstream position baseline separately checked with two sources',
       'Six scenarios at one state do not establish issuer identity, upgrade governance, pause/blacklist, tax or rebase safety',
       'No independent review, target-wallet acceptance or future behavior is implied'] }, null, 2) + '\n');

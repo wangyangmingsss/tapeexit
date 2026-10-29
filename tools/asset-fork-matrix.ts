@@ -4,6 +4,7 @@ import { V3Adapter } from '../src/core/adapter';
 import { makePlan } from '../src/core/protocol';
 import { inspectReceipt } from '../src/core/receipt';
 import { StrictRpc } from '../src/core/rpc';
+import { inspectForkOwner } from './fork-owner';
 
 type LocalRequest = (method: string, params?: unknown[]) => Promise<any>;
 // The CLI supplies only the private IPC transport of its disposable Anvil child.
@@ -11,8 +12,7 @@ export async function runAssetForkMatrix(request: LocalRequest, rpc: StrictRpc, 
   const reader = new V3Adapter(rpc, deployment);
   const initial = await reader.snapshot(tokenId);
   if (!initial.liquidity) throw new Error('A nonempty directly owned position is required');
-  if (await rpc.request('eth_getCode', [initial.owner, initial.block.number]) !== '0x')
-    throw new Error('Contract-owned positions require separate wallet support');
+  const ownerAccount = await inspectForkOwner(rpc, initial.owner, initial.block);
   const adapter = new V3Adapter(rpc, deployment, [initial.token0.address, initial.token1.address]);
   await request('anvil_setBalance', [initial.owner, '0x8ac7230489e80000']);
   await request('anvil_impersonateAccount', [initial.owner]);
@@ -93,7 +93,7 @@ export async function runAssetForkMatrix(request: LocalRequest, rpc: StrictRpc, 
       if (await request('evm_revert', [checkpoint]) !== true) throw new Error('Failed to restore isolated case');
     }
   }
-  return { tokenId: tokenId.toString(), owner: initial.owner,
+  return { tokenId: tokenId.toString(), owner: initial.owner, ownerAccount,
     assets: [initial.token0, initial.token1].map(({ verified: _verified, ...asset }) => ({
       ...asset, approval: 'NOT_APPROVED',
     })), results };

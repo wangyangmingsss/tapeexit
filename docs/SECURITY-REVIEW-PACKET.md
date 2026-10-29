@@ -2,6 +2,10 @@
 
 Status: prepared for review; no independent reviewer or approval is claimed.
 
+The real position and asset investigation is recorded in `ASSET-REVIEW-66666.md`.
+Its fixed-block fork preserves the pinned EIP-7702 account delegation. Local
+impersonation evidence does not prove the target extension's signing behavior.
+
 Review the exact Git commit, lockfile, manifest digest and build evidence together. Record reviewer identity, date, scope, findings, severity, remediation, retest and any remaining exclusions. Do not approve a moving branch.
 
 | Surface | Entry Points | Required Review |
