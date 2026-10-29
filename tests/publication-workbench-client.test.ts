@@ -101,11 +101,12 @@ async function connectedClient() {
     throw new Error(`Unexpected wallet method ${method}`);
   }), on: (event: string, callback: () => void) => events.set(event, callback),
   removeListener: (event: string) => events.delete(event) };
-  let tick!: () => void, timeout!: () => void;
+  let tick!: () => void, timeout!: () => void, automatic!: () => void;
   const execute = new (Object.getPrototypeOf(async () => {}).constructor)(
     'fetch', 'setInterval', 'setTimeout', 'clearTimeout', await readFile(`${base}client.js`, 'utf8'));
   await execute(fetcher, (fn: () => void) => { tick = fn; }, (fn: () => void, ms: number) => {
     if (ms === 15000) timeout = fn;
+    if (ms <= 3000 && ms > 500) automatic = fn;
     return 0;
   }, () => {});
   window.dispatchEvent(new CustomEvent('eip6963:announceProvider', {
@@ -114,7 +115,8 @@ async function connectedClient() {
   const button = document.getElementById('connect') as HTMLButtonElement;
   (document.getElementById('connect') as HTMLButtonElement).click();
   await vi.waitFor(() => expect(button.disabled).toBe(false));
-  return { provider, fetcher, context, publisher, events, tick: () => tick(), timeout: () => timeout() };
+  return { provider, fetcher, context, publisher, events, tick: () => tick(), timeout: () => timeout(),
+    automatic: () => automatic() };
 }
 
 async function submissionClient() {
@@ -177,6 +179,54 @@ it('reports a hung wallet state query beside the submit button without reserving
   await vi.waitFor(() => expect(document.getElementById('submission-progress')!.textContent).toContain('钱包状态查询超时'));
   expect(f.fetcher.mock.calls.some(([url]) => url.endsWith('/reserve'))).toBe(false);
   expect(f.ctx.attempts).toHaveLength(0);
+});
+
+it('automatically prepares after three seconds without submitting another wallet transaction', async () => {
+  const f = await submissionClient();
+  (document.getElementById('send') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('send')!.textContent).toContain('提交前复核'));
+  f.finish();
+  await vi.waitFor(() => expect(document.getElementById('refresh')!.textContent).toContain('自动准备下一笔'));
+  const before = f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview')).length;
+  f.automatic();
+  await vi.waitFor(() => expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview')).length).toBe(before + 1));
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
+});
+
+it('retries only the same pending receipt after three seconds without preparing or sending', async () => {
+  const f = await submissionClient();
+  let checks = 0;
+  const original = f.fetcher.getMockImplementation()!;
+  f.fetcher.mockImplementation(async (url: string, options?: RequestInit) => {
+    if (url.endsWith('/reconcile')) { checks++; return Response.json({ error:
+      'Transaction not confirmed by both RPC sources; keep waiting' }, { status: 409 }); }
+    return original(url, options);
+  });
+  (document.getElementById('send') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('send')!.textContent).toContain('提交前复核'));
+  f.finish();
+  await vi.waitFor(() => expect(document.getElementById('reconcile')!.textContent).toContain('自动再次核验'));
+  for (let i = 0; i < 4; i++) {
+    f.automatic();
+    await vi.waitFor(() => expect(checks).toBe(i + 2));
+    await vi.waitFor(() => expect((document.getElementById('reconcile') as HTMLButtonElement).disabled).toBe(false));
+  }
+  expect(document.getElementById('reconcile')!.textContent).toBe('核验交易和文件');
+  expect(f.ctx.unresolved).toBe('attempt');
+  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview'))).toHaveLength(1);
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
+});
+
+it('cancels queued automatic preparation if the connected account changes', async () => {
+  const f = await submissionClient();
+  (document.getElementById('send') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('send')!.textContent).toContain('提交前复核'));
+  f.finish();
+  await vi.waitFor(() => expect(document.getElementById('refresh')!.textContent).toContain('自动准备下一笔'));
+  f.events.get('accountsChanged')!();
+  f.automatic();
+  expect(f.fetcher.mock.calls.filter(([url]) => url.endsWith('/preview'))).toHaveLength(1);
+  expect(f.provider.request.mock.calls.filter(([r]) => r.method === 'eth_sendTransaction')).toHaveLength(1);
 });
 
 it('exposes only single upload controls and does not detect capabilities on connection', async () => {

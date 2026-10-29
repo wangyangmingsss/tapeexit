@@ -6,6 +6,8 @@ let verifyingSince = null;
 let submissionSince = null, submissionPhase = '';
 let activationPreview = null, activationSince = null, activationAction = '';
 const CHECK_TIMEOUT_MS = 90_000;
+const NEXT_CHECK_DELAY_MS = 3000;
+let automaticTimer = null, automaticAction = null, automaticAt = null, verificationRetries = 0;
 const status = text => { $('status').textContent = text; };
 const coin = wei => {
   const n = BigInt(wei), whole = n / 10n ** 18n;
@@ -50,6 +52,11 @@ function controls() {
   } else $('reconcile').textContent = '核验交易和文件';
   $('refresh').textContent = preparingSince === null ? '准备 / 刷新下一笔' :
     `正在准备 · ${Math.floor((Date.now() - preparingSince) / 1000)} 秒`;
+  if (automaticAt !== null && !busy) {
+    const seconds = Math.max(0, Math.ceil((automaticAt - Date.now()) / 1000));
+    if (automaticAction === 'prepare') $('refresh').textContent = `${seconds} 秒后自动准备下一笔`;
+    if (automaticAction === 'reconcile') $('reconcile').textContent = `${seconds} 秒后自动再次核验`;
+  }
   const authorized = context?.authorization?.expiresAt > Date.now();
   $('connect').disabled = busy || !wallets.size || !context;
   $('wallet').disabled = busy;
@@ -116,17 +123,43 @@ function render() {
   controls();
 }
 async function refreshContext() { context = await api('context'); render(); }
+function cancelAutomatic() {
+  if (automaticTimer !== null) clearTimeout(automaticTimer);
+  automaticTimer = null; automaticAt = null; automaticAction = null;
+}
+function scheduleAutomatic(action) {
+  cancelAutomatic();
+  automaticAction = action; automaticAt = Date.now() + NEXT_CHECK_DELAY_MS;
+}
+function startAutomaticTimer() {
+  if (!automaticAction) return;
+  const action = automaticAction, version = generation, attemptId = context?.unresolved;
+  automaticTimer = setTimeout(() => {
+    cancelAutomatic();
+    if (busy || version !== generation || !connectedProvider || context?.activation?.unresolved) {
+      controls(); return;
+    }
+    if (action === 'prepare' && !context?.unresolved && context?.authorization?.expiresAt > Date.now())
+      $('refresh').click();
+    else if (action === 'reconcile' && context?.unresolved === attemptId && attemptId)
+      $('reconcile').click();
+    controls();
+  }, Math.max(0, automaticAt - Date.now()));
+}
 async function run(action) {
   if (busy) return;
+  cancelAutomatic();
   busy = true; controls();
   try { await action(); }
   catch (error) { status(error instanceof Error ? error.message : '操作未完成，上传保持停止'); }
   finally {
-    try { await refreshContext(); } catch { status('无法读取上传记录，停止操作并检查本地服务'); preview = null; }
+    try { await refreshContext(); } catch { status('无法读取上传记录，停止操作并检查本地服务'); preview = null; cancelAutomatic(); }
     busy = false; controls();
+    startAutomaticTimer();
   }
 }
 function invalidateWallet() {
+  cancelAutomatic(); verificationRetries = 0;
   generation++; account = null; connectedProvider = null; preview = null;
   activationPreview = null; $('activation-consent').checked = false;
   $('account').textContent = '账户或网络已变化，请重新连接'; controls();
@@ -317,14 +350,28 @@ async function reconcileWithFeedback() {
     const result = await api('reconcile', {});
     context = result; render();
     const attempt = result.attempts.at(-1);
+    verificationRetries = 0;
+    if (attempt?.status === 'confirmed' && !result.unresolved && connectedProvider &&
+        result.authorization?.expiresAt > Date.now()) scheduleAutomatic('prepare');
     const message = attempt?.status === 'confirmed'
-      ? `核验成功：${attempt.batch ? `本批 ${attempt.batch.operations.length} 步` : '交易'}与文件字节均通过检查，可以准备下一笔。`
+      ? `核验成功：${attempt.batch ? `本批 ${attempt.batch.operations.length} 步` : '交易'}与文件字节均通过检查。${automaticAction === 'prepare' ? '3 秒后自动准备下一笔，仍需你点击并在钱包确认。' : '可以准备下一笔。'}`
       : '交易已确认回滚，本笔上传未完成。请重新准备本笔并检查钱包结果。';
     $('verification-result').textContent = message;
     $('verification-result').hidden = false;
     status(message);
   } catch (error) {
     const detail = error instanceof Error ? error.message : '检查未完成';
+    const pending = context?.attempts.find(a => a.id === context.unresolved);
+    if (pending?.hash && connectedProvider && verificationRetries < 4 &&
+        /transaction not confirmed|transaction block is not yet stable/i.test(detail)) {
+      verificationRetries++;
+      scheduleAutomatic('reconcile');
+      const message = `交易等待链上确认，3 秒后自动再次核验（${verificationRetries}/4）；无需重新发送。`;
+      $('verification-result').textContent = message;
+      $('verification-result').hidden = false;
+      status(message);
+      return;
+    }
     const message = /fee envelope exceeds authorized upload budget/i.test(detail)
       ? '核验暂停：钱包最终 Gas 参数超出已确认的单笔或累计费用上限。请核对钱包最终参数；交易记录已保留，请勿重复发送。'
       : /TimeoutError|timed out|aborted/i.test(detail)
