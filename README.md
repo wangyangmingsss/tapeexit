@@ -4,7 +4,9 @@
 
 当原站和专属后台不可用时，应用直接从公共 RPC 读取仓位，由用户钱包直接调用原 NonfungiblePositionManager，减少流动性并领取资产。代码不申请新授权，不托管资产，不转移仓位 NFT，不执行兑换。
 
-**当前版本是开发预览，主网签名关闭。** 可运行隔离演示、主网只读查询、官方 V3 本地合约与 X Layer 分叉测试和本地恢复入口。真实 TapeOut 容器发布、目标钱包实测、支持资产审阅和独立安全审阅尚未完成。
+**当前候选版本是开发预览，主网退出签名关闭。** 可运行隔离演示、主网只读查询、官方 V3 本地合约与 X Layer 分叉测试和本地恢复入口。先前只读发行版本已上传、激活并完成文件回读及双网关只读故障验证；目标钱包真实退出、支持资产批准及独立安全审阅仍待完成。
+
+已发布入口为 `tape://2.2.289.tape/`，公网网关为 `https://2-2-289.netlify.app` 和 `https://2-2-289.vercel.app`。保存的历史证据对应源码 `733ca795d9216ea43038e386ee652c1a84f112b5`，见 `evidence/historical/`。本次候选源码没有自动覆盖线上版本；历史观测不证明当前可用性、新版部署或真实钱包退出。
 
 ## 本地运行
 
@@ -35,7 +37,7 @@ npm run check:release
 npm run build:demo
 npm run vendor:tapekit
 npm run test:tapekit
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm run test:e2e
 npm run verify:deployment
 npm run verify:fork
@@ -44,7 +46,7 @@ npm run report:dependencies
 
 `npm test` 包含 SDK/整数边界、双来源冲突、钱包失效、收据转账证据、恢复包完整性、服务器边界、DOM 交互，以及 Anvil 上官方 V3 工厂和管理器字节码的实际执行。测试夹具的两个来源标签连接同一个本地 EVM，不是两个独立运营方。
 
-DOM 测试不验证视觉布局。Playwright 必须能启动真实浏览器；受限 macOS 沙箱可能在 Mach IPC 初始化阶段阻止启动。此前提交 `7219c8a` 的 16 项浏览器测试已在 GitHub Actions 运行 `40516216450` 通过；后续改动须检查对应新提交的 CI 结果。
+DOM 测试不验证视觉布局。Playwright 必须能启动真实浏览器；受限 macOS 沙箱可能在 Mach IPC 初始化阶段阻止启动。三浏览器结果、截图与测试数量以当前提交的 GitHub Actions 报告为准。
 
 `test:tapekit` 在校验过的固定上游源码上运行发布路径兼容测试，检查实际编码生成的入口、资源、清单与 fallback 能被客户端解析。它不启动浏览器，也不证明链上部署成功。
 
@@ -85,15 +87,18 @@ RPC 区块读取除双来源一致外，还检查字段格式和请求高度；�
 
 从干净提交完成生产构建后，运行 `npm run verify:reproducibility`。工具创建临时 Git 副本，以 `npm ci --ignore-scripts` 安装固定依赖，在同一系统连续构建两次，再与当前 `dist/` 逐文件比较，保存 `release-artifacts/reproducibility.json`。这不等于另一台独立设备复现，也不代替测试或审阅。
 
-Playwright 已配置演示、生产恢复、备用恢复和只读钱包接入台，共 25 项用例，包含 360/390/768/1280/1440 px、键盘焦点、未知提交恢复、受控网络故障与显式钱包夹具。本轮增加真实 Web Locks 跨标签页竞争、关闭标签页后的持久阻止、取消后的跨标签页恢复，以及真实 Service Worker 更新时的身份变化检查。另验证 HTTPS 代理确实阻断 SW 内发起的主入口请求。SW 身份响应和钱包 provider 仍是明确的测试夹具。先从干净提交运行生产构建，再执行 `npm run test:e2e`；本机 Chromium 的限制仍在，使用 GitHub Ubuntu 环境执行并保留截图。夹具测试不证明真实 OKX Wallet 或 TapeOut 链上入口已验收。
+Playwright 已配置演示、生产恢复、备用恢复、发布台和只读钱包接入台，包含 360/390/768/1280/1440 px、键盘焦点、未知提交恢复、受控网络故障与显式钱包夹具，并验证 Web Locks 跨标签页竞争、持久阻止、取消恢复及 Service Worker 身份变化。另验证 HTTPS 代理确实阻断 SW 内发起的主入口请求。SW 身份响应和钱包 provider 仍为明确夹具。先从干净提交构建，再执行 `npm run test:e2e`；本机 Chromium 限制仍在，使用 GitHub Ubuntu 环境执行并保留截图。夹具测试不替代实际扩展钱包验收；独立保存的历史公网网关观察另见 `evidence/historical/`。
 
-参赛项目说明、2 分 50 秒录制脚本及用户任务记录模板位于 `docs/competition/`。`record:demo` 可在允许 Chromium 的环境录制短静音隔离演示，`package:entry` 生成带真实源码/清单/视频身份的草稿包。公开源码已推送至 `wangyangmingsss/tapeexit`；正式提交仍需实际发布、目标钱包验收、独立审阅、团队信息及用户证据。
+参赛项目说明、2 分 50 秒录制脚本及用户任务记录模板位于 `docs/competition/`。`record:demo` 录制短静音隔离演示，`package:entry` 生成源码/清单/视频绑定的草稿包，并摘要核对先前真实发布证据、保留新旧源码区分。公开仓库为 `wangyangmingsss/tapeexit`；正式提交仍需已审候选版本发布、目标钱包验收、独立审阅、当前规则/表单、团队信息及如实披露的用户证据。
 
 ## 后续验收工具
 
 完整命令及输入见 [发行操作](docs/OPERATIONS.md)：
 
 - `inspect:assets`：采集候选代币代码、精度和代理槽，不自动批准资产。
+- `verify:runtime-source`：按输入摘要和精确安装编译器核对完整部署 runtime，不裁剪元数据，不批准资产。
+- `prepare:recovery`：只读核对真实仓位、资产身份与 USDt0 冻结状态，生成 1% 提议和待审条件，不生成签名调用。
+- `verify:recovery`：退出后复核真实交易、收据及相邻区块末余额/流动性；记录同区块其他操作可能影响比较的限制。
 - `inspect:publication`：核对容器/处理器/持有人、固定实现和显式预算，只模拟首笔。
 - `plan:resume`：逐字节核对链上前缀后生成未签名剩余调用，不盲目重放。
 - `accept:wallet`：启动本地 EIP-6963 接入台；不请求交易或消息签名。
@@ -128,7 +133,7 @@ npm run plan:publish -- <容器地址>
 
 该命令只接受带干净源提交的发行清单，拒绝重复/保留路径、缺失/额外文件、符号链接及摘要不符，按 24,000 字节分块编码 `putFile` / `appendChunk`，读取当前激活费用和容器状态，输出 `release-artifacts/publish-plan.json`。它不签名、不上传、不付费；生成的数据不能跳过所有权、实现版本、预算及逐文件回读验收。详见 [发布手册](docs/PUBLISHING.md)。
 
-上传后用 `npm run verify:publication -- <容器地址> <此前独立保存的清单SHA256>` 执行只读验收。它在固定区块用两来源核对完整路径、fallback、元数据和每个文件的全部字节，单独记录激活状态；尚无真实容器的成功回读证据。生成的报告不能替代钱包、网关和独立安全验收。
+上传后用 `npm run verify:publication -- <容器地址> <此前独立保存的清单SHA256>` 执行只读验收。它在固定区块用两来源核对完整路径、fallback、元数据和每个文件的全部字节，单独记录激活状态。先前 `733ca79` 版本已有 9 文件、587,736 字节回读记录；当前候选需自己的发布证据。生成的报告不能替代钱包和独立安全验收。小额演练准备及退出后核验见 [受控恢复交接](docs/CONTROLLED-RECOVERY.md)。
 
 ## 结构
 
