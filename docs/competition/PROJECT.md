@@ -1,6 +1,6 @@
 # TapeExit Project Draft
 
-Status: local development candidate. This document is ready to review, not a completed competition submission. Real TapeOut deployment, target-wallet acceptance and independent security review are still pending.
+Status: development candidate with a separately recorded, published read-only release. This is a draft, not a completed competition submission. Actual extension signing, a mainnet exit and independent security approval remain pending.
 
 ## Short Description
 
@@ -10,9 +10,17 @@ The application introduces no custody contract, new token approval, NFT transfer
 
 ## Why TapeOut
 
-The intended deployed product stores the application files in a real X Layer TapeOut container, uses client verification to load them, and pairs that entry with an alternate gateway and a separately verified local recovery package.
+The published read-only release stores the application files in a real X Layer TapeOut container and uses client verification to load them. The recovery design also provides an alternate gateway and a separately verified local package.
 
-Today the fixed TapeKit build, upload encoder, actual path-resolver compatibility and publication readback tool are implemented. A TapeExit container has not been published. Do not describe those tests as a live TapeOut deployment.
+The recorded publication is `tape://2.2.289.tape/`, container
+`0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`, source
+`733ca795d9216ea43038e386ee652c1a84f112b5`, manifest SHA-256
+`8282142e417188b95421249ec7beb8993aaea65308c7e87b337c08a9c77415ba`.
+Nine files / 587,736 bytes were uploaded in 31 operations across 23 transactions.
+The recorded gateways are `https://2-2-289.netlify.app` and `https://2-2-289.vercel.app`.
+The October 28 UTC browser report checks desktop/mobile resources and exercises a CONNECT-proxy block of the primary gateway.
+See `evidence/historical/` for immutable observations, dates and limitations. These are read-only recovery observations,
+not a live exit or evidence that the current source has been uploaded. Availability and payment expiry require fresh checks.
 
 ## What Can Be Demonstrated Today
 
@@ -23,10 +31,14 @@ Today the fixed TapeKit build, upload encoder, actual path-resolver compatibilit
 - Strict two-operator reads, exact SDK integer math, calldata checks, receipt evidence, durable pending-submission recovery and entry invalidation.
 - A local recovery server, hashed file manifest and offline file verification.
 
-No mainnet transaction was broadcast. Production signing is disabled and the approved asset list is empty.
-The delivered baseline passed 40 browser tests remotely on commit `3dbff19f477439ed1d153a394baa786658299f5a`; new changes require their exact commit's results.
+Real mainnet publication/activation transactions exist. No TapeExit mainnet exit is recorded.
+Production exit signing is disabled and the approved asset list is empty.
+Use the packaged exact-source test reports for current counts; historical CI counts do not validate new changes.
 Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, bounded owner-checked position discovery,
 printable public recovery cards, simulation recording and consented-session aggregation are implemented.
+The recovery outcome checker corroborates exact transaction/receipt identity with parent/receipt block-end
+balances, remaining liquidity and cleared owed amounts. It labels block-level attribution limits.
+`prepare:recovery` gathers a read-only one-percent proposal and blockers; it creates no signing calldata.
 
 ## Scope And Limits
 
@@ -54,7 +66,7 @@ and stop conditions. `BUSINESS-ASSUMPTIONS.example.json` deliberately leaves num
 1. Verify the current official activity rules and actual submission form; do not infer current eligibility or deadline from this draft.
 2. Keep the public `wangyangmingsss/tapeexit` repository updated and record the final public commit.
 3. Complete target-wallet/browser tests, supported-asset review and independent transaction-path review.
-4. Obtain a real circuit/container, approved publisher wallet, explicit maximum OKB budget and hosting access.
-5. Publish, read back exact files, verify live status, load the actual origin and rehearse alternate/local entry.
+4. Keep the existing container/history intact; obtain review and a bounded fee authorization before publishing a newer release.
+5. Read back that candidate's exact files, check live status and actual origin, and complete extension/local-device recovery tasks.
 6. Collect permissioned user-task and protocol feedback, or plainly disclose that validation is pending.
 7. Record the accurately labelled video and review all final links and claims before submitting.

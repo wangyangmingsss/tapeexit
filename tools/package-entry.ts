@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { digest, loadPublication } from './publish-core';
+import { loadHistoricalEvidence } from './historical-evidence';
 
 const root = 'release-artifacts/competition';
 await rm('release-artifacts/TapeExit-Competition-Draft.tar.gz', { force: true });
@@ -14,6 +15,11 @@ await rm(root, { recursive: true, force: true });
 await mkdir(`${root}/docs`, { recursive: true });
 await cp('docs/competition', `${root}/docs`, { recursive: true });
 await cp('docs/REAL-ACCEPTANCE.md', `${root}/docs/REAL-ACCEPTANCE.md`);
+await cp('docs/CONTROLLED-RECOVERY.md', `${root}/docs/CONTROLLED-RECOVERY.md`);
+await cp('docs/ASSET-REVIEW-66666.md', `${root}/docs/ASSET-REVIEW-66666.md`);
+const historical = await loadHistoricalEvidence(sourceCommit);
+await cp('evidence/historical', `${root}/historical-evidence`, { recursive: true });
+await writeFile(`${root}/historical-publication.json`, JSON.stringify(historical, null, 2) + '\n');
 await cp('dist/release-manifest.json', `${root}/release-manifest.json`);
 for (const name of ['performance', 'business-model', 'pilot-validation', 'browser-tests', 'compatibility'])
   await cp(`release-artifacts/${name}.json`, `${root}/${name}.json`);
@@ -46,7 +52,12 @@ await writeFile(`${root}/submission-fields.json`, JSON.stringify({
   schemaVersion: 1, status: 'DRAFT_NOT_SUBMITTED', sourceCommit,
   manifestSha256: publication.manifestSha256, repository: 'https://github.com/wangyangmingsss/tapeexit',
   teamName: null, teamMembers: [], contact: null, officialRulesVerifiedAt: null, submissionForm: null,
-  actualTapeOutEntry: null, actualContainer: null, mainnetTransaction: null,
+  actualTapeOutEntry: `tape://${historical.tapeName}/`, actualContainer: historical.container,
+  publishedSourceCommit: historical.sourceCommit, publishedManifestSha256: historical.manifestSha256,
+  candidateMatchesPublishedSource: historical.candidateMatchesPublishedSource,
+  publicGateways: historical.gateways.map((gateway: { origin: string }) => gateway.origin),
+  mainnetTransaction: null, mainnetExitTransaction: null,
+  historicalPublicationEvidence: 'historical-publication.json',
   videoEnvironment: 'ISOLATION_DEMO', userEvidence: 'NOT_COLLECTED', submissionReceipt: null,
 }, null, 2) + '\n');
 await writeFile(`${root}/README.txt`, [
@@ -54,6 +65,8 @@ await writeFile(`${root}/README.txt`, [
   `Source: ${sourceCommit}`,
   `Manifest SHA-256: ${publication.manifestSha256}`,
   'Video is a labelled local simulation; it is not a live TapeOut or mainnet recording.',
+  'A prior read-only release was published; historical-publication.json preserves its separate source and dates.',
+  'The current source candidate is not automatically deployed or approved by historical observations.',
   'Fill submission-fields.json only with actual verified information.',
   'No users, independent review, protocol endorsement or competition submission are implied.',
   'Do not include private keys, credentials or unconsented personal records.',

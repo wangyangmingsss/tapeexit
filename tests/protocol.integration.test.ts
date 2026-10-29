@@ -7,6 +7,7 @@ import { inspectReceipt } from '../src/core/receipt';
 import { recheckHistory } from '../src/core/history';
 import { discoverPositions } from '../src/core/discovery';
 import { runAssetForkMatrix } from '../tools/asset-fork-matrix';
+import { inspectRecoveryOutcome } from '../src/core/recovery-outcome';
 describe('official V3 contracts on isolated local EVM', () => {
   let f: Fixture;
   let checkpoint: `0x${string}`;
@@ -43,6 +44,12 @@ describe('official V3 contracts on isolated local EVM', () => {
       .rejects.toMatchObject({ code: 'HISTORY' });
     const p = await f.client.readContract({ address: f.manager, abi: managerAbi, functionName: 'positions', args: [1n] });
     expect(p[7]).toBe(snapshot.liquidity - plan.liquidity);
+    expect(await inspectRecoveryOutcome(f.adapter.rpc, hash, f.tokenId, f.account, f.deployment))
+      .toMatchObject({ state: 'block-state-matched', identityMatches: true,
+        liquidity: { after: p[7].toString(), matches: true }, owed: { cleared: true },
+        balances: [{ matches: true }, { matches: true }] });
+    await expect(inspectRecoveryOutcome(f.adapter.rpc, hash, f.tokenId, f.other, f.deployment))
+      .rejects.toMatchObject({ code: 'TRANSACTION_MISMATCH' });
   });
   it('rejects a non-owner using actual protocol checks', async () => {
     const data = encodeFunctionData({ abi: managerAbi, functionName: 'collect', args: [{ tokenId: 1n, recipient: f.other, amount0Max: 2n ** 128n - 1n, amount1Max: 2n ** 128n - 1n }] });
@@ -99,6 +106,8 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(position[7]).toBe(0n);
     expect(position[10]).toBe(0n);
     expect(position[11]).toBe(0n);
+    expect(await inspectRecoveryOutcome(f.adapter.rpc, hash, f.tokenId, f.account, f.deployment))
+      .toMatchObject({ state: 'block-state-matched', liquidity: { after: '0' } });
     expect(await f.client.readContract({ address: f.manager, abi: managerAbi,
       functionName: 'ownerOf', args: [f.tokenId] })).toBe(f.account);
     await mineForPin();
@@ -133,6 +142,8 @@ describe('official V3 contracts on isolated local EVM', () => {
     expect(position[7]).toBe(snapshot.liquidity);
     expect(position[10]).toBe(0n);
     expect(position[11]).toBe(0n);
+    expect(await inspectRecoveryOutcome(f.adapter.rpc, hash, f.tokenId, f.account, f.deployment))
+      .toMatchObject({ state: 'block-state-matched', liquidity: { removed: '0', matches: true } });
   });
   it.each(['minimum', 'deadline'] as const)('reverts the entire exit on an invalid %s', async fault => {
     const snapshot = await f.adapter.snapshot(f.tokenId);
@@ -152,6 +163,8 @@ describe('official V3 contracts on isolated local EVM', () => {
     const { hash, receipt } = await execute(data);
     expect(receipt.status).toBe('reverted');
     expect(receipt.logs).toHaveLength(0);
+    expect(await inspectRecoveryOutcome(f.adapter.rpc, hash, f.tokenId, f.account, f.deployment))
+      .toEqual({ state: 'reverted' });
     expect(await remaining()).toEqual(position);
     expect(await balances()).toEqual(before);
     await expect(inspectReceipt(f.adapter.rpc, hash, {

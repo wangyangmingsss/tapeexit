@@ -56,7 +56,7 @@ export function makePlan(s: Snapshot, account: Address, bps: number, slippageBps
   validatePlan(plan, deployment);
   return Object.freeze(plan);
 }
-function minimumAmounts(s: Snapshot, liquidity: bigint, slippageBps: number, deployment: Deployment): [bigint, bigint] {
+export function minimumAmounts(s: Snapshot, liquidity: bigint, slippageBps: number, deployment: Deployment): [bigint, bigint] {
   const pool = new Pool(
     new Token(deployment.chainId, s.token0.address, s.token0.decimals),
     new Token(deployment.chainId, s.token1.address, s.token1.decimals),

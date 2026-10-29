@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { loadPublication, digest } from './publish-core';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
+import { loadHistoricalEvidence } from './historical-evidence';
 
 const output = 'release-artifacts/readiness.json';
 await mkdir('release-artifacts', { recursive: true });
@@ -23,12 +24,13 @@ const report = {
   manifestSha256: publication.manifestSha256, lockSha256: auditContext.lockSha256,
   status: 'NOT_MAINNET_APPROVED', signingApproved: RELEASE_APPROVED,
   approvedTokenCount: SUPPORTED_TOKENS.length, dependencyFindings: audit.metadata.vulnerabilities,
+  historicalPublication: await loadHistoricalEvidence(manifest.sourceCommit),
   requirements: [
     { id: 'asset-review', status: SUPPORTED_TOKENS.length ? 'REQUIRES_REVIEW_EVIDENCE' : 'NO_APPROVED_ASSETS' },
     { id: 'independent-security-review', status: 'HUMAN_VERIFICATION_REQUIRED' },
-    { id: 'tapeout-publication-and-readback', status: 'REAL_CONTAINER_EVIDENCE_REQUIRED' },
+    { id: 'tapeout-publication-and-readback', status: 'HISTORICAL_RELEASE_CHECKED_CURRENT_CANDIDATE_NOT_PUBLISHED' },
     { id: 'target-wallet-on-real-origin', status: 'PERMISSIONED_EXTERNAL_ACCEPTANCE_REQUIRED' },
-    { id: 'public-gateway-fault-rehearsal', status: 'ACTUAL_ORIGINS_AND_LOGS_REQUIRED' },
+    { id: 'public-gateway-fault-rehearsal', status: 'HISTORICAL_READ_ONLY_REHEARSAL_CHECKED_WALLET_TASK_REQUIRED' },
     { id: 'user-validation', status: 'CONSENTED_PARTICIPANTS_REQUIRED' },
     { id: 'competition-submission', status: 'RULES_TEAM_INFORMATION_AND_RECEIPT_REQUIRED' },
   ],

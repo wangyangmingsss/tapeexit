@@ -123,6 +123,11 @@ export default function App() {
   const [collectOnly, setCollectOnly] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result>();
+  const [outcome, setOutcome] = useState<Awaited<ReturnType<
+    typeof import('./core/recovery-outcome').inspectRecoveryOutcome>>>();
+  const [checkingOutcome, setCheckingOutcome] = useState(false);
+  const outcomeLock = useRef(false);
+  const outcomeRequest = useRef(0);
   const [hash, setHash] = useState<Hex>();
   const [runtime, setRuntime] = useState<RuntimeStatus>({ mode: 'web', label: 'Checking entry', verified: false });
   const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
@@ -177,6 +182,7 @@ export default function App() {
   }
   function invalidate() {
     generation.current++; setPlan(undefined); setPreview(undefined); setAccepted(false);
+    outcomeRequest.current++; setOutcome(undefined);
     if (!txLock.current) setStage(snapshot ? 'ready' : 'idle');
   }
   function closeWalletPicker() {
@@ -186,6 +192,7 @@ export default function App() {
   }
   useEffect(() => () => {
     walletConnection.current?.controller.abort(); recoveryImport.current++; recoveryExport.current++;
+    outcomeRequest.current++;
   }, []);
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
@@ -544,10 +551,23 @@ export default function App() {
     downloadJson('tapeexit-operation.json', {
       schemaVersion: 1, environment: DEMO ? 'isolated-demo' : 'mainnet', releaseId: RELEASE,
       chainId: CHAIN_ID, tokenId: snapshot?.tokenId, result, runtime,
+      recoveryOutcome: outcome && 'hash' in outcome && outcome.hash === result?.hash &&
+        outcome.receipt?.blockHash === result?.blockHash ? outcome : undefined,
       operators: DEMO ? ['simulated-a', 'simulated-b'] : SOURCES.map(s => s.operator),
       fault: DEMO ? fault : undefined,
       limitations: ['No independent security audit', 'Not a cryptographic state proof'],
     });
+  }
+  async function checkOutcome() {
+    if (DEMO || !result || !snapshot || !account || outcomeLock.current) return;
+    outcomeLock.current = true; setCheckingOutcome(true); setOutcome(undefined); setError('');
+    const current = generation.current, request = ++outcomeRequest.current, expectedHash = result.hash;
+    try {
+      const { inspectRecoveryOutcome } = await import('./core/recovery-outcome');
+      const checked = await inspectRecoveryOutcome(adapter.rpc, expectedHash, snapshot.tokenId, account);
+      if (current === generation.current && request === outcomeRequest.current) setOutcome(checked);
+    } catch (err) { if (current === generation.current && request === outcomeRequest.current) showError(err); }
+    finally { outcomeLock.current = false; setCheckingOutcome(false); }
   }
   const own = account && snapshot && getAddress(account) === snapshot.owner;
   const canPreview = !!own && !!snapshot?.token0.verified && !!snapshot.token1.verified && (DEMO || RELEASE_APPROVED);
@@ -650,7 +670,17 @@ export default function App() {
               <div className="recipient-preview"><LockKeyhole size={14} /><span>{t.recipient}</span><code>{account ? short(account) : '—'}</code></div>
             </aside>
           </div>
-          {result && <section className="result-section" aria-live="polite"><div className="result-title"><CheckCircle2 size={24} /><div><h2>{result.state === 'received-checked' ? t.done : t.included}</h2><p>{DEMO ? (lang === 'zh' ? '模拟结果，不代表真实链上交易。' : 'Simulated result. Not an on-chain transaction.') : result.finalized ? 'Finalized' : result.safe ? 'Safe · finalization pending' : t.finality}</p></div></div><div className="result-assets">{snapshot && [snapshot.token0, snapshot.token1].map((a, i) => <span key={a.address}>{units(i === 0 ? result.amount0 : result.amount1, a.decimals)} <strong>{a.symbol}</strong></span>)}</div><label>{t.receipt}</label><AddressValue value={result.hash} /><div className="result-actions"><button className="secondary-button" onClick={record}><Download size={15} />{t.export}</button><button className="secondary-button" onClick={() => DEMO ? void readPosition() : void refreshReceipt()}><RefreshCw size={15} />{DEMO ? t.newExit : t.refresh}</button></div></section>}
+          {result && <section className="result-section" aria-live="polite"><div className="result-title"><CheckCircle2 size={24} /><div><h2>{result.state === 'received-checked' ? t.done : t.included}</h2><p>{DEMO ? (lang === 'zh' ? '模拟结果，不代表真实链上交易。' : 'Simulated result. Not an on-chain transaction.') : result.finalized ? 'Finalized' : result.safe ? 'Safe · finalization pending' : t.finality}</p></div></div><div className="result-assets">{snapshot && [snapshot.token0, snapshot.token1].map((a, i) => <span key={a.address}>{units(i === 0 ? result.amount0 : result.amount1, a.decimals)} <strong>{a.symbol}</strong></span>)}</div><label>{t.receipt}</label><AddressValue value={result.hash} /><div className="result-actions"><button className="secondary-button" onClick={record}><Download size={15} />{t.export}</button><button className="secondary-button" onClick={() => DEMO ? void readPosition() : void refreshReceipt()}><RefreshCw size={15} />{DEMO ? t.newExit : t.refresh}</button>{!DEMO && <button className="secondary-button" disabled={checkingOutcome || !account} onClick={() => void checkOutcome()}><RefreshCw size={15} />{checkingOutcome ? (lang === 'zh' ? '正在核对余额与流动性…' : 'Checking balances and liquidity…') : (lang === 'zh' ? '核对余额与流动性' : 'Check balances and liquidity')}</button>}</div>
+            {outcome && 'hash' in outcome && outcome.hash === result.hash && outcome.receipt?.blockHash === result.blockHash && <div role="status">
+              <p>{outcome.state === 'block-state-matched' ?
+                (lang === 'zh' ? '区块状态与收据一致' : 'Block state matches receipt') :
+                (lang === 'zh' ? '区块状态存在差异，需要复核' : 'Block state differs; review required')}</p>
+              <p>{lang === 'zh' ? '剩余流动性' : 'Remaining liquidity'}: {outcome.liquidity.after}</p>
+              {outcome.balances.map(asset => <p key={asset.address}>{asset.symbol}: {units(asset.before, asset.decimals)} → {units(asset.after, asset.decimals)}</p>)}
+              <p>{lang === 'zh' ? '比较相邻区块末状态；同区块的其他操作可能影响结果。' : 'Compares adjacent block-end states; other activity in the same block may affect results.'}</p>
+            </div>}
+            {outcome && !('hash' in outcome) && <p role="status">{lang === 'zh' ? '交易尚未成功确认，状态核对未完成。' : 'Transaction is pending or reverted; state check incomplete.'}</p>}
+          </section>}
           {['wallet', 'preflight', 'submitted', 'unknown'].includes(stage) && <div className="transaction-status" role="status"><LoaderCircle className={stage === 'unknown' ? '' : 'spin'} size={18} /><span>{stage === 'wallet' ? t.awaiting : stage === 'preflight' ? t.simulating : stage === 'unknown' ? t.unknown : t.submitted}</span>{hash && <code>{short(hash)}</code>}</div>}
           <section className="dependency-section"><div className="section-top"><h2>{t.dependencies}</h2><button className="text-link" onClick={() => { setDetailsOpen(true); }}>{t.details}<ArrowRight size={13} /></button></div><div className="dependency-grid"><div><span className="dependency-icon"><FileCheck2 size={17} /></span><div><strong>{t.origin}</strong><span>{DEMO ? 'Isolated local demo' : runtime.label}</span></div><span className={`status-dot ${runtime.verified || DEMO ? 'healthy' : ''}`} /></div><div><span className="dependency-icon"><Radio size={17} /></span><div><strong>{t.sources}</strong><span>{DEMO ? 'Simulated A + B' : 'OKX + dRPC'}</span></div><span className={`status-dot ${fault === 'none' && snapshot ? 'healthy' : ''}`} /></div><div><span className="dependency-icon"><LockKeyhole size={17} /></span><div><strong>{t.original}</strong><span>{t.notRequired}</span></div><Check size={16} className="green" /></div></div></section>
           {DEMO && <section className="fault-section"><span><Radio size={15} />{t.fault}</span><select aria-label={t.fault} value={fault} disabled={busy || stage === 'unknown'} onChange={e => { setFault(e.target.value as Fault); invalidate(); }}><option value="none">{t.none}</option><option value="conflict">{t.conflict}</option><option value="unavailable">{t.unavailable}</option></select></section>}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "app": "TapeExit",
+  "version": "0.1.0",
+  "sourceCommit": "733ca795d9216ea43038e386ee652c1a84f112b5",
+  "sourceDirty": false,
+  "tapekitCommit": "37c617e7e332787c8a32a81e4d7d05a28a06c156",
+  "chainId": 196,
+  "signingApproved": false,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "size": 1078,
+      "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 45122,
+      "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "assets/index-B7Uj4zwu.css",
+      "size": 22002,
+      "sha256": "41559baafb6d24d0c07d3811a04520655d3b95fe0d654c8e9822bf468a639079",
+      "contentType": "text/css"
+    },
+    {
+      "path": "assets/index-Bhn4ExVG.js",
+      "size": 350334,
+      "sha256": "3a725e2c3c2511a8f97c8c71df6bf3f9eea1cc8cf2d14aef8cd327721d25f7a4",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/protocol-CJV9DzQo.js",
+      "size": 166087,
+      "sha256": "2e5d7b41d6ae06748415e6950643e6afd4382ab14c71f649be206823fc99bac1",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "icon.png",
+      "size": 410,
+      "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+      "contentType": "image/png"
+    },
+    {
+      "path": "index.html",
+      "size": 569,
+      "sha256": "81014ecf42c17f6ebf047a6d7955ca7163854a05de5c628b3f40a64ad77e00a6",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "xlayer.png",
+      "size": 313,
+      "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+      "contentType": "image/png"
+    }
+  ]
+}

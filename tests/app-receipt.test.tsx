@@ -11,6 +11,8 @@ import { reconcileSubmission, sendGuarded, SUBMISSION_KEY } from '../src/core/su
 import { loadHistory } from '../src/core/storage';
 import { DEMO_OWNER, demoSnapshot } from '../src/demo/engine';
 import { runtimeStatus, type RuntimeStatus } from '../src/core/runtime';
+import { inspectRecoveryOutcome } from '../src/core/recovery-outcome';
+vi.mock('../src/core/recovery-outcome', () => ({ inspectRecoveryOutcome: vi.fn() }));
 vi.mock('../src/config', async importOriginal => ({
   ...await importOriginal<typeof import('../src/config')>(), RELEASE_APPROVED: true,
 }));
@@ -53,6 +55,7 @@ beforeEach(async () => {
     localStorage.setItem(SUBMISSION_KEY, JSON.stringify(submission));
     return hash;
   });
+  vi.mocked(inspectRecoveryOutcome).mockReset();
   const snapshot = await demoSnapshot(12n, 'none');
   vi.spyOn(V3Adapter.prototype, 'snapshot').mockImplementation(async tokenId => ({ ...snapshot, tokenId }));
   vi.spyOn(V3Adapter.prototype, 'simulate').mockImplementation(async (plan: Plan) => ({
@@ -74,6 +77,55 @@ async function confirm() {
   await user.click(screen.getByRole('button', { name: '在钱包中确认' }));
   return user;
 }
+it('shows progress and state corroboration without making another wallet request', async () => {
+  vi.mocked(reconcileSubmission).mockImplementation(async () => {
+    localStorage.removeItem(SUBMISSION_KEY);
+    return { state: 'resolved', submission, verification: { state: 'checked', result } };
+  });
+  let finish!: (value: any) => void;
+  vi.mocked(inspectRecoveryOutcome).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const user = await confirm();
+  await screen.findByText('领取证据已核对');
+  await user.click(screen.getByRole('button', { name: '核对余额与流动性' }));
+  const pending = await screen.findByRole('button', { name: '正在核对余额与流动性…' });
+  expect(pending.hasAttribute('disabled')).toBe(true);
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  await act(async () => finish({ state: 'block-state-matched', hash, receipt: result,
+    liquidity: { after: '42' }, balances: [] }));
+  await screen.findByText('区块状态与收据一致');
+  await screen.findByText('剩余流动性: 42');
+  expect(sendGuarded).toHaveBeenCalledTimes(1);
+});
+it('does not restore a late state report after switching positions', async () => {
+  vi.mocked(reconcileSubmission).mockImplementation(async () => {
+    localStorage.removeItem(SUBMISSION_KEY);
+    return { state: 'resolved', submission, verification: { state: 'checked', result } };
+  });
+  let finish!: (value: any) => void;
+  vi.mocked(inspectRecoveryOutcome).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const user = await confirm();
+  await user.click(await screen.findByRole('button', { name: '核对余额与流动性' }));
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  await user.clear(screen.getByLabelText('仓位 Token ID'));
+  await user.type(screen.getByLabelText('仓位 Token ID'), '33');
+  await user.click(screen.getByRole('button', { name: '读取仓位' }));
+  await act(async () => finish({ state: 'block-state-matched', hash, receipt: result,
+    liquidity: { after: '42' }, balances: [] }));
+  expect(screen.queryByText('区块状态与收据一致')).toBeNull();
+});
+it('retains receipt and send state when historical balance queries fail', async () => {
+  vi.mocked(reconcileSubmission).mockImplementation(async () => {
+    localStorage.removeItem(SUBMISSION_KEY);
+    return { state: 'resolved', submission, verification: { state: 'checked', result } };
+  });
+  vi.mocked(inspectRecoveryOutcome).mockRejectedValue(new Error('Historical state unavailable'));
+  const user = await confirm();
+  await user.click(await screen.findByRole('button', { name: '核对余额与流动性' }));
+  await screen.findByText('Historical state unavailable');
+  expect(screen.getByText('领取证据已核对')).toBeTruthy();
+  expect(sendGuarded).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button', { name: '核对余额与流动性' }).hasAttribute('disabled')).toBe(false);
+});
 it('revokes an initial success immediately if finalization recheck detects a reorg', async () => {
   vi.mocked(reconcileSubmission).mockRejectedValue(new ExitError('REORG', 'Receipt changed during finality check'));
   await confirm();

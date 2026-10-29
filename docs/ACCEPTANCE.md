@@ -45,7 +45,10 @@ npm run report:compatibility
 
 The configuration starts the development demo at port 4174, production recovery at 4175, a second local copy at 4176, the built demo at 4177 and the wallet connectivity harness at 4180. Test-only redirect HTTP servers use 4181/4182; their real 302/307 responses avoid WebKit's interception limitation and are absent from release distributions. Test 360, 390, 768, 1280 and 1440 px. Preserve screenshots, traces and failures. DOM tests and a successful `--list` are not browser-pass evidence.
 
-The delivered baseline passed 40 cases on commit `3dbff19f477439ed1d153a394baa786658299f5a` in GitHub Actions run `40612819980`. New cases require their own commit's results. The suite includes controlled loopback network outages and explicit provider/RPC/SW identity fixtures. It does not exercise a real extension wallet or actual TapeOut container. The current machine cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify each new commit through its actual remote result.
+Use the exact-source GitHub Actions report for each candidate's browser count and result. The fixture suite
+includes controlled loopback outages and provider/RPC/SW identity fixtures; it does not establish actual extension
+acceptance. Separate historical public-gateway evidence exists in `evidence/historical/`. The current machine
+cannot launch Chromium because macOS rejects MachPortRendezvous bootstrap; verify new commits remotely.
 
 The next matrix runs the same cases in Chromium, Firefox and WebKit, with separate screenshots, structured
 results and actual browser versions/API observations. `report:compatibility` requires all engines, no skipped
@@ -57,14 +60,14 @@ check the card image, layout and print media. This does not establish real Safar
 | Gate | Status | Required Input Or Evidence |
 | --- | --- | --- |
 | Correct GitHub publication | Completed for prior candidate | Public `wangyangmingsss/tapeexit`; verify each new pushed commit matches local |
-| Browser and layouts | Baseline 40 cases passed remotely; new changes need current result | Match screenshots and test output to the exact commit |
+| Browser and layouts | Use current candidate's CI result | Match screenshots and test output to the exact commit |
 | Actual TapeOut origin and target wallet | Not accepted | Real origin, target extension, wallet request/response trace, controller changes, cancellation, account/chain changes and refresh |
 | Supported assets | Not approved | Exact token contracts and nonstandard-behavior review; do not simply change the allowlist |
 | Independent transaction/security review | Not completed | Independent reviewer, reviewed commit, findings and retest |
 | Dependency remediation | Findings open | Advisory/call-path review and compatible fixes or documented release decision |
-| Actual container publication | Not executed | Circuit/processor/container, publishing wallet and approved maximum OKB budget |
-| Exact live file readback | Not executed | Real container, independent saved manifest digest, two-source byte comparison and live status |
-| Alternate gateway and local recovery rehearsal | Not accepted | Actual hosting/origins, same-version task, faults proven effective, request logs |
+| Actual container publication | Prior read-only release published | `2.2.289.tape`; current candidate requires its own publication |
+| Exact live file readback | Recorded for source `733ca79` | Historical 9-file evidence is not a current live check |
+| Alternate gateway and local recovery rehearsal | Historical dual-gateway read-only fault task checked | Extension signing and clean-device local task remain pending |
 | Permissioned mainnet task | Not executed | Reviewed release, approved assets, controlled position, exact transaction and fee authorization |
 | User/comparison/protocol validation | Not performed | Consented participants, same-task records and permissioned attribution |
 | Competition submission | Not submitted | Current official rules/form, team/contact details, real links, reviewed video and actual submission receipt |
@@ -80,6 +83,7 @@ Keep the production gate closed while the required acceptance remains incomplete
 Read `OPERATIONS.md` for read-only publication/asset probes, safe unsigned resume, wallet connectivity collection,
 recording and draft packaging. `SECURITY-REVIEW-PACKET.md` provides a reviewer handoff, not a review result.
 `REAL-ACCEPTANCE.md` specifies the public inputs and actual tasks for items 2-5.
+`CONTROLLED-RECOVERY.md` documents current source comparison, rehearsal preparation and post-transaction verification.
 `competition/PILOT-PLAN.md` and `model:business` prepare item 7 without asserting a completed pilot.
 
 ## Calculation Loading And Performance

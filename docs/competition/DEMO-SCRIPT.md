@@ -16,8 +16,8 @@ Keep an on-screen environment label throughout. Use the isolated demo and local-
 | 1:05–1:25 | Confirm simulated exit, show explicit simulation label | “This is not a mainnet transaction. Production signing stays disabled until the release gates pass.” |
 | 1:25–1:45 | Inject RPC conflict and show stopped workflow | “Disagreement stops the workflow. Unknown submissions stay blocked through refresh until the matching actual transaction is checked.” |
 | 1:45–2:10 | Separately show official local-contract test output and saved fork evidence | “The official local contracts verify partial/full exit, collect-only and rollback. A separately recorded X Layer fork verifies one real deployment position.” |
-| 2:10–2:35 | Verify saved manifest, start local package, show read-only workspace | “The recovery package needs no runtime npm install. It still depends on RPC, the wallet and a functioning chain.” |
-| 2:35–2:50 | Show implemented/pending evidence table | “Live TapeOut publication, real-wallet acceptance and independent review remain pending. The next milestone is a complete, permissioned fault rehearsal.” |
+| 2:10–2:35 | Separately show the published read-only release and dated primary-blocked gateway report; verify saved local manifest | “An earlier read-only release is stored in a real TapeOut container. The recorded alternate gateway loaded its exact files while the primary gateway was blocked. This is a read-only recovery observation.” |
+| 2:35–2:50 | Show published-source/current-candidate distinction and pending evidence | “Real exit signing, independent approval and a mainnet exit are still pending. The current candidate adds balance and liquidity corroboration for the controlled rehearsal.” |
 
 ## Final Live Recording Gate
 
