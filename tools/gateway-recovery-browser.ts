@@ -3,6 +3,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { assertGatewayRecoveryTask, type GatewayRecoveryTask } from './gateway-recovery-task';
 
 export async function verifyBrowserRecovery(page: Page, task: GatewayRecoveryTask, mobile: boolean, output: string) {
+  const chinese = page.getByRole('button', { name: '中文', exact: true });
+  if (await chinese.isVisible()) await chinese.click();
   if (mobile) await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await page.getByRole('button', { name: '恢复入口', exact: true }).click();
   await page.getByLabel('恢复仓位编号', { exact: true }).fill(task.tokenId);
