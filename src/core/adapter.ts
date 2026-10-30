@@ -5,10 +5,20 @@ import { StrictRpc, ExitError, type Block } from './rpc';
 import type { Asset, Snapshot, Plan, Preview } from './protocol';
 import { loadPlan } from './plan-loader';
 import { isExcludedAsset } from './asset-policy';
+import type { ProtocolAdapter, ProtocolDescriptor } from './protocol-adapter';
 
-export class V3Adapter {
+export class V3Adapter implements ProtocolAdapter<bigint, Snapshot, Plan, Preview> {
+  readonly protocol: ProtocolDescriptor;
   constructor(public rpc: StrictRpc, public deployment: Deployment = DEPLOYMENT,
-    private supported: readonly Address[] = []) {}
+    private supported: readonly Address[] = []) {
+    this.protocol = Object.freeze({
+      id: 'uniswap-v3',
+      name: 'Uniswap V3',
+      chainId: deployment.chainId,
+      category: 'liquidity',
+      actions: Object.freeze(['withdraw', 'claim'] as const),
+    });
+  }
   async read<T>(abi: Abi, to: Address, name: string, args: readonly unknown[], block: Block): Promise<T> {
     const data = encodeFunctionData({ abi, functionName: name, args });
     const result = await this.rpc.request<Hex>('eth_call', [{ to, data }, block.number]);

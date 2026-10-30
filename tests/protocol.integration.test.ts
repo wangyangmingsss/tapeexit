@@ -8,6 +8,8 @@ import { recheckHistory } from '../src/core/history';
 import { discoverPositions } from '../src/core/discovery';
 import { runAssetForkMatrix } from '../tools/asset-fork-matrix';
 import { inspectRecoveryOutcome } from '../src/core/recovery-outcome';
+import type { Plan, Preview, Snapshot } from '../src/core/protocol';
+import type { ProtocolAdapter } from '../src/core/protocol-adapter';
 describe('official V3 contracts on isolated local EVM', () => {
   let f: Fixture;
   let checkpoint: `0x${string}`;
@@ -21,9 +23,11 @@ describe('official V3 contracts on isolated local EVM', () => {
     }
   });
   it('reads an actual position and executes owner multicall without new approval', async () => {
-    const snapshot = await f.adapter.snapshot(f.tokenId);
+    const adapter: ProtocolAdapter<bigint, Snapshot, Plan, Preview> = f.adapter;
+    expect(adapter.protocol.chainId).toBe(f.deployment.chainId);
+    const snapshot = await adapter.snapshot(f.tokenId);
     const plan = makePlan(snapshot, f.account, 5000, 50, false, f.deployment);
-    const preview = await f.adapter.simulate(plan);
+    const preview = await adapter.simulate(plan);
     expect(preview.amount0).toBeGreaterThan(0n);
     const approved = await f.client.readContract({ address: f.manager,
       abi: parseAbi(['function getApproved(uint256 tokenId) view returns (address)']), functionName: 'getApproved', args: [1n] });
