@@ -15,7 +15,9 @@ TapeExit 基于 **TapeOut 协议**构建，目标是成为 **X Layer 的 DeFi �
 
 **TapeOut 保留链上应用入口，TapeExit 提供退出与恢复流程。** 应用文件发布在 X Layer 的 TapeOut 容器中，资产继续由原有钱包和协议合约管理，TapeExit 不接管资金。
 
-[在线入口](https://2-2-289.netlify.app/) · [备用入口](https://2-2-289.vercel.app/) · [下载恢复包](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.2.0-readonly-0d9ff56) · [详细文档](#文档导航)
+[**在线演示 · 无需钱包**](https://wangyangmingsss.github.io/tapeexit/) · [主网只读入口](https://2-2-289.netlify.app/) · [备用入口](https://2-2-289.vercel.app/) · [下载恢复包](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.2.0-readonly-0d9ff56) · [详细文档](#文档导航)
+
+首次体验可先打开在线演示：读取默认仓位 `28491` → 选择退出比例 → 预演并确认模拟退出，也可切换“故障演练”查看异常处理。演示使用测试资产，不发送真实交易。
 
 > **当前公开版本为只读版，生产交易签名关闭。** 可以查看仓位、核对已有交易和使用恢复入口。演示模式使用模拟数据；真实退出曾在单独的受限测试中完成。完整钱包验收与独立安全审阅的证据状态见[实施状态](docs/IMPLEMENTATION-STATUS.md)。
 
@@ -91,6 +93,10 @@ V3 是起点。我们希望用户以后只需要：**连接钱包 → 查看已�
 开发者可从 [ProtocolAdapter 接口](src/core/protocol-adapter.ts)和[扩展说明](docs/PROTOCOL-ADAPTERS.md)了解如何接入。当前预留的是代码接口，尚无自动发现全部协议或加载第三方插件的功能。
 
 ## 先体验，再看代码
+
+### 在线演示
+
+打开 [Demo 网站](https://wangyangmingsss.github.io/tapeexit/)，无需安装或连接钱包，即可体验仓位读取、退出预览、模拟确认与故障演练。
 
 ### 在线查看
 
