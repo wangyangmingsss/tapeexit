@@ -20,6 +20,7 @@ async function install(page: Page, mode = 'success') {
   await page.route('**/client.js', route => route.fulfill({ contentType: 'text/javascript', body: js }));
   await page.route('**/styles.css', route => route.fulfill({ contentType: 'text/css', body: css }));
   const calls: string[] = [];
+  let checks = 0;
   await page.route('**/api/*', async route => {
     const action = new URL(route.request().url()).pathname.split('/').at(-1)!;
     calls.push(action);
@@ -32,7 +33,8 @@ async function install(page: Page, mode = 'success') {
     }
     if (action === 'hash') context.attempts[0].hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
-      if (mode === 'pending') return route.fulfill({ status: 409, json: { error: 'Receipt not finalized' } });
+      if (mode === 'pending' || mode === 'pending-once' && checks++ === 0)
+        return route.fulfill({ status: 409, json: { error: 'Receipt not finalized' } });
       context.complete = true; context.freshlyVerified = true; context.unresolved = null; context.attempts[0].status = 'confirmed';
       context.attempts[0].outcome = { balances: [{ symbol: 'USDt0', delta: '20007' }, { symbol: 'USDC', delta: '20007' }],
         liquidity: { after: '1980854' } };
@@ -47,10 +49,14 @@ async function install(page: Page, mode = 'success') {
     const provider = {
       async request({ method }: { method: string }) {
         methods.push(method);
+        if (mode === 'connect-delayed' && method === 'eth_requestAccounts') return new Promise(() => {});
         if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [account];
         if (method === 'eth_chainId') return '0xc4';
         if (method === 'eth_sendTransaction') {
           if (mode === 'unknown') throw new Error('Wallet response lost');
+          if (mode === 'delayed') return new Promise(resolve => {
+            (window as any).finishControlledSend = () => resolve(hash);
+          });
           return hash;
         }
         throw new Error('Forbidden fixture method');
@@ -89,6 +95,13 @@ test('fixed test requires separate risk/fee consent and requests exactly one wal
   expect(calls.indexOf('reserve')).toBeLessThan(calls.indexOf('hash'));
   await expect(page.locator('#prepare')).toBeDisabled();
   await page.locator('#recheck').click(); expect(await sends(page)).toBe(1);
+  const exported = page.waitForEvent('download');
+  await page.locator('#export-recovery').click();
+  const download = await exported;
+  const restored = JSON.parse(await readFile((await download.path())!, 'utf8'));
+  expect(restored).toEqual({ schemaVersion: 1, chainId: 196, manager: MANAGER,
+    tokenId: TEST_POLICY.tokenId, account: TEST_POLICY.account, hash: `0x${'ab'.repeat(32)}` });
+  expect(restored).not.toHaveProperty('outcome');
   await page.screenshot({ path: `test-results/${test.info().project.name}-controlled-test-desktop.png`, fullPage: true });
 });
 test('unknown wallet outcome survives reload and does not retry the exit', async ({ page }) => {
@@ -108,6 +121,45 @@ test('pending finality preserves the hash and permits only read-only recovery', 
   await expect(page.locator('#status')).toContainText('等待网络最终确认');
   await expect(page.locator('#hash')).toHaveValue(`0x${'ab'.repeat(32)}`);
   await page.locator('#reconcile').click(); expect(await sends(page)).toBe(1);
+});
+test('pending finality automatically completes without asking for a second transaction', async ({ page }) => {
+  await page.clock.install();
+  const { calls } = await install(page, 'pending-once');
+  await ready(page); await page.locator('#send').click();
+  await expect(page.locator('#status')).toContainText('等待网络最终确认');
+  await expect(page.locator('#next-check')).toContainText('只读核验');
+  await page.clock.fastForward(4000);
+  await expect(page.locator('#status')).toContainText('实测成功');
+  expect(await sends(page)).toBe(1);
+  expect(calls.filter(action => action === 'reconcile')).toHaveLength(2);
+});
+test('a delayed wallet hash survives the response deadline without releasing the reservation or resending', async ({ page }) => {
+  await page.clock.install();
+  const { context } = await install(page, 'delayed');
+  await ready(page); await page.locator('#send').click();
+  await expect.poll(() => sends(page)).toBe(1);
+  await page.clock.fastForward(91000);
+  await expect(page.locator('#status')).toContainText('原请求可能仍在钱包中');
+  await expect(page.locator('#send')).toBeDisabled();
+  await expect(page.locator('#prepare')).toBeDisabled();
+  expect(context.unresolved).toBe('attempt');
+  await page.evaluate(() => (window as any).finishControlledSend());
+  await expect(page.locator('#hash')).toHaveValue(`0x${'ab'.repeat(32)}`);
+  await expect(page.locator('#status')).toContainText('稍后返回的交易哈希已保存');
+  await page.locator('#reconcile').click();
+  await expect(page.locator('#status')).toContainText('实测成功');
+  expect(await sends(page)).toBe(1);
+});
+test('a stalled wallet connection times out without reserving or sending a transaction', async ({ page }) => {
+  await page.clock.install();
+  const { calls } = await install(page, 'connect-delayed');
+  await page.locator('#connect').click();
+  await expect(page.locator('#progress')).toBeVisible();
+  await page.clock.fastForward(91000);
+  await expect(page.locator('#status')).toContainText('钱包读取等待超过 90 秒');
+  await expect(page.locator('#connect')).toBeEnabled();
+  expect(calls).not.toContain('reserve');
+  expect(await sends(page)).toBe(0);
 });
 test('read-only recovery displays finality progress and recovers after reload without requesting a wallet', async ({ page }) => {
   const [html, js, css] = await Promise.all([

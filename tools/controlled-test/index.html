@@ -30,9 +30,11 @@
       <button id="cancel" disabled>记录取消并核对 nonce</button>
     </section>
     <p id="progress" role="status" aria-live="polite" hidden></p>
+    <div class="toolbar"><label><input id="auto-check" type="checkbox" checked>自动核验到账</label><button id="stop-check" disabled>停止自动核验</button></div>
+    <p id="next-check" role="status" aria-live="polite"></p>
     <h2>测试与恢复记录</h2>
     <dl id="record"></dl>
-    <div class="toolbar"><button id="recheck" disabled>重新核验已完成交易</button><button id="export" disabled>导出测试与恢复记录</button></div>
+    <div class="toolbar"><button id="recheck" disabled>重新核验已完成交易</button><button id="export" disabled>导出测试与恢复记录</button><button id="export-recovery" disabled>导出跨网关恢复文件</button></div>
   </main>
 </body>
 </html>

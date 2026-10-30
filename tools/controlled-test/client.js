@@ -1,6 +1,8 @@
 const $ = id => document.getElementById(id), wallets = new Map();
 let context, quote, provider, account, busy = false, generation = 0, removeObservers = () => {};
 let since = 0, actionName = '';
+let nextCheck = 0, checkAttempts = 0;
+const CHECK_DELAY = 3000, MAX_CHECKS = 10;
 const status = value => { $('status').textContent = value; };
 const coin = value => {
   const n = BigInt(value), unit = 10n ** 18n;
@@ -22,6 +24,15 @@ async function api(path, body) {
   if (!r.ok) throw new Error(value.error || '检查未完成');
   return value;
 }
+async function walletRead(p, method) {
+  let timer;
+  try {
+    return await Promise.race([Promise.resolve().then(() => p.request({ method })),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('钱包读取等待超过 90 秒，请检查扩展钱包后重新连接')), 90000);
+      })]);
+  } finally { clearTimeout(timer); }
+}
 function controls() {
   const pending = context?.attempts.find(a => a.id === context.unresolved);
   $('connect').disabled = busy || !context || !wallets.size;
@@ -34,7 +45,11 @@ function controls() {
   $('reconcile').disabled = busy || !pending;
   $('cancel').disabled = busy || !pending || !!pending.hash || !$('cancel-consent').checked;
   $('export').disabled = busy || !context;
+  $('export-recovery').disabled = busy || !context?.attempts.some(a => a.hash);
   $('recheck').disabled = busy || !context?.complete;
+  $('stop-check').disabled = !nextCheck;
+  $('next-check').textContent = nextCheck
+    ? `${Math.max(0, Math.ceil((nextCheck - Date.now()) / 1000))} 秒后自动进行第 ${checkAttempts + 1} 次只读核验。` : '';
   if (since) $('progress').textContent =
     `${actionName}：已等待 ${Math.floor((Date.now() - since) / 1000)} 秒，本次请求超时倒计时 ${Math.max(0, 90 - Math.floor((Date.now() - since) / 1000))} 秒。`;
 }
@@ -76,8 +91,12 @@ async function run(name, action) {
   busy = true; since = Date.now(); actionName = name; $('progress').hidden = false; controls();
   try { await action(); }
   catch (error) { status(error.message?.startsWith('Receipt not finalized')
-    ? '交易已上链，正在等待网络最终确认。请稍后重新核验，无需重发交易。'
-    : `${error.message || '检查未完成'}。已有请求记录保留，请勿重复发送。`); }
+    ? (checkAttempts >= MAX_CHECKS ? '自动核验已达到 10 次，交易记录保留；请稍后手动核验，无需重发。'
+      : '交易已上链，正在等待网络最终确认。请稍后重新核验，无需重发交易。')
+    : error.message?.startsWith('Transaction pending;')
+      ? (checkAttempts >= MAX_CHECKS ? '自动核验已达到 10 次，交易记录保留；请稍后手动核验，无需重发。'
+        : '交易尚未确认，已保留哈希，等待继续核验，无需重发。')
+      : `${error.message || '检查未完成'}。已有请求记录保留，请勿重复发送。`); }
   finally {
     try { await refresh(); } catch { quote = null; status('无法读取测试记录，停止发送并检查本地服务'); }
     busy = false; since = 0; $('progress').hidden = true; controls();
@@ -103,7 +122,7 @@ setTimeout(() => {
 }, 500);
 $('wallet').addEventListener('change', () => { removeObservers(); invalidate(); });
 async function assertWallet(p, version) {
-  const accounts = await p.request({ method: 'eth_accounts' }), chain = await p.request({ method: 'eth_chainId' });
+  const accounts = await walletRead(p, 'eth_accounts'), chain = await walletRead(p, 'eth_chainId');
   if (version !== generation || !Array.isArray(accounts) || typeof accounts[0] !== 'string' ||
       accounts[0].toLowerCase() !== context.policy.account.toLowerCase() ||
       typeof chain !== 'string' || !/^0x[0-9a-f]+$/i.test(chain) || BigInt(chain) !== 196n)
@@ -119,7 +138,7 @@ $('connect').addEventListener('click', () => run('连接钱包', async () => {
     events.forEach(name => p.on(name, invalidate));
     removeObservers = () => events.forEach(name => p.removeListener(name, invalidate));
   }
-  await p.request({ method: 'eth_requestAccounts' }); await assertWallet(p, version);
+  await walletRead(p, 'eth_requestAccounts'); await assertWallet(p, version);
   provider = p; account = context.policy.account; $('account').textContent = `${selected.name} · ${account}`;
   status('钱包已匹配，尚未请求交易');
 }));
@@ -139,8 +158,46 @@ $('prepare').addEventListener('click', () => run('准备退出预览', async () 
 $('consent').addEventListener('change', controls);
 $('cancel-consent').addEventListener('change', controls);
 async function reconcile() {
-  const result = await api('reconcile', {});
-  status(result.complete ? '实测成功：到账、剩余仓位和最终确认已核验。可导出记录，并在恢复入口重新核验。' : '交易已确认回滚，未完成退出');
+  nextCheck = 0;
+  checkAttempts++;
+  try {
+    const result = await api('reconcile', {});
+    status(result.complete ? '实测成功：到账、剩余仓位和最终确认已核验。可导出记录，并在恢复入口重新核验。' : '交易已确认回滚，未完成退出');
+  } catch (error) {
+    if (/^(Receipt not finalized|Transaction pending;)/.test(error.message || '') &&
+        $('auto-check').checked && checkAttempts < MAX_CHECKS) nextCheck = Date.now() + CHECK_DELAY;
+    throw error;
+  }
+}
+async function requestExit(p, attempt) {
+  let timer, expired = false;
+  // A timeout cannot cancel the extension request; retain any hash it returns later.
+  const response = Promise.resolve().then(() => p.request({
+    method: 'eth_sendTransaction', params: [attempt.quote.transaction],
+  })).then(async hash => {
+    if (typeof hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(hash))
+      throw new Error('钱包未返回有效哈希，请检查钱包记录');
+    $('hash').value = hash;
+    try { localStorage.setItem(`tapeexit-test:${context.contextId}`, JSON.stringify({ id: attempt.id, hash })); }
+    catch { /* Server reservation still blocks a duplicate send. */ }
+    await api('hash', { id: attempt.id, hash });
+    if (expired && !busy) {
+      await refresh();
+      if (!busy && context.unresolved === attempt.id) {
+        status('钱包稍后返回的交易哈希已保存，可以继续核验，无需重新签名。');
+        if ($('auto-check').checked) nextCheck = Date.now() + CHECK_DELAY;
+      }
+    }
+    return hash;
+  });
+  try {
+    return await Promise.race([response, new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        expired = true;
+        reject(new Error('90 秒内未完成钱包结果核对；原请求可能仍在钱包中，请检查钱包记录并保留待处理预约'));
+      }, 90000);
+    })]);
+  } finally { clearTimeout(timer); }
 }
 $('send').addEventListener('click', () => run('提交并核验退出', async () => {
   if (!navigator.locks) throw new Error('请使用支持页面互斥锁的 Chrome');
@@ -159,19 +216,24 @@ $('send').addEventListener('click', () => run('提交并核验退出', async () 
     await refresh(); await assertWallet(p, version);
     if (q.expiresAt <= Date.now()) throw new Error('预览已过期，预约保留，请核对后取消');
     status('请在钱包确认本次小额退出');
-    const hash = await p.request({ method: 'eth_sendTransaction', params: [a.quote.transaction] });
-    if (typeof hash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(hash)) throw new Error('钱包未返回有效哈希，请检查钱包记录');
-    $('hash').value = hash;
-    try { localStorage.setItem(`tapeexit-test:${context.contextId}`, JSON.stringify({ id: a.id, hash })); } catch { /* Reservation persists. */ }
-    await api('hash', { id: a.id, hash }); await reconcile();
+    await requestExit(p, a); checkAttempts = 0; await reconcile();
   });
   $('consent').checked = false;
 }));
 $('attach').addEventListener('click', () => run('保存交易哈希', async () => {
   await api('hash', { id: context.unresolved, hash: $('hash').value.trim() }); status('哈希已保存，可以核验');
 }));
-$('reconcile').addEventListener('click', () => run('核验到账与剩余仓位', reconcile));
-$('recheck').addEventListener('click', () => run('恢复后重新核验', reconcile));
+const manualCheck = name => { checkAttempts = 0; nextCheck = 0; void run(name, reconcile); };
+$('reconcile').addEventListener('click', () => manualCheck('核验到账与剩余仓位'));
+$('recheck').addEventListener('click', () => manualCheck('恢复后重新核验'));
+$('auto-check').addEventListener('change', () => {
+  if (!$('auto-check').checked) nextCheck = 0;
+  controls();
+});
+$('stop-check').addEventListener('click', () => {
+  nextCheck = 0; $('auto-check').checked = false;
+  status('自动核验已停止，待处理记录保留。'); controls();
+});
 $('cancel').addEventListener('click', () => run('核对钱包取消', async () => {
   if (!$('cancel-consent').checked) throw new Error('请先在钱包拒绝或取消旧请求');
   await api('cancel', { id: context.unresolved, acknowledgement: 'WALLET_CANCELLED_NO_PENDING_SIGNATURE' });
@@ -183,6 +245,28 @@ $('export').addEventListener('click', () => run('导出恢复记录', async () =
   const a = document.createElement('a'); a.href = url; a.download = 'tapeexit-controlled-test-67042.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }));
-setInterval(controls, 1000);
-try { await refresh(); status(context.unresolved ? '存在未核验交易，请先处理旧请求' : context.complete ? '测试已完成，可重新核验或导出' : '测试范围已加载，尚未请求签名'); }
+$('export-recovery').addEventListener('click', () => run('导出跨网关恢复文件', async () => {
+  await refresh();
+  const attempt = context.attempts.slice().reverse().find(a => a.hash);
+  if (!attempt) throw new Error('尚无交易哈希，请先检查钱包记录');
+  const task = { schemaVersion: 1, chainId: 196, manager: context.manager,
+    tokenId: context.policy.tokenId, account: context.policy.account, hash: attempt.hash };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(task, null, 2)], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = 'tapeexit-transaction-recovery-67042.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  status('恢复文件已导出，可在新版恢复入口导入并重新核验。');
+}));
+setInterval(() => {
+  controls();
+  if (!busy && nextCheck && Date.now() >= nextCheck) {
+    nextCheck = 0; void run('自动核验到账与剩余仓位', reconcile);
+  }
+}, 1000);
+try {
+  await refresh();
+  status(context.unresolved ? '存在未核验交易，请先处理旧请求' : context.complete ? '测试已完成，可重新核验或导出' : '测试范围已加载，尚未请求签名');
+  if (context.attempts.some(a => a.status === 'reserved' && a.hash) ||
+      context.complete && !context.freshlyVerified) nextCheck = Date.now() + CHECK_DELAY;
+}
 catch { status('无法读取测试范围，停止操作'); }
