@@ -1,3 +1,10 @@
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/tapeexit-wordmark-dark.png" />
+    <img src="docs/brand/tapeexit-wordmark.png" alt="TapeExit" width="320" />
+  </picture>
+</p>
+
 # TapeExit
 
 **原来的交易网站打不开时，给你的流动性仓位留一条退出路径。**

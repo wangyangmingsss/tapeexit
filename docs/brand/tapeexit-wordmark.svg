@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="128" viewBox="0 0 480 128" fill="none" role="img" aria-labelledby="title">
+  <title id="title">TapeExit</title>
+  <path fill="#2A6448" d="M20 20H72V40H40V52H82V36L112 64L82 92V76H40V88H72V108H20Z"/>
+  <text x="144" y="86" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" letter-spacing="0" fill="#26342C">Tape<tspan fill="#2A6448">Exit</tspan></text>
+</svg>

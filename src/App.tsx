@@ -577,7 +577,7 @@ export default function App() {
   const canPreview = !excludedPosition && !!own && !!snapshot?.token0.verified && !!snapshot.token1.verified && (DEMO || RELEASE_APPROVED);
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
-      <a className="brand" href="./" aria-label="TapeExit"><img src="./icon.png" width="31" height="31" alt="" /><span>Tape<span className="brand-light">Exit</span></span></a>
+      <a className="brand" href="./" aria-label="TapeExit"><img src="./tapeexit-icon.png" width="31" height="31" alt="" /><span>Tape<span className="brand-light">Exit</span></span></a>
       <div className="sidebar-caption">SELF-CUSTODY, CONTINUED</div>
       <nav aria-label="Main navigation">{([
         ['exit', ArrowDownLeft, t.exit], ['history', History, t.history], ['recovery', LockKeyhole, t.recovery],
