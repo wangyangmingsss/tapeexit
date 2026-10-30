@@ -64,19 +64,24 @@ try {
     }
     throw new Error('Local receipt unavailable; no resubmission');
   }
+  async function mine(count: number) {
+    // Keep each IPC request below the fixed timeout on slower CI runners.
+    for (let remaining = count; remaining > 0; remaining -= 5)
+      await evm.request('anvil_mine', [`0x${Math.min(5, remaining).toString(16)}`, '0x0']);
+  }
   const fundingHash = await send(SPARK_USDC.vault, SPARK_USDC.asset,
     encodeFunctionData({ abi: erc20, functionName: 'transfer', args: [tester, 1_000000n] }));
   const approvalHash = await send(tester, SPARK_USDC.asset,
     encodeFunctionData({ abi: erc20, functionName: 'approve', args: [SPARK_USDC.vault, 1_000000n] }));
   const depositHash = await send(tester, SPARK_USDC.vault,
     encodeFunctionData({ abi: deposit, functionName: 'deposit', args: [1_000000n, tester] }));
-  await evm.request('anvil_mine', ['0x3', '0x0']);
+  await mine(3);
   const initial = await adapter.snapshot(tester);
   assert.ok(initial.shares > 0n && initial.maxRedeem > 0n);
   const partial = vaultPlan(initial, initial.shares / 2n);
   const preview = await adapter.simulate(partial);
   const partialHash = await send(tester, SPARK_USDC.vault, partial.data);
-  await evm.request('anvil_mine', ['0x41', '0x0']);
+  await mine(65);
   const task = vaultRecoveryTask(tester, partialHash);
   const recovered = await inspectVaultRecovery(forkRpc, importVaultRecovery(JSON.stringify(task)));
   assert.equal(recovered.state, 'verified');
@@ -87,7 +92,7 @@ try {
   const full = vaultPlan(remaining, remaining.shares);
   await adapter.simulate(full);
   const fullHash = await send(tester, SPARK_USDC.vault, full.data);
-  await evm.request('anvil_mine', ['0x41', '0x0']);
+  await mine(65);
   const fullResult = await inspectVaultRecovery(forkRpc, vaultRecoveryTask(tester, fullHash));
   assert.equal(fullResult.state, 'verified');
   if (fullResult.state !== 'verified') throw new Error('Full recovery failed');
