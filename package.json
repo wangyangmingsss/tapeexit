@@ -33,6 +33,8 @@
     "verify:recovery": "tsx tools/verify-recovery.ts",
     "verify:vault": "tsx tools/verify-spark-vault.ts",
     "verify:vault-fork": "tsx tools/verify-spark-vault.ts --fork",
+    "test:vault-wallet": "tsx tools/vault-wallet.ts",
+    "verify:vault-wallet-fork": "tsx tools/verify-vault-wallet-fork.ts",
     "prepare:recovery": "tsx tools/prepare-recovery.ts",
     "prepare:acceptance-assets": "tsx tools/prepare-acceptance-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",

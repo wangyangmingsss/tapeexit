@@ -1,9 +1,16 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import type { ControlledTest } from './controlled-test-core';
+interface ControlledWorkbench {
+  context(): unknown;
+  preview(): Promise<unknown>;
+  reserve(id: unknown, consent: unknown, maximumGasCostWei: unknown): Promise<unknown>;
+  attachHash(id: unknown, hash: unknown): Promise<unknown>;
+  reconcile(): Promise<unknown>;
+  cancel(id: unknown, acknowledgement: unknown): Promise<unknown>;
+}
 
-export async function createControlledTestServer(bench: ControlledTest, port: number, sourceCommit: string,
-  options: { readOnly?: boolean } = {}) {
+export async function createControlledTestServer(bench: ControlledWorkbench, port: number, sourceCommit: string,
+  options: { readOnly?: boolean; assets?: 'controlled-vault' } = {}) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid test port');
   const origin = `http://127.0.0.1:${port}`;
   const headers = {
@@ -17,7 +24,7 @@ export async function createControlledTestServer(bench: ControlledTest, port: nu
     ['/', options.readOnly ? 'recovery.html' : 'index.html', 'text/html'],
     ['/client.js', options.readOnly ? 'recovery.js' : 'client.js', 'text/javascript'],
     ['/styles.css', '../publication-workbench/styles.css', 'text/css'],
-  ]) files.set(route, { bytes: await readFile(new URL(`./controlled-test/${name}`, import.meta.url)), type });
+  ]) files.set(route, { bytes: await readFile(new URL(`./${options.assets ?? 'controlled-test'}/${name}`, import.meta.url)), type });
   const server = http.createServer(async (req, res) => {
     const reply = (status: number, value: unknown) => {
       res.writeHead(status, { ...headers, 'content-type': 'application/json' }); res.end(JSON.stringify(value));
@@ -30,7 +37,7 @@ export async function createControlledTestServer(bench: ControlledTest, port: nu
       res.writeHead(200, { ...headers, 'content-type': `${type}; charset=utf-8` }); return res.end(bytes);
     }
     if (req.method === 'GET' && req.url === '/api/context')
-      return reply(200, { ...bench.context(), sourceCommit, readOnly: !!options.readOnly });
+      return reply(200, { ...(bench.context() as object), sourceCommit, readOnly: !!options.readOnly });
     if (req.method !== 'POST') return reply(405, { error: 'Method not allowed' });
     if (req.headers.origin !== origin || req.headers['x-tapeexit-client'] !== 'controlled-test' ||
         req.headers['content-type'] !== 'application/json')

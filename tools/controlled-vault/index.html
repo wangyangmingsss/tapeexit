@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TapeExit · Spark USDC 金库实测</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/client.js"></script>
+</head>
+<body>
+  <header><strong>TapeExit</strong><span>Spark Savings USDC</span><span>受限主网实测</span></header>
+  <main>
+    <h1>1 USDC 金库实测</h1>
+    <p id="status" role="status" aria-live="polite">正在加载</p>
+    <dl id="identity"></dl>
+    <div class="toolbar"><select id="wallet" aria-label="钱包"></select><button id="connect" disabled>连接 OKX 钱包</button></div>
+    <p id="account" role="status">尚未连接</p>
+    <h2 id="stage">准备本次操作</h2>
+    <button id="prepare" disabled>准备下一笔</button>
+    <dl id="preview"></dl>
+    <label class="consent"><input id="consent" type="checkbox" disabled><span id="consent-label">确认本次预览的金额、原钱包收款和费用。</span></label>
+    <button id="send" disabled>在 OKX 钱包中确认这一笔</button>
+    <p>本次测试尚未经过独立安全审阅。USDC 和金库存在暂停、冻结或升级等协议风险。赎回预计到账和核验参考下限不是合约保证的最低到账。公开应用的生产签名继续关闭。</p>
+    <section id="pending-section" hidden>
+      <h2>待核验交易</h2>
+      <label>完整交易哈希<input id="hash" maxlength="66" autocomplete="off" spellcheck="false"></label>
+      <div class="toolbar"><button id="attach">保存哈希</button><button id="reconcile">核验这一笔</button></div>
+      <label class="consent"><input id="cancel-consent" type="checkbox"><span>我已在钱包取消或拒绝请求，确认没有等待签名或广播的交易。</span></label>
+      <button id="cancel" disabled>记录取消并核对 nonce</button>
+    </section>
+    <p id="progress" role="status" aria-live="polite" hidden></p>
+    <label><input id="auto-check" type="checkbox" checked>每 3 秒衔接只读核验</label>
+    <p id="next-check" role="status" aria-live="polite"></p>
+    <h2>到账与恢复记录</h2>
+    <dl id="record"></dl>
+    <div class="toolbar"><button id="recheck" disabled>重新核验全部记录</button><button id="export" disabled>导出实测记录</button><button id="export-recovery" disabled>导出金库恢复文件</button></div>
+  </main>
+</body>
+</html>
