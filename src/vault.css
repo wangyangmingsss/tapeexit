@@ -1,0 +1,36 @@
+.vault-workspace { min-width: 0; }
+.vault-header { display: flex; gap: 12px; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.vault-header > svg { color: var(--green); }
+.vault-header h2 { font-size: 18px; }
+.vault-header span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.vault-identity { display: grid; gap: 10px; margin: 20px 0; }
+.vault-identity > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; }
+.vault-identity dt { font-size: 12px; color: var(--muted); }
+.vault-identity dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.vault-query label, .vault-recovery label { display: block; font-size: 12px; margin: 12px 0 7px; }
+.vault-query input, .vault-recovery input:not([type=file]) { min-width: 0; width: 100%; padding: 11px; background: white; border: 1px solid #bbc8bd; border-radius: 4px; font-size: 13px; }
+.vault-query .input-row input { flex: 1; }
+.vault-position, .vault-preview, .vault-recovery { padding: 24px 0; border-top: 1px solid var(--border); margin-top: 24px; }
+.vault-preview h3, .vault-recovery h3 { font-size: 16px; }
+.vault-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 30px; margin: 18px 0; }
+.vault-metrics > div { min-width: 0; }
+.vault-metrics dt { font-size: 12px; color: var(--muted); }
+.vault-metrics dd { font-size: 17px; font-weight: 550; overflow-wrap: anywhere; margin: 5px 0 0; }
+.vault-controls { max-width: 500px; margin-top: 26px; }
+.vault-controls > label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.vault-controls input[type=range] { width: 100%; height: 20px; accent-color: var(--green); margin: 14px 0; }
+.vault-controls .primary-button { margin-top: 18px; }
+.vault-controls p, .vault-preview p { color: var(--muted); font-size: 12px; margin-top: 12px; }
+.vault-recovery .recovery-actions { flex-wrap: wrap; margin: 16px 0; }
+.vault-progress { display: flex; align-items: center; gap: 10px; margin-top: 20px; font-size: 12px; }
+.vault-progress span { flex: 1; }
+.vault-message { margin-top: 18px; font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 650px) {
+  .vault-identity > div { grid-template-columns: 1fr; gap: 4px; }
+  .vault-identity code { font-size: 11px; }
+  .vault-query .input-row { flex-wrap: wrap; }
+  .vault-query .input-row input { flex-basis: 100%; }
+  .vault-metrics { grid-template-columns: 1fr; gap: 17px; }
+  .vault-recovery .recovery-actions { align-items: stretch; }
+  .vault-recovery .recovery-actions .secondary-button { flex: 1 1 100%; white-space: normal; }
+}

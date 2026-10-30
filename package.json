@@ -31,6 +31,8 @@
     "prepare:review": "tsx tools/prepare-review.ts",
     "verify:review": "tsx tools/verify-review.ts",
     "verify:recovery": "tsx tools/verify-recovery.ts",
+    "verify:vault": "tsx tools/verify-spark-vault.ts",
+    "verify:vault-fork": "tsx tools/verify-spark-vault.ts --fork",
     "prepare:recovery": "tsx tools/prepare-recovery.ts",
     "prepare:acceptance-assets": "tsx tools/prepare-acceptance-assets.ts",
     "accept:wallet": "node tools/wallet-acceptance.mjs",

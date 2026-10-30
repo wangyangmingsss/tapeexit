@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   ArrowDownLeft, ArrowRight, Check, CheckCircle2, ChevronDown, CircleHelp, Copy,
   Download, ExternalLink, FileCheck2, History, LayoutList, LoaderCircle, LockKeyhole, Menu,
-  Radio, RefreshCw, ShieldCheck, Upload, Wallet as WalletIcon, X, XCircle,
+  Landmark, Radio, RefreshCw, ShieldCheck, Upload, Wallet as WalletIcon, X, XCircle,
 } from 'lucide-react';
 import { formatUnits, getAddress, type Address, type Hex } from 'viem';
 import { CHAIN_ID, DEPLOYMENT, MANAGER, RELEASE, RELEASE_APPROVED, SOURCES, SUPPORTED_TOKENS } from './config';
@@ -23,14 +23,15 @@ import { discoverPositions, type PositionPage } from './core/discovery';
 import RecoveryCheck from './RecoveryCheck';
 import AssetOverview from './AssetOverview';
 import DistributionStatus from './DistributionStatus';
+const VaultWorkspace = lazy(() => import('./VaultWorkspace'));
 
 const DEMO = import.meta.env.VITE_DEMO === 'true';
 const demoModule = DEMO ? import('./demo/engine') : null;
 type Stage = 'idle' | 'reading' | 'ready' | 'simulating' | 'review' | 'preflight' | 'wallet' | 'submitted' | 'done' | 'unknown';
-type Tab = 'overview' | 'exit' | 'history' | 'recovery';
+type Tab = 'overview' | 'exit' | 'vault' | 'history' | 'recovery';
 const texts = {
   zh: {
-    overview: '资产总览', exit: '退出仓位', history: '操作记录', recovery: '恢复入口', connect: '连接钱包', disconnect: '断开连接',
+    overview: '资产总览', exit: '退出仓位', vault: 'USDC 金库', history: '操作记录', recovery: '恢复入口', connect: '连接钱包', disconnect: '断开连接',
     title: '独立退出，资产回到自己手中。', sub: 'X Layer · TapeOut · DeFi 资产应急出口', workspace: '仓位工作区',
     id: '仓位 Token ID', idHint: '输入你直接持有的 Uniswap V3 仓位编号', load: '读取仓位',
     readOnly: '只读模式', readOnlyHint: '连接钱包后可核对所有权。当前发行尚未批准主网签名。',
@@ -47,7 +48,7 @@ const texts = {
     saveCard: '保存恢复卡', importCard: '导入恢复卡', clear: '清除本地记录',
     recoveryTitle: '提前保存，保留退出路径。', recoverySub: '恢复卡保存公开入口与仓位编号，不包含私钥或签名。',
     local: '本地恢复包', localSub: '通过发行包在 localhost 运行，读取与交易仍需要钱包、RPC 和可用的链。',
-    scope: '支持用户自持的 X Layer Uniswap V3 仓位。无法恢复丢失私钥，也无法绕过合约锁定或协议损失。',
+    scope: '支持 X Layer 自持 Uniswap V3 仓位与 Spark USDC 金库的只读查询。无法恢复丢失私钥，也无法绕过合约锁定或协议损失。',
     demo: '隔离演示 · 测试资产 · 不连接真实钱包，不发送链上交易',
     live: '主网只读 · 部署、代币与发行审阅通过前禁止签名',
     fault: '故障演练', none: '正常读取', conflict: '注入 RPC 分歧', unavailable: '注入来源中断',
@@ -58,7 +59,7 @@ const texts = {
     disclaimer: '链上字节核对不等于安全审计。入口仍依赖浏览器、启动文件、RPC、钱包及底层合约。',
   },
   en: {
-    overview: 'Assets', exit: 'Exit position', history: 'Activity', recovery: 'Recovery', connect: 'Connect wallet', disconnect: 'Disconnect',
+    overview: 'Assets', exit: 'Exit position', vault: 'USDC vault', history: 'Activity', recovery: 'Recovery', connect: 'Connect wallet', disconnect: 'Disconnect',
     title: 'An independent way back to your assets.', sub: 'X Layer · TapeOut · DeFi emergency exit', workspace: 'Position workspace',
     id: 'Position token ID', idHint: 'Enter a Uniswap V3 NFT position you directly own', load: 'Read position',
     readOnly: 'Read-only mode', readOnlyHint: 'Connect to check ownership. This release is not approved for mainnet signing.',
@@ -75,7 +76,7 @@ const texts = {
     saveCard: 'Save recovery card', importCard: 'Import recovery card', clear: 'Clear local activity',
     recoveryTitle: 'Save your route before you need it.', recoverySub: 'A recovery card stores public entry details and position IDs, never keys or signatures.',
     local: 'Local recovery bundle', localSub: 'Run the release bundle on localhost. Reading and transactions still require RPC, a wallet, and a functioning chain.',
-    scope: 'For directly owned X Layer Uniswap V3 positions. Cannot recover lost keys, bypass locks, or undo protocol losses.',
+    scope: 'Read-only access to directly owned X Layer Uniswap V3 positions and the Spark USDC vault. Cannot recover lost keys, bypass locks, or undo protocol losses.',
     demo: 'Isolated demo · test assets · no real wallet or on-chain transaction',
     live: 'Mainnet read-only · signing disabled until deployment, assets and release are reviewed',
     fault: 'Fault rehearsal', none: 'Healthy reads', conflict: 'Inject RPC conflict', unavailable: 'Interrupt operator',
@@ -582,7 +583,7 @@ export default function App() {
       <a className="brand" href="./" aria-label="TapeExit"><img src="./tapeexit-icon.png" width="31" height="31" alt="" /><span>Tape<span className="brand-light">Exit</span></span></a>
       <div className="sidebar-caption">SELF-CUSTODY, CONTINUED</div>
       <nav aria-label="Main navigation">{([
-        ['overview', LayoutList, t.overview], ['exit', ArrowDownLeft, t.exit], ['history', History, t.history], ['recovery', LockKeyhole, t.recovery],
+        ['overview', LayoutList, t.overview], ['exit', ArrowDownLeft, t.exit], ['vault', Landmark, t.vault], ['history', History, t.history], ['recovery', LockKeyhole, t.recovery],
       ] as const).map(([key, Icon, label]) => <button key={key} className={`nav-item ${tab === key ? 'active' : ''}`} onClick={() => { setTab(key); setMenuOpen(false); }}><Icon size={18} />{label}{key === 'exit' && <span className="nav-dot" />}</button>)}</nav>
       <div className="sidebar-bottom"><div className="network-mark"><img src="./xlayer.png" width="29" height="29" alt="" /><div><strong>X Layer</strong><span>Chain 196</span></div><span className="live-dot" /></div>
         <button className="text-link" onClick={() => setDetailsOpen(true)}><CircleHelp size={15} />{t.support}<ArrowRight size={14} /></button>
@@ -596,7 +597,7 @@ export default function App() {
         </div></header>
       <div className={`environment-banner ${DEMO ? 'demo-banner' : ''}`}><Radio size={14} /><span>{DEMO ? t.demo : t.live}</span><span className="banner-badge">{DEMO ? 'DEMO' : 'READ ONLY'}</span></div>
       <main>
-        <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{t[tab]}</h1><p>{tab === 'overview' ? (lang === 'zh' ? '已接入 Uniswap V3 · 其他协议逐步扩展' : 'Uniswap V3 connected · further protocols planned') : tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{t[tab]}</h1><p>{tab === 'overview' ? (lang === 'zh' ? 'Uniswap V3 · Spark Savings USDC' : 'Uniswap V3 · Spark Savings USDC') : tab === 'vault' ? (lang === 'zh' ? 'Spark Savings USDC · 份额、赎回与到账核验' : 'Spark Savings USDC · shares, redemption and receipt verification') : tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
           <button className="secondary-button save-button" onClick={() => void saveCard()}><Download size={15} />{t.saveCard}</button></div>
         {error && <div className="error-notice" role="alert"><XCircle size={18} /><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
         {!submissionBlocked && submissionMessage && <div className="transaction-status" role="status"><CheckCircle2 size={18} /><span>{submissionMessage}</span></div>}
@@ -626,12 +627,15 @@ export default function App() {
           {submissionMessage && <p role="status">{submissionMessage}</p>}
         </section>}
         {tab === 'overview' && <AssetOverview account={account} adapter={adapter} demo={demo} simulated={DEMO} fault={fault}
-          lang={lang} locked={busy || stage === 'unknown' || submissionBlocked} onConnect={() => setWalletPicker(true)}
+          lang={lang} locked={busy || stage === 'unknown' || submissionBlocked} onConnect={() => setWalletPicker(true)} onOpenVault={() => setTab('vault')}
           onSelect={id => {
             if (busy || txLock.current || stage === 'unknown' || submissionBlocked) return;
             if (id) { setTokenId(id); setSnapshot(undefined); setResult(undefined); invalidate(); }
             setTab('exit');
           }} />}
+        {tab === 'vault' && <Suspense fallback={<p role="status">{lang === 'zh' ? '正在打开金库…' : 'Opening vault…'}</p>}>
+          <VaultWorkspace account={account} lang={lang} simulated={DEMO} />
+        </Suspense>}
         {tab === 'exit' && <>
           <div className="workspace-overview-link"><button className="text-link" onClick={() => setTab('overview')}>
             <LayoutList size={15} />{t.overview}<ArrowRight size={14} /></button></div>

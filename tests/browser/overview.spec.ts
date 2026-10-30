@@ -5,7 +5,7 @@ for (const width of [360, 390, 768, 1280, 1440]) test(`asset overview and TapeOu
   if (width <= 650) await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('navigation').getByRole('button', { name: '资产总览', exact: true }).click();
   await expect(page.getByText('TEST-USDC / TEST-USDT')).toBeVisible();
-  await expect(page.getByText('规划中', { exact: true })).toHaveCount(4);
+  await expect(page.getByText('规划中', { exact: true })).toHaveCount(3);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/${test.info().project.name}-overview-${width}.png`, fullPage: true });
   await page.getByRole('button', { name: '打开仓位 28491' }).click();
@@ -16,7 +16,7 @@ for (const width of [360, 390, 768, 1280, 1440]) test(`asset overview and TapeOu
   await page.getByRole('button', { name: '恢复入口', exact: true }).click();
   const routes = page.getByRole('region', { name: 'TapeOut 与恢复路径' });
   await expect(routes.getByText('独立模拟演示')).toBeVisible();
-  await expect(routes.getByText('0.2.0-0d9ff56')).toBeVisible();
+  await expect(routes.getByText('0.3.0-2597f66')).toBeVisible();
   await expect(routes.getByRole('link', { name: '备用网关' })).toHaveAttribute('href', 'https://2-2-289.vercel.app/');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/${test.info().project.name}-distribution-${width}.png`, fullPage: true });

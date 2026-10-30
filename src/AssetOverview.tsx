@@ -7,9 +7,9 @@ import { isExcludedAsset } from './core/asset-policy';
 import type { DemoEngine, Fault } from './demo/engine';
 import { PROTOCOL_COVERAGE } from './product';
 
-export default function AssetOverview({ account, adapter, demo, simulated, fault, lang, locked, onSelect, onConnect }:
+export default function AssetOverview({ account, adapter, demo, simulated, fault, lang, locked, onSelect, onConnect, onOpenVault }:
   { account?: Address; adapter: V3Adapter; demo?: DemoEngine; simulated: boolean; fault: Fault;
-    lang: 'zh' | 'en'; locked: boolean; onSelect: (id: string) => void; onConnect: () => void }) {
+    lang: 'zh' | 'en'; locked: boolean; onSelect: (id: string) => void; onConnect: () => void; onOpenVault?: () => void }) {
   const zh = lang === 'zh';
   const [page, setPage] = useState<PortfolioPage>();
   const [loading, setLoading] = useState(false);
@@ -63,7 +63,7 @@ export default function AssetOverview({ account, adapter, demo, simulated, fault
         {page && <>
           <div className="overview-summary" role="status"><strong>{page.total.toString()} {zh ? '个仓位 NFT' : 'position NFTs'}</strong>
             <span>{zh ? '区块' : 'Block'} {BigInt(page.block.number).toString()}</span></div>
-          {page.total === 0n && <p className="overview-message">{zh ? '未发现直接持有的 V3 仓位。其他协议或托管仓位尚未接入。' : 'No directly owned V3 positions found. Other protocols and custodial positions are not connected yet.'}</p>}
+          {page.total === 0n && <p className="overview-message">{zh ? '未发现直接持有的 V3 仓位。Spark USDC 份额可从金库入口查询。' : 'No directly owned V3 positions found. Check Spark USDC shares from the vault entry.'}</p>}
           <ul className="portfolio-list">{page.entries.map(entry => {
             const snapshot = entry.state === 'ready' ? entry.snapshot : undefined;
             const excluded = snapshot && (isExcludedAsset(snapshot.token0.address) || isExcludedAsset(snapshot.token1.address));
@@ -87,6 +87,8 @@ export default function AssetOverview({ account, adapter, demo, simulated, fault
       </div>}
     <div className="protocol-coverage"><h2>{zh ? '协议覆盖' : 'Protocol coverage'}</h2>
       {PROTOCOL_COVERAGE.map(protocol => <div key={protocol.id}><span>{protocol.name}</span>
+        {protocol.id === 'spark-spusdc' && onOpenVault && <button className="text-link" disabled={locked} onClick={onOpenVault}>
+          {zh ? '查询金库' : 'Open vault'}<ArrowRight size={15} /></button>}
         <span className={protocol.status === 'readonly' ? 'green' : 'muted'}>{protocol.status === 'readonly' ? (zh ? '已接入 · 主网只读' : 'Connected · mainnet read only') : (zh ? '规划中' : 'Planned')}</span></div>)}</div>
   </section>;
 }

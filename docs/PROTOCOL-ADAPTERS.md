@@ -1,6 +1,6 @@
 # 多协议适配
 
-TapeExit 的长期目标是为 X Layer 上不同 DeFi 协议提供应急退出与恢复入口。当前只实现 Uniswap V3；本次增加共同接口，为后续接入保留边界。
+TapeExit 的长期目标是为 X Layer 上不同 DeFi 协议提供应急退出与恢复入口。当前源码实现了 Uniswap V3 与 Spark Savings USDC 金库两个适配器，分别处理 NFT 流动性仓位和单资产金库份额。
 
 ## 与 TapeOut 的分工
 
@@ -10,7 +10,7 @@ TapeOut 承载链上应用文件，供网关读取；协议适配模块负责读
 
 ## 已有接口
 
-`src/core/protocol-adapter.ts` 导出 `ProtocolAdapter`，`V3Adapter` 已实现：
+`src/core/protocol-adapter.ts` 导出 `ProtocolAdapter`，`V3Adapter` 与 `SparkVaultAdapter` 均已实现：
 
 | 成员 | 用途 |
 | --- | --- |
@@ -25,6 +25,7 @@ TapeOut 承载链上应用文件，供网关读取；协议适配模块负责读
 
 ```ts
 class V3Adapter implements ProtocolAdapter<bigint, Snapshot, Plan, Preview>
+class SparkVaultAdapter implements ProtocolAdapter<Address, VaultSnapshot, VaultPlan, VaultPreview>
 ```
 
 该接口只负责读取和模拟，不提供签名、广播、任意合约调用或动态插件加载。`protocol.actions` 描述实现的操作，不代表资产获批、发行获批或已经开放生产签名。
@@ -35,11 +36,11 @@ class V3Adapter implements ProtocolAdapter<bigint, Snapshot, Plan, Preview>
 | --- | --- | --- |
 | V2 类流动性池 | LP 份额和池资产 | 移除流动性 |
 | 质押与收益农场 | 用户存款、奖励、解锁条件 | 解除质押、提取、领取 |
-| 收益金库 | 份额、底层资产、赎回限制 | 预览赎回、提取 |
+| 收益金库 | Spark spUSDC 已实现份额、底层资产、赎回限制 | 已支持读取、赎回模拟、直接赎回事件与到账核验；生产签名关闭 |
 | 借贷 | 存款、债务、抵押约束 | 按协议条件提取 |
 | 排队赎回 | 申请编号、等待状态、可领取金额 | 申请退出、到期领取 |
 
-以上均为规划，尚无对应的新协议实现或生产支持。
+除指定 Spark USDC 金库外，上表其他类型仍为规划。Spark 适配不等于支持全部 ERC-4626 金库；详见 [Spark 金库说明](SPARK-USDC-VAULT.md)。
 
 ## 接入步骤
 
@@ -49,7 +50,9 @@ class V3Adapter implements ProtocolAdapter<bigint, Snapshot, Plan, Preview>
 4. 为多步操作定义顺序和恢复状态，区分提交、等待、可领取、领取完成；每一步根据链上结果核对，避免刷新后重复操作。
 5. 增加实际协议的隔离测试和版本证据，再接入界面及发行流程。
 
-资产发现、计划生成、多步恢复和协议注册表仍需随具体模块开发。当前界面、钱包发送、交易历史和恢复文件仍使用现有 V3 模型，新增接口没有将它们自动改造成通用执行器。
+Spark 模块已有独立的计划、界面与恢复文件，恢复线索绑定协议、链、金库、持有人和哈希，不能导入 V3 记录冒充金库记录。它复用双 RPC 与通用收据身份校验，单独核对金库的 Withdraw、份额销毁和 USDC Transfer 事件。
+
+当前 V3 的签名与历史记录继续保留自己的模型，Spark 不复用 NFT calldata 或 V3 发送器。金库入口也不是通用执行器；没有任意地址金库接入、动态插件加载或跨协议签名。
 
 ## 当前版本边界
 
@@ -57,3 +60,4 @@ class V3Adapter implements ProtocolAdapter<bigint, Snapshot, Plan, Preview>
 - 新接口不依赖平台的专属后台；后续若使用索引或聚合服务，需保留链上核对与手动输入路径。
 - 协议本身暂停、锁定、缺乏可用资金或有未满足的债务条件时，应显示实际限制。
 - 多协议接入应分别标记可查看、可预览、可执行及已验证的版本，不能以统一页面代表所有平台已受支持。
+- 公网 TapeOut 容器仍运行 `0.3.0-2597f66`，尚不包含本次 Spark 模块；源码和 Demo 更新不替代链上发布。

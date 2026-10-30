@@ -35,7 +35,7 @@ it('opens exact large IDs, labels unsupported protocols, and pins next page', as
   const user = userEvent.setup();
   render(<AssetOverview {...props} />);
   await screen.findByText('USDt0 / USDC');
-  expect(screen.getAllByText('规划中')).toHaveLength(4);
+  expect(screen.getAllByText('规划中')).toHaveLength(3);
   await user.click(screen.getByRole('button', { name: `打开仓位 ${snapshot.tokenId}` }));
   expect(props.onSelect).toHaveBeenCalledWith(snapshot.tokenId.toString());
   await user.click(screen.getByRole('button', { name: '下一页资产' }));
