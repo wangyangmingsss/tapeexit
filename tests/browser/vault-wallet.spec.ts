@@ -111,6 +111,7 @@ for (const width of [390, 1440]) test(`vault wallet consent and 3-second read-on
   await expect(page.locator('#next-action')).toContainText('已勾选');
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
   await page.locator('#send').click();
+  await expect.poll(() => page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(2);
   const sends = await page.evaluate(() => (window as any).vaultWalletFixture.sends);
   expect(sends).toHaveLength(2);
   expect(sends[1][0].to).toBe(p.vault);
@@ -130,6 +131,7 @@ test('reload after approved USDC resumes at deposit without another approval', a
   await expect(page.locator('#consent')).not.toBeChecked();
   await page.locator('#consent').check();
   await page.locator('#send').click();
+  await expect.poll(() => page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
   const sends = await page.evaluate(() => (window as any).vaultWalletFixture.sends);
   expect(sends).toHaveLength(1);
   expect(sends[0][0].to).toBe(p.vault);
