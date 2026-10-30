@@ -220,7 +220,8 @@ export class PublicationWorkbench {
       if (contextId !== this.contextId || maximumWei !== this.profile.maxUploadCostWei)
         throw new Error('Fee consent does not match this release and budget');
       if (this.unresolved()) throw new Error('Resolve the previous wallet request before authorization');
-      this.journal.authorization = { grantedAt: this.now(), expiresAt: this.now() + 3_600_000,
+      const grantedAt = this.now();
+      this.journal.authorization = { grantedAt, expiresAt: grantedAt + 3_600_000,
         maximumWei: this.profile.maxUploadCostWei };
       await this.persist();
       return this.context();

@@ -123,6 +123,15 @@ function fixture(saved?: UploadJournal) {
   };
 }
 describe('bounded browser-wallet publication coordinator', () => {
+  it('uses one clock reading for the one-hour authorization and can restore it after restart', async () => {
+    const f = fixture();
+    let clock = Date.now();
+    const bench = new PublicationWorkbench(f.rpc, profile, publication, f.journal, f.store, () => clock++);
+    await bench.authorize(bench.contextId, profile.maxUploadCostWei);
+    const saved = structuredClone(f.writes.at(-1)!);
+    expect(saved.authorization!.expiresAt - saved.authorization!.grantedAt).toBe(3_600_000);
+    expect(() => new PublicationWorkbench(f.rpc, profile, publication, saved, f.store, () => clock++)).not.toThrow();
+  });
   function legacyBatch() {
     const now = Date.now();
     const a: UploadAttempt = { id: 'legacy', operation: 0, createdAt: now, status: 'reserved',
