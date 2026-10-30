@@ -27,6 +27,10 @@ try {
   activationStore = await openPublicationJournal<ActivationJournal>(`${journalPath}.activation.json`, activationId,
     { schemaVersion: 1, contextId: activationId, attempts: [] });
   const activation = new PublicationActivation(rpc, workbench, activationStore.journal, activationStore);
+  if (previousPublication && !workbench.context().unresolved) {
+    console.log('Checking exact chain bytes and remaining wallet confirmations; no transaction will be sent.');
+    await workbench.inspectProgress();
+  }
   const port = Number(portInput);
   const server = await createPublicationWorkbenchServer(workbench, port, activation);
   let stopping = false;

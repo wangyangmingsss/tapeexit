@@ -155,6 +155,16 @@ async function submissionClient() {
   } };
 }
 
+it('shows the checked remaining confirmations instead of the historical operation upper bound', async () => {
+  const f = await connectedClient(), ctx = f.context as unknown as Record<string, any>;
+  Object.assign(ctx, { totalOperations: 42, requiredOperations: 34, completedOperations: 1, remainingTransactions: 33 });
+  (document.getElementById('consent') as HTMLInputElement).checked = true;
+  document.getElementById('consent')!.dispatchEvent(new Event('change'));
+  (document.getElementById('authorize') as HTMLButtonElement).click();
+  await vi.waitFor(() => expect(document.getElementById('confirmed')!.textContent).toBe('1 / 34 步，剩余 33 笔'));
+  expect(f.provider.request.mock.calls.some(([r]) => /send|sign|upgrade/i.test(r.method))).toBe(false);
+});
+
 it('shows the submission recheck countdown and sends once after a 45-second recheck', async () => {
   let now = Date.now();
   vi.spyOn(Date, 'now').mockImplementation(() => now);

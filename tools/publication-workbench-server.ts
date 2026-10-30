@@ -80,6 +80,8 @@ export async function createPublicationWorkbenchServer(workbench: PublicationWor
       if (activation?.context().unresolved && path === '/api/reserve')
         throw new Error('Resolve pending activation before requesting another wallet transaction');
       switch (path) {
+        case '/api/progress':
+          exactKeys([]); return reply(200, await workbench.inspectProgress());
         case '/api/preview':
           exactKeys([]); return reply(200, await workbench.prepareNext());
         case '/api/bundle':

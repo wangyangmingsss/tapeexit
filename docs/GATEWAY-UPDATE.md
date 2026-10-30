@@ -34,11 +34,23 @@ verification artifacts only, not an authorized in-place migration.
 
 Two origins serving the same Tape name resolve the same mutable chain container.
 Replacing hosting bootstrap files alone does not update the application.
-This migration explicitly removes obsolete/changed old files before uploading
-the new release. It can temporarily interrupt the site. Each old file is fully
-checked against the saved old publication before a removal is proposed.
+The live continuation removes only obsolete paths. Same-path `putFile` calls
+replace changed files directly; files with matching bytes are reused, and an
+already correct `index.html` fallback is not written again. It can temporarily
+interrupt the site. Each old file is fully checked against the saved old
+publication before a removal or replacement is proposed.
 Unknown paths, altered old bytes and invalid new prefixes stop the process.
 No removal is sent automatically.
+
+The generated offline plan and fee ceiling remain conservative upper bounds.
+The workbench reads the actual chain state before displaying the remaining
+wallet confirmations, and repeats those checks before each request. Existing
+journals retain their original operation indices, hashes and fee authorization.
+Gaps in historical indices do not mean additional wallet confirmations are needed.
+Do not republish application bytes just to update this local publishing tool.
+The existing 24,000-byte TapeOut chunk limit still applies. This optimization
+does not introduce account upgrades, new operators, compression-dependent
+gateway changes, automatic signing or a different application release.
 
 ## Wallet Migration
 

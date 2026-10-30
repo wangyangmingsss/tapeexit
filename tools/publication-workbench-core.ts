@@ -66,6 +66,7 @@ export class PublicationWorkbench {
   private preview: UploadPreview | null = null;
   private busy = false;
   private fault = false;
+  private remainingTransactions: number | null = null;
   constructor(private rpc: StrictRpc, input: unknown, private publication: Publication,
     private journal: UploadJournal, private store: JournalStore, private now = Date.now,
     private previousPublication?: Publication) {
@@ -190,10 +191,14 @@ export class PublicationWorkbench {
     catch (error) { this.fault = true; throw error; }
   }
   context() {
+    const completedOperations = new Set(this.journal.attempts.filter(a => a.status === 'confirmed')
+      .flatMap(a => a.batch?.operations ?? [a.operation])).size;
     return {
       schemaVersion: 1, contextId: this.contextId, chainId: 196, publisher: this.profile.publisher,
       container: this.profile.container, registry: REGISTRY, manifestSha256: this.publication.manifestSha256,
       fileCount: this.publication.contents.length, totalOperations: this.operations.length,
+      completedOperations, remainingTransactions: this.remainingTransactions,
+      requiredOperations: this.remainingTransactions === null ? null : completedOperations + this.remainingTransactions,
       totalBytes: this.publication.contents.reduce((sum, c) => sum + c.bytes.length, 0),
       maximumWei: this.profile.maxUploadCostWei, maxGas: this.profile.maxGasPerTransaction,
       maxGasPriceWei: this.profile.maxFeePerGasWei, reservedWei: this.reservedCost().toString(),
@@ -202,7 +207,8 @@ export class PublicationWorkbench {
       uploadMode: 'single-transaction',
       migration: this.previousPublication ? {
         previousManifestSha256: this.previousPublication.manifestSha256,
-        removalCount: updateRemovals(this.profile.container, this.publication, this.previousPublication).length,
+        removalCount: this.previousPublication.contents.filter(old =>
+          !this.publication.contents.some(item => item.file.path === old.file.path)).length,
         siteMayBeUnavailableDuringUpdate: true,
       } : null,
       scope: 'Upload registry calls only. No activation, token approval, liquidity or app funds operations. ' +
@@ -246,10 +252,20 @@ export class PublicationWorkbench {
         this.previousPublication, this.profile.previousManifestSha256!)
       : await resumePublication(this.rpc, this.profile.container, this.publication);
   }
+  inspectProgress() {
+    return this.exclusive(async () => {
+      if (this.unresolved()) throw new Error('Resolve pending upload before inspecting remaining transactions');
+      await this.checkHistory();
+      const plan = await this.continuation();
+      this.remainingTransactions = plan.transactions.length;
+      return { ...this.context(), snapshotBlock: plan.block };
+    });
+  }
   private async prepare(): Promise<UploadPreview | { complete: true; readback: unknown }> {
     if (this.unresolved()) throw new Error('Previous wallet request unresolved; do not resend');
     await this.checkHistory();
     const plan = await this.continuation();
+    this.remainingTransactions = plan.transactions.length;
     for (const a of this.journal.attempts) {
       if (a.status === 'confirmed' && (a.batch?.operations ?? [a.operation])
         .some(n => plan.transactions.some(op => equal(op, this.operations[n]))))
@@ -444,6 +460,7 @@ export class PublicationWorkbench {
       a.minedEnvelope = { gas: gas.toString(), maximumGasPriceWei: maximumPrice.toString(),
         ...(settledException ? { settledWithinReservation: true as const } : {}) };
       await this.persist();
+      this.remainingTransactions = continuation.transactions.length;
       return this.context();
     });
   }

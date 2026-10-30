@@ -37,7 +37,7 @@ const profile = parsePublishProfile({ schemaVersion: 1, chainId: 196, publisher,
 it('binds migration to its old manifest and persists removal reservations before any wallet request', async () => {
   const f = fixture(), bytes = Buffer.from('old manifest');
   const previous = { manifestSha256: digest(bytes), contents: [{ bytes, file: {
-    path: 'release-manifest.json', size: bytes.length, sha256: digest(bytes), contentType: 'text/plain',
+    path: 'obsolete.js', size: bytes.length, sha256: digest(bytes), contentType: 'text/plain',
   } }] };
   const input = { ...profile, previousManifestSha256: previous.manifestSha256 };
   const contextId = PublicationWorkbench.contextId(input, publication.manifestSha256);
@@ -236,6 +236,25 @@ describe('bounded browser-wallet publication coordinator', () => {
     await expect(f.bench.authorize(f.bench.contextId, '1')).rejects.toThrow('consent');
     expect(f.writes).toHaveLength(0);
     expect(f.requests.some(m => /send|sign/i.test(m))).toBe(false);
+  });
+  it('counts only remaining chain calls and keeps historical operation indices unchanged', async () => {
+    const f = fixture();
+    const before = f.bench.context();
+    expect(before.remainingTransactions).toBeNull();
+    const initial = await f.bench.inspectProgress();
+    expect(initial).toMatchObject({ totalOperations: 3, completedOperations: 0,
+      requiredOperations: 3, remainingTransactions: 3 });
+    expect(f.writes).toHaveLength(0);
+    await f.authorize();
+    const a = await f.bench.reserve((await f.prepare()).id);
+    await expect(f.bench.inspectProgress()).rejects.toThrow('pending');
+    await f.bench.attachHash(a.id, txHash); f.mine(a);
+    const result = await f.bench.reconcile();
+    expect(result).toMatchObject({ requiredOperations: 3, completedOperations: 1, remainingTransactions: 2 });
+    const restarted = fixture(structuredClone(f.journal)); restarted.next(1);
+    expect((await restarted.bench.inspectProgress()).remainingTransactions).toBe(2);
+    expect(restarted.journal.attempts[0].operation).toBe(a.operation);
+    expect(restarted.requests.some(m => /send|sign/i.test(m))).toBe(false);
   });
   it('persists the exact transaction before returning it and prevents double reservation', async () => {
     const f = fixture(); await f.authorize();

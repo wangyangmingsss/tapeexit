@@ -5,7 +5,7 @@ import { getAddress } from 'viem';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
 import { loadPublication, preparePublication } from './publish-core';
 import { assertProfileManifest, parseGatewayProfile } from './release-profile-core';
-import { updateRemovals } from './resume-publication-update';
+import { incrementalUpdateOperations, updateRemovals } from './resume-publication-update';
 
 const [previousDirectory, previousDigest, ...extra] = process.argv.slice(2);
 if (extra.length || !!previousDirectory !== !!previousDigest)
@@ -45,9 +45,12 @@ const removals = previous ? updateRemovals(getAddress(profile.container), public
 if (previousDirectory) await cp(previousDirectory, `${directory}/previous-publication`, { recursive: true });
 await save('unsigned-publication-plan.json', { ...profile, status: 'UNSIGNED_NOT_AUTHORIZED',
   signingApproved: false, independentReview: 'NOT_COMPLETED', transactionCount: unsigned.transactions.length + removals.length,
+  incrementalOperationCountUpperBound: previous
+    ? incrementalUpdateOperations(getAddress(profile.container), publication, previous).length : unsigned.transactions.length,
   previousManifestSha256: previous?.manifestSha256 ?? null,
   transactions: [...removals, ...unsigned.transactions], activationIncluded: false,
-  note: 'No gas estimate, fee consent, upload, activation, hosting deployment or mainnet readiness is implied.' });
+  note: 'Historical operation IDs and fee ceilings are conservative. The live incremental continuation reuses exact files and fallback. ' +
+    'No gas estimate, fee consent, upload, activation, hosting deployment or mainnet readiness is implied.' });
 for (const name of ['Netlify-Gateway', 'Vercel-Gateway'])
   execFileSync('zip', ['-q', '-r', resolve(`${directory}/${name}.zip`), '.'], { cwd: `${directory}/${name}` });
 await save('status.json', { ...profile, observedAt: new Date().toISOString(),

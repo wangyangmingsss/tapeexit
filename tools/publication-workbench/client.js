@@ -93,8 +93,12 @@ function controls() {
 function render() {
   renderActivation();
   $('files').textContent = `${context.fileCount} 个 / ${context.totalBytes.toLocaleString()} 字节`;
-  $('confirmed').textContent = `${context.attempts.filter(a => a.status === 'confirmed')
-    .reduce((n, a) => n + (a.batch?.operations.length || 1), 0)} / ${context.totalOperations} 步`;
+  const completed = context.completedOperations ?? context.attempts.filter(a => a.status === 'confirmed')
+    .reduce((n, a) => n + (a.batch?.operations.length || 1), 0);
+  $('confirmed').textContent = context.requiredOperations != null
+    ? `${completed} / ${context.requiredOperations} 步，剩余 ${context.remainingTransactions} 笔`
+    : Object.hasOwn(context, 'requiredOperations') ? `${completed} 步；剩余次数待链上核对`
+      : `${completed} / ${context.totalOperations} 步`;
   $('maximum').textContent = coin(context.maximumWei);
   $('reserved').textContent = coin(context.reservedWei);
   $('identity').replaceChildren();
@@ -267,7 +271,7 @@ $('refresh').addEventListener('click', () => run(async () => {
   publicationComplete = false;
   preview = result;
   for (const [name, value] of [
-    ['步骤', `${result.operation + 1} / ${context.totalOperations}，剩余 ${result.remaining} 笔`],
+    ['剩余交易', `${result.remaining} 笔钱包确认（包含当前这一笔）`],
     ['文件', result.file], ['操作', result.chunk === -1 ? '移除已核验的旧文件' : '上传文件分块'],
     ['分块序号', result.chunk === -1 ? '不适用' : result.chunk], ['Gas 上限', BigInt(result.transaction.gas)],
     ['Gas 单价 / wei', BigInt(result.transaction.gasPrice)], ['本笔 EVM 费用上限', coin(result.maximumCostWei)],

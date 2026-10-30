@@ -11,6 +11,7 @@ describe('loopback-only publication server', () => {
     context: vi.fn(() => ({ schemaVersion: 1, attempts: [] })),
     authorize: vi.fn(async () => ({ accepted: true })),
     prepareNext: vi.fn(async () => ({ operation: 0 })),
+    inspectProgress: vi.fn(async () => ({ remainingTransactions: 3 })),
     reserve: vi.fn(async () => ({ status: 'reserved' })),
     attachHash: vi.fn(async () => ({})), reconcile: vi.fn(async () => ({})),
     recordBundle: vi.fn(async () => ({})), recordBatchFailure: vi.fn(async () => ({})),
@@ -53,6 +54,8 @@ describe('loopback-only publication server', () => {
   it('accepts only exact action fields and rejects arbitrary transaction/broadcast routes', async () => {
     const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
     expect((await post('/api/preview', {})).status).toBe(200);
+    expect((await post('/api/progress', {})).status).toBe(200);
+    expect((await post('/api/progress', { transaction: {} })).status).toBe(409);
     expect((await post('/api/authorize', { contextId: 'context', maximumWei: '7' })).status).toBe(200);
     expect(bench.authorize).toHaveBeenCalledWith('context', '7');
     expect((await post('/api/reserve', { previewId: 'id', to: 'arbitrary' })).status).toBe(409);
