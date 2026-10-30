@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "status": "published-bytes-checked",
+  "chainId": 196,
+  "container": "0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D",
+  "registry": "0xd6EFb7adCc9c83dC4924Ad56f6a8E4e969b9ADB6",
+  "registryCodeHash": "0x5e41d8905a1e7ccfc8c297c3a33d08d1712e4876f9c6eefc0e5991409dd38c1d",
+  "binding": "0x68809Fd2fb343aA57D0aeB7f33Defe477c9666f9",
+  "block": {
+    "number": "0x4722577",
+    "hash": "0x08510f5dbaa81c51a0836e6e64a958a751f7bdcac6620a200487f30a5cbb27f3",
+    "timestamp": "0x6ae47b03"
+  },
+  "manifestSha256": "3108213d676a2f4cbee87943d8be031e1dcf880077f4c847618568e85b9c190a",
+  "totalBytes": 620917,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "size": 1078,
+      "contentType": "application/octet-stream",
+      "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+      "chunks": "1",
+      "updatedAt": "1793177185"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 45122,
+      "contentType": "application/octet-stream",
+      "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+      "chunks": "2",
+      "updatedAt": "1793180715"
+    },
+    {
+      "path": "assets/index-CHL79GPB.css",
+      "size": 25259,
+      "contentType": "text/css",
+      "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+      "chunks": "2",
+      "updatedAt": "1793353094"
+    },
+    {
+      "path": "assets/index-CzOugjgt.js",
+      "size": 373603,
+      "contentType": "text/javascript",
+      "sha256": "44a1cc372aa25a08edd2dfa399caeb47665f383e0450a228586ec18d61d8044c",
+      "chunks": "16",
+      "updatedAt": "1793355205"
+    },
+    {
+      "path": "assets/protocol-VN-4fI77.js",
+      "size": 167528,
+      "contentType": "text/javascript",
+      "sha256": "2e8b76ee7ee3f1480bdb6c15d464024a5ce84858baad9ee2c951ab598a79669a",
+      "chunks": "7",
+      "updatedAt": "1793357488"
+    },
+    {
+      "path": "assets/recovery-outcome-C3NOAu3t.js",
+      "size": 3123,
+      "contentType": "text/javascript",
+      "sha256": "6830e0e0103b1b6adff069fa56b28325884eab7d4ad2a42c73a9563faa060fda",
+      "chunks": "1",
+      "updatedAt": "1793357622"
+    },
+    {
+      "path": "icon.png",
+      "size": 410,
+      "contentType": "image/png",
+      "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+      "chunks": "1",
+      "updatedAt": "1793186507"
+    },
+    {
+      "path": "release-info.json",
+      "size": 215,
+      "contentType": "application/json",
+      "sha256": "dd7711abe4786bd4f7d615c5674be9181449903b1963bc942b04cc8bb10eb193",
+      "chunks": "1",
+      "updatedAt": "1793357786"
+    },
+    {
+      "path": "tapeexit-icon.png",
+      "size": 1282,
+      "contentType": "image/png",
+      "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+      "chunks": "1",
+      "updatedAt": "1793357947"
+    },
+    {
+      "path": "xlayer.png",
+      "size": 313,
+      "contentType": "image/png",
+      "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+      "chunks": "1",
+      "updatedAt": "1793186507"
+    },
+    {
+      "path": "release-manifest.json",
+      "size": 2406,
+      "contentType": "application/json",
+      "sha256": "3108213d676a2f4cbee87943d8be031e1dcf880077f4c847618568e85b9c190a",
+      "chunks": "1",
+      "updatedAt": "1793358088"
+    },
+    {
+      "path": "index.html",
+      "size": 578,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "57b16981f4e1464d8ac79e1ec8d7ac305c1c4ef9e38fb34474d661750c7912e0",
+      "chunks": "1",
+      "updatedAt": "1793358313"
+    }
+  ],
+  "fallback": "index.html",
+  "containerLive": true,
+  "operators": [
+    {
+      "url": "https://rpc.xlayer.tech",
+      "operator": "okx"
+    },
+    {
+      "url": "https://xlayer.drpc.org",
+      "operator": "drpc"
+    }
+  ],
+  "scope": "Fixed-block RPC agreement and exact release bytes. Registry code hash is observed, not approved. Does not verify ownership, implementation approval, origin, wallet, gateway, finality or security. A mutable container may change after this block.",
+  "observedAt": "2026-10-30T11:10:33.614Z",
+  "sourceCommit": "2597f667dd0fcaefc416dd66e9cf513d75ef78d4",
+  "confirmedTransactions": 34,
+  "remainingTransactions": 0,
+  "unresolved": null,
+  "recordedEvmGasFeeWei": "2614030130701500",
+  "productionSigningApproved": false,
+  "independentReview": "NOT_COMPLETED",
+  "fullWalletAcceptance": "NOT_COMPLETED",
+  "journalUnchanged": true,
+  "transactionSentByThisCheck": false
+}

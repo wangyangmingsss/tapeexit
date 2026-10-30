@@ -7,9 +7,12 @@ It reads receipts, token arrivals and adjacent block-end balances/liquidity from
 requires finality for success, and can export its result without connecting a wallet.
 Cancellation, timeout or input edits invalidate the current result.
 
-The `0d9ff56` update is now published: 31 confirmed migration transactions,
-zero remaining operations, 10 files / 600302 bytes read back exactly, and four
-public desktop/mobile recovery views passed. See `public-gateway-acceptance.md`.
+The `2597f66` update is now published: 34 confirmed migration transactions,
+zero remaining operations, and 12 files / 620917 bytes read back exactly.
+The container remains activated. All four fresh public desktop/mobile views
+passed 48 exact file checks and read-only recovery; the backup also passed while
+primary HTTPS connections were blocked. See `public-gateway-acceptance.md`
+and `evidence/published-2597f66/README.md`.
 The following preparation instructions apply to future updates; they are not
 outstanding upload instructions for the existing publication.
 

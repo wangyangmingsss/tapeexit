@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "chainId": 196,
-  "sourceCommit": "0d9ff56a32b2ce36cd78c925d03f7205c169bf4a",
-  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "sourceCommit": "2597f667dd0fcaefc416dd66e9cf513d75ef78d4",
+  "manifestSha256": "3108213d676a2f4cbee87943d8be031e1dcf880077f4c847618568e85b9c190a",
   "container": "0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D",
   "tapeName": "2.2.289.tape",
   "gateways": [

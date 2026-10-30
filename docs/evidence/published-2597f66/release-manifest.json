@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "app": "TapeExit",
+  "version": "0.3.0",
+  "sourceCommit": "2597f667dd0fcaefc416dd66e9cf513d75ef78d4",
+  "sourceDirty": false,
+  "tapekitCommit": "37c617e7e332787c8a32a81e4d7d05a28a06c156",
+  "chainId": 196,
+  "signingApproved": false,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "size": 1078,
+      "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 45122,
+      "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "assets/index-CHL79GPB.css",
+      "size": 25259,
+      "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+      "contentType": "text/css"
+    },
+    {
+      "path": "assets/index-CzOugjgt.js",
+      "size": 373603,
+      "sha256": "44a1cc372aa25a08edd2dfa399caeb47665f383e0450a228586ec18d61d8044c",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/protocol-VN-4fI77.js",
+      "size": 167528,
+      "sha256": "2e8b76ee7ee3f1480bdb6c15d464024a5ce84858baad9ee2c951ab598a79669a",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/recovery-outcome-C3NOAu3t.js",
+      "size": 3123,
+      "sha256": "6830e0e0103b1b6adff069fa56b28325884eab7d4ad2a42c73a9563faa060fda",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "icon.png",
+      "size": 410,
+      "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+      "contentType": "image/png"
+    },
+    {
+      "path": "index.html",
+      "size": 578,
+      "sha256": "57b16981f4e1464d8ac79e1ec8d7ac305c1c4ef9e38fb34474d661750c7912e0",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "release-info.json",
+      "size": 215,
+      "sha256": "dd7711abe4786bd4f7d615c5674be9181449903b1963bc942b04cc8bb10eb193",
+      "contentType": "application/json"
+    },
+    {
+      "path": "tapeexit-icon.png",
+      "size": 1282,
+      "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+      "contentType": "image/png"
+    },
+    {
+      "path": "xlayer.png",
+      "size": 313,
+      "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+      "contentType": "image/png"
+    }
+  ]
+}

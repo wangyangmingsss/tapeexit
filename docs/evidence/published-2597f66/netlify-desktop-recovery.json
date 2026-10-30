@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "environment": "MAINNET_READ_ONLY",
+  "signingApproved": false,
+  "task": {
+    "schemaVersion": 1,
+    "chainId": 196,
+    "manager": "0x315e413A11AB0df498eF83873012430ca36638Ae",
+    "tokenId": "67042",
+    "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+    "hash": "0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5"
+  },
+  "outcome": {
+    "state": "block-state-matched",
+    "hash": "0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5",
+    "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+    "tokenId": "67042",
+    "receipt": {
+      "hash": "0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5",
+      "blockNumber": "74492977",
+      "blockHash": "0xf5911e11f9f21c8ea40083beb95f7fa47915c668b12c93d86f86919bfef5e4fe",
+      "amount0": "20016",
+      "amount1": "19999",
+      "state": "received-checked",
+      "safe": true,
+      "finalized": true
+    },
+    "beforeBlock": {
+      "number": "0x470ac30",
+      "hash": "0x5e4fbebc53eb7e771364edf7a914776705f85975e71133127c37ca19403eb49d",
+      "timestamp": "0x6ae301bc"
+    },
+    "afterBlock": {
+      "number": "0x470ac31",
+      "hash": "0xf5911e11f9f21c8ea40083beb95f7fa47915c668b12c93d86f86919bfef5e4fe",
+      "timestamp": "0x6ae301bd"
+    },
+    "identityMatches": true,
+    "balances": [
+      {
+        "address": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
+        "decimals": 6,
+        "symbol": "USD₮0",
+        "before": "15997895",
+        "after": "16017911",
+        "delta": "20016",
+        "receiptAmount": "20016",
+        "matches": true
+      },
+      {
+        "address": "0xB6CEceAB302E2E4948951eE7843FC24E92933061",
+        "decimals": 6,
+        "symbol": "USDC",
+        "before": "994309",
+        "after": "1014308",
+        "delta": "19999",
+        "receiptAmount": "19999",
+        "matches": true
+      }
+    ],
+    "liquidity": {
+      "before": "2000862",
+      "removed": "20008",
+      "expected": "1980854",
+      "after": "1980854",
+      "matches": true
+    },
+    "owed": {
+      "amount0": "0",
+      "amount1": "0",
+      "cleared": true
+    },
+    "limitations": "Balances and position are compared at parent/receipt block ends. Other activity in either block can cause a mismatch or coincidental match. This is corroboration, not transaction-level state attribution, wallet acceptance, independent review or release approval."
+  },
+  "observedAt": "2026-10-30T11:11:26.668Z",
+  "verificationAttempts": [
+    {
+      "observedAt": "2026-10-30T11:11:26.722Z",
+      "status": "恢复核验完成：到账、剩余流动性及最终确认一致。"
+    }
+  ]
+}

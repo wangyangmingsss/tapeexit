@@ -58,7 +58,7 @@ flowchart TD
 
 TapeOut 保存的是应用文件。它不托管用户资金，也不替原 DeFi 协议执行赎回。未来接入的协议模块，也会随 TapeExit 的具体版本构建、校验和发布，而不是临时加载未核验的第三方代码。
 
-**已有真实集成：** 应用已发布至 `2.2.289.tape`，完成容器激活、10 个文件逐字节回读，以及两个公网网关的访问和已有交易恢复检查。发布身份、文件摘要和记录见[链上发行证据](docs/evidence/published-0d9ff56/README.md)。
+**已有真实集成：** `0.3.0-2597f66` 已发布至 `2.2.289.tape`，容器已激活，12 个文件逐字节回读通过，两个公网网关的桌面、手机访问及主入口故障时的已有交易恢复检查均通过。发布身份、文件摘要和记录见[链上发行证据](docs/evidence/published-2597f66/README.md)。
 
 容器内容可以更新，所以每次发行需要保留对应版本的文件摘要并重新核对。访问仍依赖可用的网关或本地入口、容器状态、RPC 和链；链上发布不等于永久可用。
 
@@ -105,7 +105,7 @@ V3 是起点。我们希望用户以后只需要：**连接钱包 → 查看已�
 2. 按页面提示选择钱包，输入自己的仓位编号（Token ID）。
 3. 查看仓位信息；已有交易可以通过恢复入口核验。
 
-已记录的在线与备用入口版本为 `0.2.0-0d9ff56`；新版 Demo 与恢复包属于 `0.3.0` 系列。仓库中的后续改进需要单独发布，才会出现在 TapeOut 公网入口。每份构建都有完整提交与版本标识，见[版本与交付](docs/RELEASE-CHANNELS.md)。
+在线与备用入口已更新为 `0.3.0-2597f66`，对应同一发行版本的恢复包。Demo 属于 `0.3.0` 系列，随源码更新；仓库中的后续改进仍需单独发布，才会出现在 TapeOut 公网入口。每份构建都有完整提交与版本标识，见[版本与交付](docs/RELEASE-CHANNELS.md)。
 
 ### 本地演示
 
@@ -134,12 +134,12 @@ npm run dev
 
 | 项目 | 已有记录 |
 | --- | --- |
-| 链上发布 | 已发布并激活，10 个文件逐字节回读通过 |
-| 双网关访问 | 已完成桌面、移动视图及主入口阻断后的已有交易恢复检查 |
+| 链上发布 | `0.3.0-2597f66` 的 34 笔更新交易全部确认；12 个文件、620917 字节回读通过，容器已激活 |
+| 双网关访问 | 新版桌面、移动视图共 48 次文件检查通过；主入口阻断后，备用入口的已有交易恢复检查通过 |
 | 小额真实退出 | USDt0 / USDC 仓位完成过一次受限退出，到账与剩余流动性已核对 |
 | 自动化测试 | 包含核心计算、交易核验、恢复流程及 Chromium / Firefox / WebKit 浏览器测试 |
 
-实际记录见[发行证据](docs/evidence/published-0d9ff56/README.md)、[公网网关验收](docs/public-gateway-acceptance.md)和[小额退出测试](docs/CONTROLLED-TEST-67042.md)。不同版本的测试结果分别记录，自动化测试不替代独立安全审阅。
+实际记录见[发行证据](docs/evidence/published-2597f66/README.md)、[公网网关验收](docs/public-gateway-acceptance.md)和[小额退出测试](docs/CONTROLLED-TEST-67042.md)。不同版本的测试结果分别记录，自动化测试不替代独立安全审阅。
 
 ## 开发与检查
 
@@ -172,7 +172,7 @@ npm run test:e2e
 | 项目思路与参赛介绍 | [项目说明](docs/competition/PROJECT.md) |
 | 已实现内容、版本与实际证据状态 | [实施状态](docs/IMPLEMENTATION-STATUS.md) |
 | 多协议扩展接口与后续方向 | [协议适配说明](docs/PROTOCOL-ADAPTERS.md) |
-| TapeOut 实际集成与发布身份 | [链上发行证据](docs/evidence/published-0d9ff56/README.md) |
+| TapeOut 实际集成与发布身份 | [链上发行证据](docs/evidence/published-2597f66/README.md) |
 | 退出后如何核对、刷新和恢复查询 | [交易恢复流程](docs/EXIT-RECOVERY-WORKFLOW.md) |
 | 网关、本地恢复包和开发工具 | [发行操作手册](docs/OPERATIONS.md) |
 | Demo、恢复包与链上版如何对应 | [版本与交付](docs/RELEASE-CHANNELS.md) |

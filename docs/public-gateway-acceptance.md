@@ -1,5 +1,38 @@
 # Published Gateway Acceptance
 
+## Current Release: 0.3.0-2597f66
+
+The uploaded release passed on 2026-10-30 at 11:14 UTC.
+
+- Application and verifier source: `2597f667dd0fcaefc416dd66e9cf513d75ef78d4`.
+- Manifest SHA-256: `3108213d676a2f4cbee87943d8be031e1dcf880077f4c847618568e85b9c190a`.
+- Successful run: <https://github.com/wangyangmingsss/tapeexit/actions/runs/41045994985>.
+- Evidence: [published-2597f66](evidence/published-2597f66/README.md).
+- Publication: 34 confirmed update transactions, zero remaining or unresolved.
+- Exact chain readback: 12 files / 620917 bytes; container activated.
+
+Fresh desktop (1440 x 1000) and mobile (390 x 844) Chromium contexts checked
+both public origins. Each view matched all 12 files against the fixed release:
+48 file checks overall. Tape identity, activation, Service Worker, stores and
+read-only layout checks passed, with no JavaScript page errors.
+
+Both Vercel views completed the existing transaction recovery while an HTTPS
+CONNECT proxy blocked the Netlify primary hostname. Each demonstrated a failed
+primary probe before using the backup. All four views recovered and exported
+the saved position `67042` transaction, matching 0.020016 USDt0, 0.019999 USDC
+and remaining liquidity `1980854`. This was a read-only recheck of the existing
+transaction, without connecting a wallet or sending a new transaction.
+
+Existing hosting bootstrap files matched. They loaded the updated chain
+container without a hosting redeployment or further wallet confirmations.
+This run used `candidate` at the fixed release tag `v0.3.0-readonly`, reproducing
+the exact uploaded application. Later checks should use `published`, which now
+pins this release through `docs/published-gateway-profile.json`.
+
+## Previous Release: 0.2.0-0d9ff56
+
+The following evidence is retained as history and does not accept a newer release.
+
 The public release `0.2.0-0d9ff56` passed acceptance on 2026-10-29 at
 23:33 UTC (2026-10-30 at 07:33 in Asia/Shanghai).
 
@@ -48,9 +81,9 @@ npx playwright install --with-deps chromium
 npm run verify:live-gateway -- docs/published-gateway-profile.json docs/gateway-recovery-task-67042.json
 ```
 
-`published` checks the fixed uploaded release. `candidate` builds a future
-release from the selected branch; it is not the correct acceptance mode for the
-existing publication. `historical` checks the older release only.
+`published` checks the fixed uploaded release. `candidate` rebuilds the selected
+Git ref, so it matches an existing publication only when that ref identifies the
+exact uploaded application. `historical` checks the original historical profile.
 
 ## Remaining Gate
 
