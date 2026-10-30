@@ -26,6 +26,7 @@ jobs:
       - run: npm run prepare:review
       - run: npm run prepare:acceptance-assets
       - run: npm run build:demo
+      - run: npm run package:delivery
       - run: npm run print:card
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e

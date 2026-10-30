@@ -1,28 +1,20 @@
-# TapeExit Demo Script
+# TapeExit 演示脚本
 
-Target duration: 2 minutes 50 seconds. This is a recording plan, not a completed final pitch.
-The automated short, silent isolation-demo recording is separate footage; check its source metadata and actual CI result.
-No external submission is implied.
+目标时长 2 分 50 秒。打开[在线 Demo](https://wangyangmingsss.github.io/tapeexit/)，保留 DEMO 环境标识。
+本稿是录制方案，尚非最终参赛视频。测试资产、历史链上记录与当前公开版要分别说明。
 
-## Current Candidate Recording
-
-Keep an on-screen environment label throughout. Use the isolated demo and local-contract/fork evidence as distinct scenes. Do not splice them into a claimed mainnet transaction.
-
-| Time | Screen And Action | Suggested Narration |
+| 时间 | 画面与操作 | 讲解要点 |
 | --- | --- | --- |
-| 0:00–0:20 | Position workspace, visible DEMO and test-asset labels | “When a protocol frontend fails, a holder may still control an on-chain position. TapeExit is a focused independent exit interface.” |
-| 0:20–0:40 | Read demo position and show direct owner/manager | “This scene is a local simulation. The intended transaction goes directly to the original manager, back to the current account.” |
-| 0:40–1:05 | Select 50%, simulate, inspect target/recipient/minimums | “Official SDK integer math, two-operator checks and calldata validation precede the wallet request. No new token approval or custody is introduced.” |
-| 1:05–1:25 | Confirm simulated exit, show explicit simulation label | “This is not a mainnet transaction. Production signing stays disabled until the release gates pass.” |
-| 1:25–1:45 | Inject RPC conflict and show stopped workflow | “Disagreement stops the workflow. Unknown submissions stay blocked through refresh until the matching actual transaction is checked.” |
-| 1:45–2:10 | Separately show official local-contract test output and saved fork evidence | “The official local contracts verify partial/full exit, collect-only and rollback. A separately recorded X Layer fork verifies one real deployment position.” |
-| 2:10–2:35 | Separately show the published read-only release and dated primary-blocked gateway report; verify saved local manifest | “An earlier read-only release is stored in a real TapeOut container. The recorded alternate gateway loaded its exact files while the primary gateway was blocked. This is a read-only recovery observation.” |
-| 2:35–2:50 | Show published-source/current-candidate distinction and pending evidence | “A restricted workbench exit is recorded on mainnet; both public gateways verify its finalized result. Production signing stays disabled while independent review, asset approval and full wallet acceptance remain pending.” |
+| 0:00–0:20 | 打开资产总览，显示 TEST 币对和协议覆盖 | TapeExit 是基于 TapeOut 的 X Layer DeFi 资产应急出口。第一个模块已接入 V3，其他协议仍在规划中。 |
+| 0:20–0:40 | 打开模拟仓位 `28491`，点击读取 | 用户可从总览打开仓位，也可输入编号。此处全部为模拟资产，不是真实钱包余额。 |
+| 0:40–1:05 | 选择 50%，预演并打开交易核对 | 展示原协议目标、收款钱包、最低输出和有效期。没有新增托管或代币授权。 |
+| 1:05–1:20 | 勾选确认，完成模拟退出，打开操作记录 | 这里只模拟执行与结果；主网公开版保持只读。 |
+| 1:20–1:40 | 回到退出仓位，选择 RPC 分歧，再读取 | 模拟分歧会停止生成交易；切回正常可重新读取。这是故障注入演练。 |
+| 1:40–2:10 | 打开恢复入口，显示 TapeOut 名称、历史版本、容器及两个网关 | TapeOut 保存应用文件，TapeExit 处理退出流程。两个网关读取同一容器；本地包提供第三条运行路径，仍需 RPC 与可用的链。 |
+| 2:10–2:35 | 单独展示历史发行证据、已记录的主网交易和主网关阻断报告 | 旧版已激活并回读 10 个文件。一笔受限小额主网退出及其恢复查询有实际记录；不能将其称为新版钱包完整验收。 |
+| 2:35–2:50 | 展示当前应用版本、已记录链上版与规划模块 | 每个新协议随具体版本构建、校验、发布。当前生产签名关闭，独立审阅与完整钱包验收按实际证据推进。 |
 
-## Final Live Recording Gate
+录制时不要将 Demo 与真实网关画面拼接成一笔真实交易。真实访问与恢复演练应记录完整版本、清单摘要、网络阻断范围、资源来源和交易哈希。
 
-Only replace the local simulation with a live origin/transaction after the required evidence actually exists. Record the container/name, source commit, independent manifest digest, real resource headers, RPC request log and any real transaction hash.
-
-For a fault claim, show actual network blocking and its scope. A UI fault selector proves only the simulated case. Do not describe local recovery as offline transactions, two gateways as independent infrastructure without evidence, or a fork transaction as mainnet.
-
-Do not claim adoption, cooperation, audit, awards or guaranteed availability without attributable evidence.
+UI 中的“RPC 分歧”只证明模拟行为；公网故障报告才记录具体网络阻断。两个网关不等于链、RPC 或协议故障都能恢复。
+不得宣称已覆盖全部 DEX、已审计、永久可用、已有用户或保证获奖。

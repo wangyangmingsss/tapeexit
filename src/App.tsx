@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowDownLeft, ArrowRight, Check, CheckCircle2, ChevronDown, CircleHelp, Copy,
-  Download, ExternalLink, FileCheck2, History, LoaderCircle, LockKeyhole, Menu,
+  Download, ExternalLink, FileCheck2, History, LayoutList, LoaderCircle, LockKeyhole, Menu,
   Radio, RefreshCw, ShieldCheck, Upload, Wallet as WalletIcon, X, XCircle,
 } from 'lucide-react';
 import { formatUnits, getAddress, type Address, type Hex } from 'viem';
@@ -21,15 +21,17 @@ import { assertSigningRuntime, canSignRuntime, manifestDigest, runtimeStatus, ty
 import type { DemoEngine, Fault } from './demo/engine';
 import { discoverPositions, type PositionPage } from './core/discovery';
 import RecoveryCheck from './RecoveryCheck';
+import AssetOverview from './AssetOverview';
+import DistributionStatus from './DistributionStatus';
 
 const DEMO = import.meta.env.VITE_DEMO === 'true';
 const demoModule = DEMO ? import('./demo/engine') : null;
 type Stage = 'idle' | 'reading' | 'ready' | 'simulating' | 'review' | 'preflight' | 'wallet' | 'submitted' | 'done' | 'unknown';
-type Tab = 'exit' | 'history' | 'recovery';
+type Tab = 'overview' | 'exit' | 'history' | 'recovery';
 const texts = {
   zh: {
-    exit: '退出仓位', history: '操作记录', recovery: '恢复入口', connect: '连接钱包', disconnect: '断开连接',
-    title: '独立退出，资产回到自己手中。', sub: 'X Layer · Uniswap V3', workspace: '仓位工作区',
+    overview: '资产总览', exit: '退出仓位', history: '操作记录', recovery: '恢复入口', connect: '连接钱包', disconnect: '断开连接',
+    title: '独立退出，资产回到自己手中。', sub: 'X Layer · TapeOut · DeFi 资产应急出口', workspace: '仓位工作区',
     id: '仓位 Token ID', idHint: '输入你直接持有的 Uniswap V3 仓位编号', load: '读取仓位',
     readOnly: '只读模式', readOnlyHint: '连接钱包后可核对所有权。当前发行尚未批准主网签名。',
     owner: '持有地址', pool: '流动性池', range: '价格区间', liquidity: '仓位流动性',
@@ -56,8 +58,8 @@ const texts = {
     disclaimer: '链上字节核对不等于安全审计。入口仍依赖浏览器、启动文件、RPC、钱包及底层合约。',
   },
   en: {
-    exit: 'Exit position', history: 'Activity', recovery: 'Recovery', connect: 'Connect wallet', disconnect: 'Disconnect',
-    title: 'An independent way back to your assets.', sub: 'X Layer · Uniswap V3', workspace: 'Position workspace',
+    overview: 'Assets', exit: 'Exit position', history: 'Activity', recovery: 'Recovery', connect: 'Connect wallet', disconnect: 'Disconnect',
+    title: 'An independent way back to your assets.', sub: 'X Layer · TapeOut · DeFi emergency exit', workspace: 'Position workspace',
     id: 'Position token ID', idHint: 'Enter a Uniswap V3 NFT position you directly own', load: 'Read position',
     readOnly: 'Read-only mode', readOnlyHint: 'Connect to check ownership. This release is not approved for mainnet signing.',
     owner: 'Owner', pool: 'Liquidity pool', range: 'Tick range', liquidity: 'Position liquidity',
@@ -580,7 +582,7 @@ export default function App() {
       <a className="brand" href="./" aria-label="TapeExit"><img src="./tapeexit-icon.png" width="31" height="31" alt="" /><span>Tape<span className="brand-light">Exit</span></span></a>
       <div className="sidebar-caption">SELF-CUSTODY, CONTINUED</div>
       <nav aria-label="Main navigation">{([
-        ['exit', ArrowDownLeft, t.exit], ['history', History, t.history], ['recovery', LockKeyhole, t.recovery],
+        ['overview', LayoutList, t.overview], ['exit', ArrowDownLeft, t.exit], ['history', History, t.history], ['recovery', LockKeyhole, t.recovery],
       ] as const).map(([key, Icon, label]) => <button key={key} className={`nav-item ${tab === key ? 'active' : ''}`} onClick={() => { setTab(key); setMenuOpen(false); }}><Icon size={18} />{label}{key === 'exit' && <span className="nav-dot" />}</button>)}</nav>
       <div className="sidebar-bottom"><div className="network-mark"><img src="./xlayer.png" width="29" height="29" alt="" /><div><strong>X Layer</strong><span>Chain 196</span></div><span className="live-dot" /></div>
         <button className="text-link" onClick={() => setDetailsOpen(true)}><CircleHelp size={15} />{t.support}<ArrowRight size={14} /></button>
@@ -594,7 +596,7 @@ export default function App() {
         </div></header>
       <div className={`environment-banner ${DEMO ? 'demo-banner' : ''}`}><Radio size={14} /><span>{DEMO ? t.demo : t.live}</span><span className="banner-badge">{DEMO ? 'DEMO' : 'READ ONLY'}</span></div>
       <main>
-        <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{tab === 'exit' ? t.exit : tab === 'history' ? t.history : t.recovery}</h1><p>{tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
+        <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" />{t.sub}</div><h1>{t[tab]}</h1><p>{tab === 'overview' ? (lang === 'zh' ? '已接入 Uniswap V3 · 其他协议逐步扩展' : 'Uniswap V3 connected · further protocols planned') : tab === 'exit' ? t.title : tab === 'history' ? (lang === 'zh' ? '记录保存在当前浏览器。' : 'Stored only in this browser.') : t.recoveryTitle}</p></div>
           <button className="secondary-button save-button" onClick={() => void saveCard()}><Download size={15} />{t.saveCard}</button></div>
         {error && <div className="error-notice" role="alert"><XCircle size={18} /><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
         {!submissionBlocked && submissionMessage && <div className="transaction-status" role="status"><CheckCircle2 size={18} /><span>{submissionMessage}</span></div>}
@@ -623,7 +625,16 @@ export default function App() {
             <RefreshCw size={15} className={checkingSubmission ? 'spin' : ''} />{lang === 'zh' ? '核对待处理交易' : 'Check pending transaction'}</button>
           {submissionMessage && <p role="status">{submissionMessage}</p>}
         </section>}
+        {tab === 'overview' && <AssetOverview account={account} adapter={adapter} demo={demo} simulated={DEMO} fault={fault}
+          lang={lang} locked={busy || stage === 'unknown' || submissionBlocked} onConnect={() => setWalletPicker(true)}
+          onSelect={id => {
+            if (busy || txLock.current || stage === 'unknown' || submissionBlocked) return;
+            if (id) { setTokenId(id); setSnapshot(undefined); setResult(undefined); invalidate(); }
+            setTab('exit');
+          }} />}
         {tab === 'exit' && <>
+          <div className="workspace-overview-link"><button className="text-link" onClick={() => setTab('overview')}>
+            <LayoutList size={15} />{t.overview}<ArrowRight size={14} /></button></div>
           <div className="workspace-grid">
             <section className="position-section" aria-labelledby="workspace-title">
               <div className="section-top"><h2 id="workspace-title">{t.workspace}</h2><span className="neutral-tag">UNISWAP V3</span></div>
@@ -694,6 +705,7 @@ export default function App() {
         </>}
         {tab === 'history' && <section className="history-section"><div className="section-top"><h2>{t.history}</h2><button className="text-link" onClick={() => { historyGeneration.current++; clearHistory(); setHistory([]); setHistoryChecks({}); }}>{t.clear}</button></div>{history.length ? <div className="history-list">{history.map(h => <div key={h.hash}><span className="history-icon"><ArrowDownLeft size={18} /></span><div><strong>#{h.tokenId}</strong><span>{new Date(h.time).toLocaleString()} · {h.environment}</span><span className="history-verification" role="status">{historyChecks[h.hash] || (h.environment === 'demo' ? (lang === 'zh' ? '模拟记录' : 'Simulated record') : (lang === 'zh' ? '已保存，尚未重新核对' : 'Saved; not rechecked'))}</span></div><code title={h.hash}>{short(h.hash)}</code><span className="neutral-tag">{h.state}</span><div className="history-actions">{h.environment === 'mainnet' && <button className="icon-button" title={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} aria-label={lang === 'zh' ? '重新核对交易' : 'Recheck transaction'} disabled={historyLocks.current.has(h.hash)} onClick={() => void verifyHistory(h)}><RefreshCw size={16} /></button>}<button className="icon-button" title={t.export} aria-label={t.export} onClick={() => downloadJson('tapeexit-history.json', h)}><Download size={16} /></button></div></div>)}</div> : <div className="empty-history"><History size={28} /><p>{t.nothing}</p></div>}</section>}
         {tab === 'recovery' && <section className="recovery-section"><div className="recovery-header"><LockKeyhole size={27} /><div><h2>{t.recoveryTitle}</h2><p>{t.recoverySub}</p></div></div><div className="recovery-facts"><div><span>{t.version}</span><code>{RELEASE}</code></div><div><span>{t.target}</span><AddressValue value={MANAGER} /></div><div><span>{t.origin}</span><strong>{runtime.label}</strong></div></div><div className="recovery-actions"><button className="primary-button" onClick={() => void saveCard()}><Download size={16} />{t.saveCard}</button><button className="secondary-button" onClick={() => importInput.current?.click()}><Upload size={16} />{t.importCard}</button></div><div className="local-bundle"><h3>{t.local}</h3><p>{t.localSub}</p><code>node tools/local-server.mjs</code></div></section>}
+        {tab === 'recovery' && <DistributionStatus lang={lang} runtime={runtime} simulated={DEMO} />}
         {tab === 'recovery' && !DEMO && <RecoveryCheck lang={lang} />}
         <footer><span><ShieldCheck size={15} />{t.scope}</span><code>{RELEASE}</code></footer>
       </main>

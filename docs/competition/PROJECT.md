@@ -1,78 +1,81 @@
-# TapeExit Project Draft
+# TapeExit
 
-Status: development candidate with a published read-only release and a completed, separately bounded mainnet exit. This is a draft, not a completed competition submission. Full current-release extension acceptance, post-review execution and independent security approval remain pending.
+**基于 TapeOut 的 X Layer DeFi 资产应急出口。**
 
-## Short Description
+原平台网站打不开时，用户的仓位可能仍在链上。TapeExit 希望让用户通过提前保存的入口，查看资产、按原协议规则退出，并在页面中断后继续核对结果。
 
-TapeExit is an independent exit interface for directly owned Uniswap V3 position NFTs on X Layer. If the original website or private API is unavailable while the protocol remains operational, the holder can read a known position, review a decrease-and-collect or collect-only call, and use their own wallet to interact with the original manager.
+[在线 Demo](https://wangyangmingsss.github.io/tapeexit/) 使用测试资产，不连接真实钱包、不发送交易。
+当前公开主网版本只读，生产签名关闭。本文是参赛说明草案，不表示已提交或获得活动认可。
 
-The application introduces no custody contract, new token approval, NFT transfer, swap, agent signing or arbitrary recipient.
+## 产品如何工作
 
-## Why TapeOut
+1. 连接钱包，在资产总览查看已接入协议的仓位，也可手动输入编号。
+2. 打开仓位，核对所有权、币对与剩余流动性。
+3. 选择退出比例或仅领取，预演并检查目标合约、收款地址和最低输出。
+4. 可签名发行通过审阅后，由用户钱包直接调用原协议合约。
+5. 核对交易收据、到账证据与剩余流动性；入口中断后，通过备用网关或本地恢复包继续查询。
 
-The published read-only release stores the application files in a real X Layer TapeOut container and uses client verification to load them. The recovery design also provides an alternate gateway and a separately verified local package.
+第一个已实现的模块是 **X Layer Uniswap V3**。资产总览只列出用户直接持有的 V3 NFT；读取失败会单独标记，不当作没有资产。
+总览按页、在同一区块核对所有权与仓位，不将流动性数值当作美元资产总额。
+当前代码不增加托管合约、不转移 NFT、不申请新代币授权、不兑换资产，接收地址固定为签名账户。
 
-The recorded publication is `tape://2.2.289.tape/`, container
-`0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`, source
-`0d9ff56a32b2ce36cd78c925d03f7205c169bf4a`, manifest SHA-256
-`c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc`.
-Ten files / 600302 bytes passed exact chain readback after 31 confirmed migration transactions;
-zero publication operations remained.
-The recorded gateways are `https://2-2-289.netlify.app` and `https://2-2-289.vercel.app`.
-The October 29 UTC browser report checks four desktop/mobile views and exercises a CONNECT-proxy block of the primary gateway.
-All views completed finalized recovery of the saved mainnet transaction, without sending another transaction.
-See `../evidence/published-0d9ff56/` and `../public-gateway-acceptance.md` for observations and limitations.
-Availability and payment expiry require fresh checks. Later development commits are not automatically uploaded.
+## TapeOut 是入口基础
 
-## What Can Be Demonstrated Today
+TapeOut 承载 TapeExit 的应用文件，提供链上名称、容器和网关读取机制。TapeExit 负责协议适配、退出预览、结果核验与恢复流程。资金由原钱包和协议合约管理。
 
-- A clearly labelled isolated UI simulation with test assets.
-- Read-only checks against the configured X Layer manager and factory; evidence files record the observed block and code hashes.
-- An isolated fork of an actual X Layer position, with recorded exit, balance changes and remaining liquidity.
-- Real official V3 contracts on a local EVM: partial and full exits, collect-only with and without remaining liquidity, ownership rejection, slippage/deadline revert and atomic collection-failure rollback.
-- Strict two-operator reads, exact SDK integer math, calldata checks, receipt evidence, durable pending-submission recovery and entry invalidation.
-- A local recovery server, hashed file manifest and offline file verification.
+已记录的只读发布：
 
-Real mainnet publication/activation transactions and a bounded exit are recorded.
-Position `67042` exited through the restricted local workbench in transaction
-`0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5`:
-0.020016 USDt0 and 0.019999 USDC arrived; remaining liquidity was `1980854`.
-This is not public-release signing acceptance or a post-review transaction.
-Production exit signing is disabled and the approved asset list is empty.
-Use the packaged exact-source test reports for current counts; historical CI counts do not validate new changes.
-Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, bounded owner-checked position discovery,
-printable public recovery cards, simulation recording and consented-session aggregation are implemented.
-The recovery outcome checker corroborates exact transaction/receipt identity with parent/receipt block-end
-balances, remaining liquidity and cleared owed amounts. It labels block-level attribution limits.
-`prepare:recovery` gathers a read-only one-percent proposal and blockers; it creates no signing calldata.
+| 项目 | 记录 |
+| --- | --- |
+| 名称 | `2.2.289.tape` |
+| 容器 | `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D` |
+| 版本 | `0.2.0-0d9ff56` |
+| 完整源码提交 | `0d9ff56a32b2ce36cd78c925d03f7205c169bf4a` |
+| 清单 SHA-256 | `c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc` |
+| 已有发布证据 | 31 笔迁移交易；10 个文件、600302 字节逐字节回读；容器激活 |
+| 网关 | [Netlify](https://2-2-289.netlify.app/) / [Vercel](https://2-2-289.vercel.app/) |
 
-## Scope And Limits
+历史检查记录包括桌面、移动视图及阻断主网关后的已有交易恢复查询。
+这些记录属于上述版本。新版源码与 Demo 不会自动更新链上文件。容器可以修改，每次更新需要重新核对版本、清单和回读证据。
+详情见[发行证据](../evidence/published-0d9ff56/README.md)与[公网验收](../public-gateway-acceptance.md)。
 
-Supports one configured protocol and chain, a manually entered or owner-enumerated token ID, direct ownership and reviewed standard tokens. Staked/vault-held NFTs, unknown forks, contract-wallet support, fee-on-transfer/rebase assets and lost keys are outside the accepted scope.
+## 当前能力与未来方向
 
-The browser, wallet, bootstrap files, RPC operators, X Layer and protocol/token contracts remain trusted dependencies. Matching file hashes is not a security audit. Local code still needs network RPC and an operational chain.
+| 模块 | 状态 |
+| --- | --- |
+| V3 仓位读取、资产总览、退出预览、到账核验与恢复查询 | 已实现；主网公开版只读 |
+| TapeOut 容器、双网关与本地恢复包 | 已集成；新版需要单独发布 |
+| 多协议适配接口 | 已预留，V3 已使用 |
+| V2 LP、质押、收益金库、借贷、等待期赎回 | 规划中，尚未接入 |
 
-## Differentiation To Test
+后续每个协议都需要独立实现读取、模拟、交易限制及结果核验，并随具体应用版本发布。
+当前没有自动扫描 X Layer 全部平台或运行第三方插件的能力。
+扩展设计见[协议适配说明](../PROTOCOL-ADAPTERS.md)。
 
-The hypothesis is that a saved, task-specific exit route with explicit dependency and recovery evidence is easier to use during a frontend outage than reconstructing the original application or composing raw explorer calls.
+## 真实记录与限制
 
-This has not been established by a controlled comparison or user study. There are no claimed users, customers, revenue, endorsements or partnerships.
+受限本地工作台曾对主网仓位 `67042` 完成一笔小额退出：
+`0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5`。
+已记录 0.020016 USDt0、0.019999 USDC 到账，剩余流动性 `1980854`。
+这笔历史交易不是当前公开版完整钱包验收，也不是独立审阅后的交易。
 
-## Business Hypothesis
+自动化验证覆盖官方 V3 本地合约、部分及全部退出、仅领取、所有权拒绝、滑点与有效期、失败回滚、两运营商 RPC 读取、提交恢复及浏览器交互。
+各版本的计数以对应提交报告为准。生产签名保持关闭，批准代币列表为空；独立安全审阅及当前发行完整钱包验收仍需真实证据。
 
-The base exit tool is open source and free. Protocol-funded adapter review, deployment, periodic fault rehearsals and maintenance are potential services, subject to user research and actual customer evidence. No emergency-exit fee is implemented.
+无法恢复丢失私钥，不能绕过合约锁定、协议暂停或偿付条件。已质押、托管或存入金库的 NFT 不在当前范围内。
+浏览器、钱包、启动文件、RPC、X Layer 和协议合约仍是依赖。本地恢复包需要网络；文件摘要一致不等于安全审计。
 
-`PILOT-PLAN.md` specifies consented incident research, a bounded protocol pilot, matched outage-task comparison
-and stop conditions. `BUSINESS-ASSUMPTIONS.example.json` deliberately leaves numeric assumptions unset.
-`npm run model:business` computes explicit-assumption costs and break-even; it is not customer or revenue evidence.
-`REAL-ACCEPTANCE.md` in the preparation archive lists the real publication, wallet, review and hosting inputs.
+## 验证与商业方向
 
-## Required Before Submission
+待验证的产品假设是：在原站中断时，提前保存且专门用于退出的路径，比临时拼接浏览器合约调用更容易完成任务。
+目前不宣称已有用户、客户、收入、合作或市场验证。
 
-1. Verify the current official activity rules and actual submission form; do not infer current eligibility or deadline from this draft.
-2. Keep the public `wangyangmingsss/tapeexit` repository updated and record the final public commit.
-3. Complete target-wallet/browser tests, supported-asset review and independent transaction-path review.
-4. Keep the existing container/history intact; obtain review and a bounded fee authorization before publishing a newer release.
-5. Read back that candidate's exact files, check live status and actual origin, and complete extension/local-device recovery tasks.
-6. Collect permissioned user-task and protocol feedback, or plainly disclose that validation is pending.
-7. Record the accurately labelled video and review all final links and claims before submitting.
+基础工具开源免费。协议适配、审阅协调、部署、定期故障演练与维护是后续服务方向，需要实际用户和协议反馈验证。
+[试点计划](PILOT-PLAN.md)记录同意参与的访谈、任务对比与停止条件；成本模型的输入是假设，不是收入证据。
+
+## 提交前
+
+核实官方活动规则、资格和截止时间，填写真实团队资料；保存最终公开提交与对应 Demo 视频。
+进一步发布需要具体版本的真实回读、钱包测试及独立审阅记录。不得用模拟画面代替主网交易，或把旧版证据用于证明新版已验收。
+
+构建、Demo、恢复包与公网链上版的关系见[版本与交付](../RELEASE-CHANNELS.md)。

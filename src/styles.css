@@ -24,3 +24,41 @@
 .recovery-check .recovery-actions { flex-wrap: wrap; align-items: center; }
 .recovery-check .recovery-actions label { display: inline-flex; align-items: center; gap: 6px; }
 .recovery-check dd { margin: 0 0 12px; overflow-wrap: anywhere; }
+.workspace-overview-link { display: flex; justify-content: flex-end; margin: -10px 0 15px; }
+.overview-toolbar, .overview-actions, .overview-summary, .overview-pagination { display: flex; align-items: center; gap: 14px; }
+.overview-toolbar { justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.overview-toolbar>div:first-child>span { display: block; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.overview-actions { flex-shrink: 0; }
+.overview-results { min-height: 190px; }
+.overview-message { display: flex; align-items: center; gap: 9px; padding: 25px 0; color: var(--muted); font-size: 12px; }
+.overview-empty { display: grid; justify-items: center; gap: 16px; padding: 45px 0; color: var(--muted); }
+.overview-summary { justify-content: space-between; padding: 18px 0; font-size: 12px; }
+.overview-summary>span { color: var(--muted); font-size: 10px; }
+.portfolio-list { margin: 0; padding: 0; list-style: none; }
+.portfolio-list>li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .65fr) 36px; gap: 18px; align-items: center; padding: 20px 0; border-top: 1px solid var(--border); }
+.portfolio-identity, .portfolio-state { min-width: 0; display: grid; gap: 5px; overflow-wrap: anywhere; }
+.portfolio-identity strong { font-size: 14px; }
+.portfolio-identity>span, .portfolio-state { font-size: 11px; color: var(--muted); }
+.portfolio-identity code, .portfolio-state code { font-size: 10px; }
+.portfolio-list .icon-button { min-width: 36px; min-height: 36px; }
+.overview-pagination { justify-content: flex-end; padding: 13px 0; border-top: 1px solid var(--border); font-size: 11px; }
+.protocol-coverage { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); }
+.protocol-coverage h2 { margin-bottom: 12px; }
+.protocol-coverage>div { display: flex; justify-content: space-between; gap: 15px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.distribution-status { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
+.distribution-status h2 { display: flex; align-items: center; gap: 8px; }
+.distribution-status dl { margin: 20px 0; display: grid; gap: 14px; }
+.distribution-status dl>div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; font-size: 12px; }
+.distribution-status dt { color: var(--muted); }
+.distribution-status dd { margin: 0; overflow-wrap: anywhere; }
+.distribution-routes { display: flex; flex-wrap: wrap; gap: 10px; }
+.distribution-status>p { font-size: 11px; color: var(--muted); margin-top: 15px; }
+@media(max-width:650px) {
+  .overview-toolbar { align-items: flex-start; flex-wrap: wrap; }
+  .overview-toolbar h2 { font-size: 14px; }
+  .overview-actions { width: 100%; justify-content: flex-end; }
+  .portfolio-list>li { grid-template-columns: minmax(0, 1fr) 36px; gap: 12px; }
+  .portfolio-state { grid-column: 1; grid-row: 2; }
+  .portfolio-list>li>.icon-button { grid-column: 2; grid-row: 1 / 3; }
+  .distribution-status dl>div { grid-template-columns: 95px minmax(0, 1fr); gap: 10px; font-size: 11px; }
+}

@@ -4,9 +4,9 @@ This is a preparation checklist, not an assertion that entry requirements have b
 
 | Field | Current Evidence / Required Action |
 | --- | --- |
-| Project | TapeExit, independent recovery/exit interface for directly owned X Layer V3 position NFTs |
+| Project | TapeExit, a TapeOut-based X Layer DeFi emergency exit; V3 is the first connected module, with further protocols planned |
 | Source | Public repository `wangyangmingsss/tapeexit`; record exact final commit |
-| Demo | Isolated demo workflow and labelled simulation video; never present as a live exit |
+| Demo | https://wangyangmingsss.github.io/tapeexit/ — asset overview, simulated V3 exit, fault injection, and TapeOut/recovery routes; never present as a live exit |
 | Actual TapeOut entry | Published read-only source `0d9ff56`, `2.2.289.tape`, container `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`; exact 10-file readback passed |
 | Public gateways | Four published-version Netlify/Vercel views passed exact file and finalized recovery checks; primary CONNECT block exercised |
 | Current candidate deployment | Published source is pinned separately from later development commits; any future executable candidate needs its own evidence |

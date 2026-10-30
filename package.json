@@ -1,6 +1,6 @@
 {
   "name": "tapeexit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -42,6 +42,7 @@
     "report:compatibility": "node tools/report-compatibility.mjs",
     "model:business": "node tools/business-model.mjs",
     "package:entry": "tsx tools/package-entry.ts",
+    "package:delivery": "tsx tools/package-delivery.ts",
     "print:card": "tsx tools/print-recovery-card.ts",
     "verify:fork": "tsx tools/verify-fork.ts",
     "verify:asset-fork": "tsx tools/verify-asset-fork.ts",

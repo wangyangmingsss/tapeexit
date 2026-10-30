@@ -28,6 +28,10 @@ try {
   await page.goto('http://127.0.0.1:4190/');
   await page.getByText('隔离演示 · 测试资产').waitFor();
   await scene('isolation-demo-introduction');
+  await page.getByRole('navigation').getByRole('button', { name: '资产总览', exact: true }).click();
+  await page.getByText('TEST-USDC / TEST-USDT').waitFor();
+  await scene('supported-assets-and-planned-protocols');
+  await page.getByRole('button', { name: '打开仓位 28491' }).click();
   await page.getByRole('button', { name: '读取仓位' }).click();
   await page.getByText('TEST-USDC / TEST-USDT').waitFor();
   await scene('test-position-loaded');
@@ -46,6 +50,9 @@ try {
   await page.getByRole('button', { name: '读取仓位' }).click();
   await page.getByRole('alert').filter({ hasText: '读取结果不一致' }).waitFor();
   await scene('simulated-source-conflict-stops-flow');
+  await page.getByRole('button', { name: '恢复入口', exact: true }).click();
+  await page.getByRole('region', { name: 'TapeOut 与恢复路径' }).waitFor();
+  await scene('tapeout-recorded-release-and-recovery-routes');
   const video = page.video();
   await context.close();
   context = null;
