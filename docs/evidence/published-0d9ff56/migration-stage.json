@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-10-29T23:19:53.153Z",
+  "status": "NO_PUBLICATION_OPERATIONS_REMAIN",
+  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "block": {
+    "number": "0x4717ef9",
+    "hash": "0xf484e237124268edad6bcd6ff7a1d25c1005a3a117a64f8a3df64909660b4b8e",
+    "timestamp": "0x6ae3d485"
+  },
+  "confirmedAttempts": 31,
+  "unresolved": null,
+  "remainingOperationCount": 0,
+  "remaining": [],
+  "productionSigningApproved": false,
+  "independentReview": "NOT_COMPLETED",
+  "transactionSentByThisCheck": false
+}

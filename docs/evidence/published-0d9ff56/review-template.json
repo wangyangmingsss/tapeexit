@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "packetSha256": "0e4fe203394f0712906bb46101e5f46a2362f599c2812baa3da6e6a3d04043e3",
+  "sourceCommit": "0d9ff56a32b2ce36cd78c925d03f7205c169bf4a",
+  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "sourceArchiveSha256": "05129f05ad84068073ca77f1f278e3290e689c5460e0f84df7626f73e64ba32f",
+  "lockfileSha256": "6ae24def3a96ca42a888a9ca908a646b0d182b2524b8313761f675ae2c0940c4",
+  "reviewedAt": null,
+  "reviewer": {
+    "name": null,
+    "contact": null,
+    "independent": null,
+    "independenceStatement": null
+  },
+  "surfaces": [
+    {
+      "id": "deployment-assets-governance",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "integer-math-calldata",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "wallet-boundary",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "receipt-finality-recovery",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "submission-locks",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "publication-resume",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "entrypoint-local-gateway",
+      "reviewed": null,
+      "evidence": null
+    },
+    {
+      "id": "build-dependencies",
+      "reviewed": null,
+      "evidence": null
+    }
+  ],
+  "findings": null,
+  "exclusions": null,
+  "decision": null
+}

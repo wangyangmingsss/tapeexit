@@ -1,6 +1,6 @@
 # TapeExit Project Draft
 
-Status: development candidate with a separately recorded, published read-only release. This is a draft, not a completed competition submission. Actual extension signing, a mainnet exit and independent security approval remain pending.
+Status: development candidate with a published read-only release and a completed, separately bounded mainnet exit. This is a draft, not a completed competition submission. Full current-release extension acceptance, post-review execution and independent security approval remain pending.
 
 ## Short Description
 
@@ -14,13 +14,15 @@ The published read-only release stores the application files in a real X Layer T
 
 The recorded publication is `tape://2.2.289.tape/`, container
 `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`, source
-`733ca795d9216ea43038e386ee652c1a84f112b5`, manifest SHA-256
-`8282142e417188b95421249ec7beb8993aaea65308c7e87b337c08a9c77415ba`.
-Nine files / 587,736 bytes were uploaded in 31 operations across 23 transactions.
+`0d9ff56a32b2ce36cd78c925d03f7205c169bf4a`, manifest SHA-256
+`c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc`.
+Ten files / 600302 bytes passed exact chain readback after 31 confirmed migration transactions;
+zero publication operations remained.
 The recorded gateways are `https://2-2-289.netlify.app` and `https://2-2-289.vercel.app`.
-The October 28 UTC browser report checks desktop/mobile resources and exercises a CONNECT-proxy block of the primary gateway.
-See `evidence/historical/` for immutable observations, dates and limitations. These are read-only recovery observations,
-not a live exit or evidence that the current source has been uploaded. Availability and payment expiry require fresh checks.
+The October 29 UTC browser report checks four desktop/mobile views and exercises a CONNECT-proxy block of the primary gateway.
+All views completed finalized recovery of the saved mainnet transaction, without sending another transaction.
+See `../evidence/published-0d9ff56/` and `../public-gateway-acceptance.md` for observations and limitations.
+Availability and payment expiry require fresh checks. Later development commits are not automatically uploaded.
 
 ## What Can Be Demonstrated Today
 
@@ -31,7 +33,11 @@ not a live exit or evidence that the current source has been uploaded. Availabil
 - Strict two-operator reads, exact SDK integer math, calldata checks, receipt evidence, durable pending-submission recovery and entry invalidation.
 - A local recovery server, hashed file manifest and offline file verification.
 
-Real mainnet publication/activation transactions exist. No TapeExit mainnet exit is recorded.
+Real mainnet publication/activation transactions and a bounded exit are recorded.
+Position `67042` exited through the restricted local workbench in transaction
+`0xef76ac4089198488982fa71d65c35e390884b950dfa0cfbcb8ca3c66efde27c5`:
+0.020016 USDt0 and 0.019999 USDC arrived; remaining liquidity was `1980854`.
+This is not public-release signing acceptance or a post-review transaction.
 Production exit signing is disabled and the approved asset list is empty.
 Use the packaged exact-source test reports for current counts; historical CI counts do not validate new changes.
 Read-only asset/container inspection, unsigned prefix resume, a wallet connectivity harness, bounded owner-checked position discovery,

@@ -7,6 +7,12 @@ It reads receipts, token arrivals and adjacent block-end balances/liquidity from
 requires finality for success, and can export its result without connecting a wallet.
 Cancellation, timeout or input edits invalidate the current result.
 
+The `0d9ff56` update is now published: 31 confirmed migration transactions,
+zero remaining operations, 10 files / 600302 bytes read back exactly, and four
+public desktop/mobile recovery views passed. See `public-gateway-acceptance.md`.
+The following preparation instructions apply to future updates; they are not
+outstanding upload instructions for the existing publication.
+
 ## Prepare A Candidate
 
 Use a clean source commit:
@@ -68,10 +74,12 @@ npm run verify:live-gateway -- \
   docs/gateway-recovery-task-67042.json
 ```
 
-Alternatively dispatch "Verify public TapeExit gateways" for this commit and choose
-`candidate`. `historical` checks the original 733ca79 release and cannot accept the
-new candidate. Candidate workflow builds its expected profile from its own clean
-source; an old chain release fails its manifest check.
+To recheck the already published version, dispatch "Verify public TapeExit gateways"
+and choose `published`, or use `docs/published-gateway-profile.json` instead of the
+generated candidate profile in the command above.
+For a future rebuilt publication choose `candidate`. `historical` checks the original
+733ca79 release and cannot accept the new candidate. Candidate workflow builds its
+expected profile from its own clean source; an older chain release fails its manifest check.
 
 Acceptance uses fresh desktop/mobile Chromium contexts. It checks exact manifest
 and file bytes, Tape identity, activation, same-origin Service Worker and layout.

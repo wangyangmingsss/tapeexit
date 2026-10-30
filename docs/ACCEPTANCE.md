@@ -2,6 +2,14 @@
 
 This candidate is not a production release. `RELEASE_APPROVED=false` and the approved token list remains empty.
 
+The published read-only application is source `0d9ff56a32b2ce36cd78c925d03f7205c169bf4a`.
+Its 31 migration transactions, zero remaining publication operations, exact 10-file/600302-byte chain
+readback, live activation and four public desktop/mobile recovery views have passed.
+See `public-gateway-acceptance.md` and `evidence/published-0d9ff56/`.
+The existing mainnet exit was a separately bounded local-workbench task, not production signing
+from the public release. The later review-tool commit `44aeb18` passed 953 local tests; it does not
+replace the uploaded application. Independent review is deferred and remains incomplete.
+
 ## Locally Reproducible Work
 
 ```sh
@@ -65,10 +73,10 @@ check the card image, layout and print media. This does not establish real Safar
 | Supported assets | Not approved | Exact token contracts and nonstandard-behavior review; do not simply change the allowlist |
 | Independent transaction/security review | Not completed | Independent reviewer, reviewed commit, findings and retest |
 | Dependency remediation | Findings open | Advisory/call-path review and compatible fixes or documented release decision |
-| Actual container publication | Prior read-only release published | `2.2.289.tape`; current candidate requires its own publication |
-| Exact live file readback | Recorded for source `733ca79` | Historical 9-file evidence is not a current live check |
-| Alternate gateway and local recovery rehearsal | Historical dual-gateway read-only fault task checked | Extension signing and clean-device local task remain pending |
-| Permissioned mainnet task | Not executed | Reviewed release, approved assets, controlled position, exact transaction and fee authorization |
+| Actual container publication | Read-only source `0d9ff56` published and active | Future executable releases need their own exact publication evidence |
+| Exact live file readback | 10 files, 600302 bytes matched for `0d9ff56` | Fixed-block observation; future mutations require another check |
+| Alternate gateway and local recovery rehearsal | Published four-view recovery and effective primary CONNECT block passed | Extension signing and clean-device local task remain pending |
+| Permissioned mainnet task | Earlier bounded exit completed and finalized | Post-review executable-release wallet task remains pending |
 | User/comparison/protocol validation | Not performed | Consented participants, same-task records and permissioned attribution |
 | Competition submission | Not submitted | Current official rules/form, team/contact details, real links, reviewed video and actual submission receipt |
 

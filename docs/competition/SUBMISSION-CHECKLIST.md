@@ -7,10 +7,10 @@ This is a preparation checklist, not an assertion that entry requirements have b
 | Project | TapeExit, independent recovery/exit interface for directly owned X Layer V3 position NFTs |
 | Source | Public repository `wangyangmingsss/tapeexit`; record exact final commit |
 | Demo | Isolated demo workflow and labelled simulation video; never present as a live exit |
-| Actual TapeOut entry | Historical read-only release `2.2.289.tape`, container `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`; preserve its separate source/manifest in the package |
-| Public gateways | Recorded Netlify/Vercel desktop/mobile byte checks and effective primary CONNECT block; not extension signing or current availability |
-| Current candidate deployment | Not established by prior publication; must match the final reviewed source and manifest |
-| Actual reviewed assets and wallet task | Required for live claims; not accepted |
+| Actual TapeOut entry | Published read-only source `0d9ff56`, `2.2.289.tape`, container `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`; exact 10-file readback passed |
+| Public gateways | Four published-version Netlify/Vercel views passed exact file and finalized recovery checks; primary CONNECT block exercised |
+| Current candidate deployment | Published source is pinned separately from later development commits; any future executable candidate needs its own evidence |
+| Actual reviewed assets and wallet task | Earlier restricted USDt0/USDC mainnet exit completed; asset approval and post-review current-release wallet acceptance remain pending |
 | Team and contact | Must be supplied by actual entrants |
 | Rule verification | Reopen the official activity page and actual form; record observation date and relevant requirements |
 | Eligibility/deadline | Not established by code, old notes or this checklist |

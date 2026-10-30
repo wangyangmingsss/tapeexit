@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "status": "published-bytes-checked",
+  "chainId": 196,
+  "container": "0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D",
+  "registry": "0xd6EFb7adCc9c83dC4924Ad56f6a8E4e969b9ADB6",
+  "registryCodeHash": "0x5e41d8905a1e7ccfc8c297c3a33d08d1712e4876f9c6eefc0e5991409dd38c1d",
+  "binding": "0x68809Fd2fb343aA57D0aeB7f33Defe477c9666f9",
+  "block": {
+    "number": "0x4717e8b",
+    "hash": "0x2e6f377445f7096c4884aedbc6fc53268271c77bb7ccf3742d599ce668dcc3a6",
+    "timestamp": "0x6ae3d417"
+  },
+  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "totalBytes": 600302,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "size": 1078,
+      "contentType": "application/octet-stream",
+      "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+      "chunks": "1",
+      "updatedAt": "1793177185"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 45122,
+      "contentType": "application/octet-stream",
+      "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+      "chunks": "2",
+      "updatedAt": "1793180715"
+    },
+    {
+      "path": "assets/index-BqyppihC.js",
+      "size": 357768,
+      "contentType": "text/javascript",
+      "sha256": "eae93f7cc90de633d65fa65c0297303d0347bb6887b6b70aa986e90fc905cef7",
+      "chunks": "15",
+      "updatedAt": "1793274370"
+    },
+    {
+      "path": "assets/index-C5_lLTTN.css",
+      "size": 22361,
+      "contentType": "text/css",
+      "sha256": "b2532f1f526034a6cccfb8b8f70eb325bb5ab71a681679de631a458e1eacd5d1",
+      "chunks": "1",
+      "updatedAt": "1793274558"
+    },
+    {
+      "path": "assets/protocol--wmUswvm.js",
+      "size": 167528,
+      "contentType": "text/javascript",
+      "sha256": "09961634d27a71ee92347f33211e6255d25b9df4a132cc28ad3efd33fa683360",
+      "chunks": "7",
+      "updatedAt": "1793314700"
+    },
+    {
+      "path": "assets/recovery-outcome-DWQkMQ7O.js",
+      "size": 3123,
+      "contentType": "text/javascript",
+      "sha256": "c6981ba9f99a69340da88b7990719b1f03078bc883ba7dd2b5f84e35e52edf22",
+      "chunks": "1",
+      "updatedAt": "1793314934"
+    },
+    {
+      "path": "icon.png",
+      "size": 410,
+      "contentType": "image/png",
+      "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+      "chunks": "1",
+      "updatedAt": "1793186507"
+    },
+    {
+      "path": "xlayer.png",
+      "size": 313,
+      "contentType": "image/png",
+      "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+      "chunks": "1",
+      "updatedAt": "1793186507"
+    },
+    {
+      "path": "release-manifest.json",
+      "size": 2030,
+      "contentType": "application/json",
+      "sha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+      "chunks": "1",
+      "updatedAt": "1793315191"
+    },
+    {
+      "path": "index.html",
+      "size": 569,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "dab68be487d3c802aef510ab80175178f5d2cd2de21907f37ca94fae2f57f5b4",
+      "chunks": "1",
+      "updatedAt": "1793315374"
+    }
+  ],
+  "fallback": "index.html",
+  "containerLive": true,
+  "operators": [
+    {
+      "url": "https://rpc.xlayer.tech",
+      "operator": "okx"
+    },
+    {
+      "url": "https://xlayer.drpc.org",
+      "operator": "drpc"
+    }
+  ],
+  "scope": "Fixed-block RPC agreement and exact release bytes. Registry code hash is observed, not approved. Does not verify ownership, implementation approval, origin, wallet, gateway, finality or security. A mutable container may change after this block.",
+  "observedAt": "2026-10-29T23:18:04.908Z",
+  "transactionSentByThisCheck": false
+}

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "0d9ff56a32b2ce36cd78c925d03f7205c169bf4a",
+  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "productionSigningApproved": false,
+  "independentReview": "NOT_COMPLETED",
+  "scope": "Selected public engineering evidence. Excludes publisher journals, authorization state and credentials.",
+  "files": [
+    {
+      "path": "dependency-audit.json",
+      "bytes": 4852,
+      "sha256": "e299307991e7224ac2659d6a903380220e62c91a329637a980081cf2cbe0acbc"
+    },
+    {
+      "path": "development-44aeb18.json",
+      "bytes": 483,
+      "sha256": "0924f3a9770016c612d0f3cb94f951e72ad0390bc696f1962a275ca66aca9715"
+    },
+    {
+      "path": "migration-stage.json",
+      "bytes": 557,
+      "sha256": "38f69a55bfd874be458dee8a6aa43f7cc07069063033182dceb9fdff22af5da3"
+    },
+    {
+      "path": "netlify-desktop-recovery.json",
+      "bytes": 2373,
+      "sha256": "45f43f5d863716a9da47244ce9a06a04d9988b689d164a1d89bf17e1cd825dbe"
+    },
+    {
+      "path": "netlify-mobile-recovery.json",
+      "bytes": 2373,
+      "sha256": "a602534f7fe83fdc6dab8bf691ff2f0c128270cd04feadac4c5e2d94a641ab92"
+    },
+    {
+      "path": "profile.json",
+      "bytes": 478,
+      "sha256": "806cba25df68fd60bf8edc7c8cdccbf3faae87665af7b35f39a2eac42ab8cb53"
+    },
+    {
+      "path": "public-acceptance.json",
+      "bytes": 1110,
+      "sha256": "1d3a0f409ccf69c9d6c0ed5837f983928eb2eef363ccafcde757a4728b329835"
+    },
+    {
+      "path": "publication-verification.json",
+      "bytes": 3698,
+      "sha256": "32d1adf8b835ceceed75ea26c395a09b2600c9aeb4739aab00c052bc5af6d5d3"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 745,
+      "sha256": "0e4fe203394f0712906bb46101e5f46a2362f599c2812baa3da6e6a3d04043e3"
+    },
+    {
+      "path": "review-template.json",
+      "bytes": 1438,
+      "sha256": "6e1e16387fb575266c13f4ec80a34e7d06ba10521066c95845b5d19376b93240"
+    },
+    {
+      "path": "vercel-desktop-recovery.json",
+      "bytes": 2373,
+      "sha256": "3817bd07545ec5cfaaf262cdb78ae248a378ec6df4c7bcb282a39ba68b868a47"
+    },
+    {
+      "path": "vercel-mobile-recovery.json",
+      "bytes": 2373,
+      "sha256": "7db74d063d29efc67fbe624509cb4c7cfb76135f7a5861447ad9b20720c9cf61"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 100694,
+      "sha256": "2471578c4e8bb2199e116a7a3673c212c3b7a3abed6e508c495d0198cc89458a"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "PUBLISHED_GATEWAYS_AND_FAULT_RECOVERY_PASSED",
+  "observedAt": "2026-10-29T23:33:21.707Z",
+  "sourceCommit": "0d9ff56a32b2ce36cd78c925d03f7205c169bf4a",
+  "verifierSourceCommit": "93b1760f931970e2d7c608f4689921542fab197b",
+  "manifestSha256": "c3c4101ae075a2dd1679213776dfc2d988494cb5c407ee58f82dc490b9a455cc",
+  "githubRunId": "40973429129",
+  "githubRunUrl": "https://github.com/wangyangmingsss/tapeexit/actions/runs/40973429129",
+  "viewsChecked": 4,
+  "fileChecks": 40,
+  "bytesPerView": 600302,
+  "recoveryTaskCompleted": true,
+  "primaryBlockedDuringRecovery": true,
+  "blockMechanism": "HTTPS_CONNECT_PROXY",
+  "productionSigningApproved": false,
+  "independentReview": "NOT_COMPLETED",
+  "productionSigningGateVerifiedFromExactSource": true,
+  "supportedExecutionAssets": [],
+  "newTransactionsSentDuringAcceptance": false,
+  "scope": "Public desktop/mobile Chromium, exact pinned release bytes and finalized read-only recovery of the existing transaction. Does not constitute independent security review, extension-wallet signing or physical-device acceptance."
+}
