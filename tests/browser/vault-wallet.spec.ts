@@ -17,6 +17,11 @@ async function install(page: Page, mode = 'pending-once') {
   const context = { policy: p, contextId: 'a'.repeat(64), sourceCommit: 'b'.repeat(40),
     stage: 'approve', complete: false, freshlyVerified: false, remainingWalletConfirmations: 4,
     unresolved: null as string | null, attempts: [] as any[] };
+  if (mode === 'approved-start') {
+    context.stage = 'deposit'; context.remainingWalletConfirmations = 3;
+    context.attempts.push({ id: 'approved', status: 'confirmed', quote, hash,
+      outcome: { assets: '0', shares: '0', remainingShares: '0', gasUsed: '50000', effectiveGasPrice: '10000000' } });
+  }
   await page.route('**/vault-wallet-test', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.route('**/client.js', route => route.fulfill({ contentType: 'text/javascript', body: js }));
   await page.route('**/styles.css', route => route.fulfill({ contentType: 'text/css', body: css }));
@@ -24,18 +29,29 @@ async function install(page: Page, mode = 'pending-once') {
   await page.route('**/api/*', async route => {
     const action = new URL(route.request().url()).pathname.split('/').at(-1)!;
     let value: unknown = context;
-    if (action === 'preview') value = quote;
+    if (action === 'preview') value = context.stage === 'approve' ? quote : {
+      ...quote, id: `quote-${context.stage}`, stage: context.stage, output: '996244', minimumOutput: '991262',
+      transaction: { ...quote.transaction, to: p.vault, nonce: '0x1',
+        data: encodeFunctionData({ abi: walletVaultAbi, functionName: 'deposit', args: [1000000n, p.account] }) },
+    };
     if (action === 'reserve') {
-      const a = { id: 'attempt', status: 'reserved', quote: mode === 'tampered'
-        ? { ...quote, transaction: { ...quote.transaction, to: p.account } } : quote };
+      const preview = route.request().postDataJSON().previewId === 'quote' ? quote : {
+        ...quote, id: `quote-${context.stage}`, stage: context.stage, output: '996244', minimumOutput: '991262',
+        transaction: { ...quote.transaction, to: p.vault, nonce: '0x1',
+          data: encodeFunctionData({ abi: walletVaultAbi, functionName: 'deposit', args: [1000000n, p.account] }) },
+      };
+      const a = { id: `attempt-${context.attempts.length}`, status: 'reserved', quote: mode === 'tampered'
+        ? { ...preview, transaction: { ...preview.transaction, to: p.account } } : preview };
       context.unresolved = a.id; context.attempts.push(a); value = a;
     }
-    if (action === 'hash') context.attempts[0].hash = route.request().postDataJSON().hash;
+    if (action === 'hash') context.attempts.at(-1).hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
       if (checks++ === 0) return route.fulfill({ status: 409, json: { error: 'Receipt not finalized' } });
-      context.unresolved = null; context.stage = 'deposit'; context.remainingWalletConfirmations = 3;
-      context.freshlyVerified = true; context.attempts[0].status = 'confirmed';
-      context.attempts[0].outcome = { assets: '0', shares: '0', remainingShares: '0', gasUsed: '50000', effectiveGasPrice: '10000000' };
+      const attempt = context.attempts.at(-1);
+      context.unresolved = null; context.stage = attempt.quote.stage === 'approve' ? 'deposit' : 'partial';
+      context.remainingWalletConfirmations = attempt.quote.stage === 'approve' ? 3 : 2;
+      context.freshlyVerified = true; attempt.status = 'confirmed';
+      attempt.outcome = { assets: '0', shares: '0', remainingShares: '0', gasUsed: '50000', effectiveGasPrice: '10000000' };
     }
     await route.fulfill({ json: value });
   });
@@ -57,7 +73,7 @@ async function install(page: Page, mode = 'pending-once') {
     )));
   }, { account: p.account, hash, mode });
   await page.goto('/vault-wallet-test');
-  await expect(page.locator('#status')).toContainText('尚未请求签名');
+  await expect(page.locator('#status')).toContainText(mode === 'approved-start' ? '无需重复授权' : '尚未请求签名');
   return { quote, hash };
 }
 async function ready(page: Page) {
@@ -82,6 +98,51 @@ for (const width of [390, 1440]) test(`vault wallet consent and 3-second read-on
   await page.clock.fastForward(3100);
   await expect(page.locator('#status')).toContainText('本笔已核验');
   await expect(page.locator('#prepare')).toBeEnabled();
+  await expect(page.locator('#prepare')).toContainText('存入 1 USDC');
+  await expect(page.locator('#preview')).toBeEmpty();
+  await expect(page.locator('#consent')).not.toBeChecked();
+  await expect(page.locator('#next-check')).toContainText('自动准备');
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#preview')).toContainText('存入 1 USDC');
+  await expect(page.locator('#send')).toContainText('存入 1 USDC');
+  await expect(page.locator('#send')).toBeDisabled();
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+  await page.locator('#consent').check();
+  await expect(page.locator('#next-action')).toContainText('已勾选');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+  await page.locator('#send').click();
+  const sends = await page.evaluate(() => (window as any).vaultWalletFixture.sends);
+  expect(sends).toHaveLength(2);
+  expect(sends[1][0].to).toBe(p.vault);
+  expect(sends[1][0].data).toBe(encodeFunctionData({ abi: walletVaultAbi, functionName: 'deposit', args: [1000000n, p.account] }));
+});
+test('reload after approved USDC resumes at deposit without another approval', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'approved-start');
+  await expect(page.locator('#status')).toContainText('无需重复授权');
+  await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
+  await page.clock.fastForward(4100);
+  await expect(page.locator('#preview')).toContainText('存入 1 USDC');
+  await expect(page.locator('#send')).toBeDisabled();
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends)).toEqual([]);
+  await page.locator('#connect').click();
+  await page.locator('#prepare').click();
+  await expect(page.locator('#consent')).not.toBeChecked();
+  await page.locator('#consent').check();
+  await page.locator('#send').click();
+  const sends = await page.evaluate(() => (window as any).vaultWalletFixture.sends);
+  expect(sends).toHaveLength(1);
+  expect(sends[0][0].to).toBe(p.vault);
+});
+test('automatic next preparation can be disabled after verification', async ({ page }) => {
+  await page.clock.install();
+  await install(page); await ready(page); await page.locator('#send').click();
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#status')).toContainText('本笔已核验');
+  await page.locator('#auto-check').uncheck();
+  await page.clock.fastForward(4100);
+  await expect(page.locator('#preview')).toBeEmpty();
+  await expect(page.locator('#next-check')).toBeEmpty();
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
 });
 test('changed vault reservation never opens the wallet transaction prompt', async ({ page }) => {

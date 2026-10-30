@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id), wallets = new Map();
 const names = { approve: '批准本次 1 USDC', deposit: '存入 1 USDC', partial: '赎回一半份额', full: '赎回剩余份额', complete: '实测流程完成' };
 let context, quote, provider, account, busy = false, generation = 0, removeObservers = () => {};
-let started = 0, operation = '', nextCheck = 0, checks = 0;
+let started = 0, operation = '', nextCheck = 0, nextPrepare = 0, checks = 0;
 const amount = value => {
   const n = BigInt(value);
   return `${n / 1000000n}.${(n % 1000000n).toString().padStart(6, '0')}`;
@@ -31,14 +31,27 @@ function controls() {
   $('prepare').disabled = busy || !context || !!pending || context.complete;
   $('consent').disabled = busy || !quote;
   $('send').disabled = busy || !provider || !account || !quote || !!pending ||
-    quote.expiresAt <= Date.now() || !$('consent').checked;
+    quote.stage !== context?.stage || quote.expiresAt <= Date.now() || !$('consent').checked;
+  $('prepare').textContent = context?.complete ? '实测流程完成' : `准备：${names[context?.stage] || '下一笔'}`;
+  $('send').textContent = `在 OKX 钱包中确认：${names[quote?.stage || context?.stage] || '这一笔'}`;
+  $('next-action').textContent = busy ? `${operation}，请等待页面结果。` : pending
+    ? '本笔请求尚待核验，请先处理下方记录，不要重复发送。' : context?.complete
+      ? '全部步骤已核验，可导出金库恢复文件。' : !provider || !account
+        ? '请先连接原 OKX 钱包，再继续当前步骤。' : !quote
+          ? `下一步：${names[context?.stage] || '读取实测范围'}。请准备本笔预览。`
+          : quote.expiresAt <= Date.now()
+            ? '本笔预览已到期，请重新准备。'
+            : !$('consent').checked
+              ? `请核对“${names[quote.stage]}”的金额和费用，再勾选本笔确认。`
+              : `已勾选。请点击下方“在 OKX 钱包中确认：${names[quote.stage]}”，然后在扩展中确认。`;
   $('attach').disabled = busy || !pending;
   $('reconcile').disabled = busy || !pending?.hash;
   $('cancel').disabled = busy || !pending || !!pending.hash || !$('cancel-consent').checked;
   $('recheck').disabled = busy || !context?.attempts.some(a => a.status === 'confirmed');
   $('export').disabled = busy || !context;
   $('export-recovery').disabled = busy || !context?.attempts.some(a => a.outcome?.recovery);
-  $('next-check').textContent = nextCheck ? `${Math.max(0, Math.ceil((nextCheck - Date.now()) / 1000))} 秒后继续只读核验，不会自动签名。` : '';
+  const next = nextCheck || nextPrepare;
+  $('next-check').textContent = next ? `${Math.max(0, Math.ceil((next - Date.now()) / 1000))} 秒后${nextCheck ? '继续只读核验' : `自动准备“${names[context?.stage]}”预览`}，不会自动签名。` : '';
   if (started) $('progress').textContent = `${operation}：已等待 ${Math.floor((Date.now() - started) / 1000)} 秒，超时倒计时 ${Math.max(0, 90 - Math.floor((Date.now() - started) / 1000))} 秒。`;
 }
 function render() {
@@ -67,6 +80,13 @@ function render() {
   controls();
 }
 async function refresh() { context = await api('context'); render(); }
+function clearPreview() {
+  quote = null; $('consent').checked = false; $('preview').replaceChildren();
+  $('consent-label').textContent = '确认本次预览的金额、原钱包收款和费用。';
+}
+function schedulePreparation() {
+  nextPrepare = !context.unresolved && !context.complete && $('auto-check').checked ? Date.now() + 3000 : 0;
+}
 async function run(name, action) {
   if (busy) return;
   busy = true; started = Date.now(); operation = name; $('progress').hidden = false; controls();
@@ -77,7 +97,7 @@ async function run(name, action) {
   }
 }
 function invalidate() {
-  generation++; quote = null; provider = null; account = null; $('consent').checked = false;
+  generation++; clearPreview(); provider = null; account = null; nextPrepare = 0;
   $('account').textContent = '请重新连接原钱包'; controls();
 }
 function addWallet(id, name, candidate) {
@@ -118,11 +138,17 @@ $('connect').addEventListener('click', () => run('连接钱包', async () => {
   }
   await walletRead(p, 'eth_requestAccounts'); await assertWallet(p, version);
   provider = p; account = context.policy.account;
-  $('account').textContent = `${selected.name} · ${account}`; status('钱包已匹配，尚未请求交易');
+  $('account').textContent = `${selected.name} · ${account}`;
+  if (!context.unresolved && !context.complete && context.attempts.some(a => a.status === 'confirmed')) {
+    schedulePreparation();
+    status(`钱包已匹配；下一步：${names[context.stage]}。${nextPrepare ? '3 秒后自动准备预览' : '请点击准备按钮'}，无需重复授权。`);
+  } else status('钱包已匹配，尚未请求交易');
 }));
-$('prepare').addEventListener('click', () => run('准备并模拟', async () => {
-  quote = null; $('consent').checked = false; $('preview').replaceChildren();
-  quote = await api('preview', {});
+async function preparePreview() {
+  nextPrepare = 0; clearPreview();
+  const version = generation, prepared = await api('preview', {});
+  if (version !== generation) throw Error('钱包连接已变化，请重新连接并准备');
+  quote = prepared;
   const unit = quote.stage === 'deposit' ? 'spUSDC' : quote.stage === 'approve' ? 'USDC 授权' : 'USDC';
   for (const [label, value] of [['本次操作', names[quote.stage]], ['预计结果', `${amount(quote.output)} ${unit}`],
     ['核验参考下限（非链上最低到账保证）', `${amount(quote.minimumOutput)} ${unit}`],
@@ -131,16 +157,18 @@ $('prepare').addEventListener('click', () => run('准备并模拟', async () => 
     ['原生币转账', '0 OKB'], ['EVM Gas 费用上限', gasCost(quote.maximumGasCostWei)],
     ['预览到期', new Date(quote.expiresAt).toLocaleString()]]) field('preview', label, value);
   $('consent-label').textContent = `我确认未独立审阅的 1 USDC 主网实测，本笔为“${names[quote.stage]}”，金额和原钱包收款如上，EVM Gas 最多 ${gasCost(quote.maximumGasCostWei)}，链特有附加费以钱包显示为准。`;
-  status('模拟通过，请核对本笔金额与费用，然后勾选确认');
-}));
+  status(`“${names[quote.stage]}”模拟通过。请核对金额与费用，勾选后点击“在 OKX 钱包中确认：${names[quote.stage]}”。`);
+}
+$('prepare').addEventListener('click', () => run('准备并模拟', preparePreview));
 $('consent').addEventListener('change', controls);
 $('cancel-consent').addEventListener('change', controls);
 async function reconcile() {
-  nextCheck = 0; checks++;
+  nextCheck = 0; nextPrepare = 0; checks++;
   try {
     const result = await api('reconcile', {});
-    quote = null;
-    status(result.complete ? '全部链上步骤核验通过；可导出恢复文件，并在本地主网界面重新核验。' : '本笔已核验，请准备下一笔。');
+    context = result; clearPreview(); render(); schedulePreparation();
+    status(result.complete ? '全部链上步骤核验通过；可导出恢复文件，并在本地主网界面重新核验。'
+      : `本笔已核验；下一步：${names[result.stage]}。${nextPrepare ? '3 秒后自动准备预览' : '请点击准备按钮'}，仍需逐笔勾选并点击钱包确认。`);
   } catch (error) {
     if (/^(Receipt not finalized|Transaction pending;)/.test(error.message || '') && $('auto-check').checked && checks < 20) {
       nextCheck = Date.now() + 3000;
@@ -174,8 +202,8 @@ $('send').addEventListener('click', () => run('请求钱包并核验', async () 
   await navigator.locks.request('tapeexit-controlled-vault-wallet', { ifAvailable: true }, async lock => {
     if (!lock) throw Error('另一页面正在请求钱包');
     const q = quote, p = provider, version = generation;
-    quote = null;
     if (!q || !p || q.expiresAt <= Date.now() || !$('consent').checked) throw Error('请重新准备并确认预览');
+    nextPrepare = 0; clearPreview();
     await assertWallet(p, version);
     const attempt = await api('reserve', { previewId: q.id, consent: context.policy.consent, maximumGasCostWei: q.maximumGasCostWei });
     if (attempt.status !== 'reserved' || JSON.stringify(attempt.quote) !== JSON.stringify(q) ||
@@ -214,13 +242,21 @@ $('export-recovery').addEventListener('click', () => run('导出恢复文件', a
   if (!attempt) throw Error('尚无核验通过的赎回记录');
   download('tapeexit-spark-vault-recovery.json', attempt.outcome.recovery);
 }));
-$('auto-check').addEventListener('change', () => { if (!$('auto-check').checked) nextCheck = 0; controls(); });
+$('auto-check').addEventListener('change', () => {
+  if (!$('auto-check').checked) { nextCheck = 0; nextPrepare = 0; }
+  controls();
+});
 setInterval(() => {
   controls();
   if (!busy && nextCheck && Date.now() >= nextCheck) { nextCheck = 0; void run('自动核验', reconcile); }
+  else if (!busy && nextPrepare && Date.now() >= nextPrepare) { nextPrepare = 0; void run('自动准备并模拟', preparePreview); }
 }, 1000);
 try {
   await refresh();
   status(context.unresolved ? '存在待核验请求，请先处理，禁止重复发送' : '实测范围已加载，尚未请求签名');
   if (context.attempts.some(a => a.status === 'reserved' && a.hash)) nextCheck = Date.now() + 3000;
+  else if (!context.unresolved && !context.complete && context.attempts.some(a => a.status === 'confirmed')) {
+    schedulePreparation();
+    status(`已保留完成记录；下一步：${names[context.stage]}。请连接原 OKX 钱包继续，无需重复授权。`);
+  }
 } catch { status('无法读取实测范围，停止操作'); }
