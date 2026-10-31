@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-31T08:22:04.537Z",
+  "outcome": {
+    "state": "verified",
+    "task": {
+      "schemaVersion": 1,
+      "protocolId": "spark-spusdc",
+      "chainId": 196,
+      "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+      "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+      "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef"
+    },
+    "block": {
+      "number": "0x473488d",
+      "hash": "0x9ef4553637a90dbe670908c234dcfa5458f06598f30e8cb1b6e7bafd98393657",
+      "timestamp": "0x6ae59e19"
+    },
+    "beforeBlock": {
+      "number": "0x473488c",
+      "hash": "0x2e400d59859beba763a0d2378c6aca88d096e6b0986157e7bfdc00be47e50b16",
+      "timestamp": "0x6ae59e18"
+    },
+    "mode": "redeem",
+    "assets": "500002",
+    "shares": "498084",
+    "remainingShares": "0",
+    "balances": {
+      "before": "514308",
+      "after": "1014310",
+      "delta": "500002",
+      "matches": true
+    },
+    "shareBalance": {
+      "before": "498084",
+      "after": "0",
+      "matches": true
+    },
+    "eventsChecked": true,
+    "safe": true,
+    "finalized": true,
+    "transactionSent": false,
+    "signingApproved": false,
+    "limitations": "Parent and receipt block-end balances corroborate the events, but cannot isolate other activity in the same block. No wallet signing or independent review is implied."
+  },
+  "verificationAttempts": [
+    {
+      "observedAt": "2026-10-31T08:22:04.526Z",
+      "status": "核验完成：USDC 到账、份额销毁、剩余份额及最终确认一致。"
+    }
+  ],
+  "importedRecoveryFile": true,
+  "persistedAfterReload": true,
+  "walletConnected": false,
+  "transactionSent": false,
+  "signingApproved": false
+}

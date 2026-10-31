@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-31T08:30:57.868Z",
+  "status": "RESTRICTED_MAINNET_TEST_FINALIZED",
+  "sourceContextId": "2b8204be5372c6505e758ee2d91739cb1208d780d64eea40fd04298bf6c102db",
+  "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+  "chainId": 196,
+  "transactions": [
+    {
+      "stage": "approve",
+      "hash": "0x4732646974bc12c94e62c3d361f6d280d8c8d8d1c201e8e2d69089e9833981b1",
+      "status": "confirmed",
+      "amount": "1000000",
+      "outcome": {
+        "assets": "0",
+        "shares": "0",
+        "remainingShares": "0",
+        "block": {
+          "number": "0x4723c31",
+          "hash": "0x70cd128cd46a3d21955940bcd663e69db31f6e5f467314444659eaaa1b3684e0",
+          "timestamp": "0x6ae491bd"
+        },
+        "finalized": true,
+        "gasUsed": "55437",
+        "effectiveGasPrice": "20000001"
+      }
+    },
+    {
+      "stage": "deposit",
+      "hash": "0x9fa24ac0a7a71ed3f834b13b45bf02ff3e2a01f9f9074c9715e4cfd500c79fc2",
+      "status": "confirmed",
+      "amount": "1000000",
+      "outcome": {
+        "assets": "1000000",
+        "shares": "996167",
+        "remainingShares": "996167",
+        "block": {
+          "number": "0x4733891",
+          "hash": "0xd9434c5bff562ac394eba901c0e08ab047f2f29ab41d00f5248aaef4cc9f0410",
+          "timestamp": "0x6ae58e1d"
+        },
+        "finalized": true,
+        "gasUsed": "107584",
+        "effectiveGasPrice": "20000001"
+      }
+    },
+    {
+      "stage": "partial",
+      "hash": "0xef317abccd41c1fc709bdf189fa8402c84a2d76c15ad3ee510b7e1daf85c39b5",
+      "status": "confirmed",
+      "amount": "498083",
+      "outcome": {
+        "assets": "500000",
+        "shares": "498083",
+        "remainingShares": "498084",
+        "block": {
+          "number": "0x4734202",
+          "hash": "0x0cc43bb610109fd9e7479f14dff272077c068fd47b514a79e7b7dc2c71b080c0",
+          "timestamp": "0x6ae5978e"
+        },
+        "finalized": true,
+        "recovery": {
+          "schemaVersion": 1,
+          "protocolId": "spark-spusdc",
+          "chainId": 196,
+          "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+          "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+          "hash": "0xef317abccd41c1fc709bdf189fa8402c84a2d76c15ad3ee510b7e1daf85c39b5"
+        },
+        "gasUsed": "85747",
+        "effectiveGasPrice": "20000001"
+      }
+    },
+    {
+      "stage": "full",
+      "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef",
+      "status": "confirmed",
+      "amount": "498084",
+      "outcome": {
+        "assets": "500002",
+        "shares": "498084",
+        "remainingShares": "0",
+        "block": {
+          "number": "0x473488d",
+          "hash": "0x9ef4553637a90dbe670908c234dcfa5458f06598f30e8cb1b6e7bafd98393657",
+          "timestamp": "0x6ae59e19"
+        },
+        "finalized": true,
+        "recovery": {
+          "schemaVersion": 1,
+          "protocolId": "spark-spusdc",
+          "chainId": 196,
+          "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+          "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+          "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef"
+        },
+        "gasUsed": "81592",
+        "effectiveGasPrice": "20000001"
+      }
+    }
+  ],
+  "totalUsdcReturned": "1000002",
+  "assetDecimals": 6,
+  "remainingShares": "0",
+  "remainingWalletConfirmations": 0,
+  "freshRecovery": {
+    "state": "verified",
+    "task": {
+      "schemaVersion": 1,
+      "protocolId": "spark-spusdc",
+      "chainId": 196,
+      "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+      "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+      "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef"
+    },
+    "block": {
+      "number": "0x473488d",
+      "hash": "0x9ef4553637a90dbe670908c234dcfa5458f06598f30e8cb1b6e7bafd98393657",
+      "timestamp": "0x6ae59e19"
+    },
+    "beforeBlock": {
+      "number": "0x473488c",
+      "hash": "0x2e400d59859beba763a0d2378c6aca88d096e6b0986157e7bfdc00be47e50b16",
+      "timestamp": "0x6ae59e18"
+    },
+    "mode": "redeem",
+    "assets": "500002",
+    "shares": "498084",
+    "remainingShares": "0",
+    "balances": {
+      "before": "514308",
+      "after": "1014310",
+      "delta": "500002",
+      "matches": true
+    },
+    "shareBalance": {
+      "before": "498084",
+      "after": "0",
+      "matches": true
+    },
+    "eventsChecked": true,
+    "safe": true,
+    "finalized": true,
+    "transactionSent": false,
+    "signingApproved": false,
+    "limitations": "Parent and receipt block-end balances corroborate the events, but cannot isolate other activity in the same block. No wallet signing or independent review is implied."
+  },
+  "independentReview": "NOT_COMPLETED",
+  "productionSigningApproved": false,
+  "scope": "Original restricted-test journal plus fresh two-source read-only chain verification. The four transactions were signed separately in the original wallet; this packaging tool sends none. Not a post-review production-origin wallet acceptance or an independent security review."
+}

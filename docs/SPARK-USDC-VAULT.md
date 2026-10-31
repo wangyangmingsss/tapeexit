@@ -77,7 +77,12 @@ npx vitest run tests/vault-adapter.test.ts tests/vault-recovery.test.ts tests/va
 
 ## 发布范围
 
-本次交付是源码、Demo 与本地只读应用。已发布的 TapeOut `0.3.0-2597f66` 仍只有 V3，加入金库需要单独构建、上传和逐字节回读。
-生产签名保持关闭：`RELEASE_APPROVED=false`、`SUPPORTED_TOKENS=[]`。没有进行真实扩展钱包赎回或独立安全审阅。
+金库模块已随 TapeOut `0.3.0-f8771a8` 发布。16 个文件、647523 字节完整回读，
+双公网桌面/手机与主入口阻断后的金库恢复均通过，见[发行证据](evidence/published-f8771a8/README.md)。
+
+固定钱包已完成批准、存入 1 USDC、半额赎回、剩余赎回四笔受限真实测试交易，
+全部最终确认。两次合计返回 1.000002 USDC，份额归零；原日志保留且由协调器重新核验。
+这不是公开入口的生产签名验收。生产签名保持关闭：
+`RELEASE_APPROVED=false`、`SUPPORTED_TOKENS=[]`，独立安全审阅尚未完成。
 
 受限真实钱包测试的独立工具、固定 1 USDC 范围与操作步骤见 [金库钱包实测](SPARK-WALLET-TEST.md)。它不向公开应用添加签名入口。

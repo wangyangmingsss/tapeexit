@@ -1,27 +1,33 @@
-# Submission Checklist
+# 参赛提交清单
 
-This is a preparation checklist, not an assertion that entry requirements have been verified.
+本轮材料已围绕实际发行与金库实测更新，报名尚未提交。
 
-| Field | Current Evidence / Required Action |
+| 项目 | 当前材料 |
 | --- | --- |
-| Project | TapeExit, a TapeOut-based X Layer DeFi emergency exit; V3 is the first connected module, with further protocols planned |
-| Source | Public repository `wangyangmingsss/tapeexit`; record exact final commit |
-| Demo | https://wangyangmingsss.github.io/tapeexit/ — asset overview, simulated V3 exit, fault injection, and TapeOut/recovery routes; never present as a live exit |
-| Actual TapeOut entry | Published read-only source `0d9ff56`, `2.2.289.tape`, container `0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D`; exact 10-file readback passed |
-| Public gateways | Four published-version Netlify/Vercel views passed exact file and finalized recovery checks; primary CONNECT block exercised |
-| Current candidate deployment | Published source is pinned separately from later development commits; any future executable candidate needs its own evidence |
-| Actual reviewed assets and wallet task | Earlier restricted USDt0/USDC mainnet exit completed; asset approval and post-review current-release wallet acceptance remain pending |
-| Team and contact | Must be supplied by actual entrants |
-| Rule verification | Reopen the official activity page and actual form; record observation date and relevant requirements |
-| Eligibility/deadline | Not established by code, old notes or this checklist |
-| Users and comparison | Only actual consented records; zero participants is valid to disclose |
-| Independent review | Reviewer attribution, exact commit, findings and retest |
-| Final pitch | 2:50 script is a draft; short generated demo is silent simulation footage |
-| Submission receipt | Keep empty until an actual completed submission returns a receipt |
+| 产品介绍 | [PROJECT.md](PROJECT.md)；中文/英文提交简介 [PITCH.md](PITCH.md) |
+| 源码 | 公开仓库 `wangyangmingsss/tapeexit`；交付包附固定提交源码 |
+| 在线 Demo | https://wangyangmingsss.github.io/tapeexit/，明确使用模拟资产 |
+| TapeOut 实际入口 | `2.2.289.tape`；`0.3.0-f8771a8`；Netlify / Vercel 两公网入口 |
+| 发布证据 | 34 笔上传已完成，16 个文件、647523 字节回读，容器已激活 |
+| 公网恢复 | 四个桌面/手机视图、64 次文件检查；导入文件、刷新重查；主入口阻断后的备用恢复通过 |
+| 真实金库 | 四笔受限交易最终确认；存入 1 USDC，返回 1.000002 USDC，剩余份额 0 |
+| 官方规则 | 2026-10-31 核对实际活动页与报名表；见 [OFFICIAL-RULES.md](OFFICIAL-RULES.md) |
+| Logo | [logo-24.png](logo-24.png)，24 × 24 像素；沿用项目现有标识 |
+| 视频 | 三分钟以内，中文合成旁白；模拟与真实证据分别标记，详情见最终 `video.json` |
+| 报名字段 | [submission-fields.json](submission-fields.json)，缺失个人信息保持空 |
+| 独立审阅 | 尚未完成；生产签名关闭 |
+| 报名回执 | 空，实际提交后才能填写 |
 
-Do not send the entry automatically while required personal/team information is absent. Do not invent a container,
-mainnet hash, partnership, customer, revenue, user quote, independent audit or prize likelihood.
+官方截止为 **2026-12-07 23:59 UTC**，中国标准时间 **2026-12-08 07:59**。
+视频不得超过三分钟。具体表单字段和随时可能更新的要求以实际官方页面为准。
 
-After browser recording and readiness generation, `npm run package:entry` creates a draft archive with source,
-manifest, demo recording, project/script/checklist, digest-checked historical publication evidence and
-submission fields. Historical entry/container are populated; team, current rules, exit hash and receipt stay unset.
+报名仍需本人提供：真实姓名、国籍、团队名、人数及背景、Telegram、项目 X 账号、联系邮箱。
+最终提交会向主办方发送这些信息与项目材料，需要在提交前核对确认。
+不得从浏览器登录状态推断个人资料，不虚构团队、用户、客户、合作、收入或安全审阅。
+
+交付视频是整理好的演示材料，包含标明“隔离模拟”的操作录像和真实公网核验截图。
+它不是钱包签名的连续录像。实际主网哈希、版本、回读与故障演练原始报告一并提供。
+证据总索引见[当前发行](../evidence/published-f8771a8/README.md)。
+
+`npm run package:entry` 仍生成通用 CI 草案。最终参赛证据包使用
+`tools/package-competition-evidence.mjs`，保留真实发行、录像与工具各自的版本。

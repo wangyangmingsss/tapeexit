@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "sourceCommit": "f8771a82c8de048a0ae1d6d41c43d555361dc705",
+  "manifestSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+  "container": "0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D",
+  "tapeName": "2.2.289.tape",
+  "gateways": [
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "operator": "netlify"
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "operator": "vercel"
+    }
+  ]
+}

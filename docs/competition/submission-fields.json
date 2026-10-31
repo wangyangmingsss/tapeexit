@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "status": "PREPARED_NOT_SUBMITTED",
+  "rulesObservedOn": "2026-10-31",
+  "deadlineUtc": "2026-12-07T23:59:00Z",
+  "form": "https://forms.gle/EoDNbxQ65dev1wFd9",
+  "fullName": null,
+  "nationality": null,
+  "teamName": null,
+  "teamSize": null,
+  "teamBackground": null,
+  "telegramHandle": null,
+  "projectXAccount": null,
+  "teamEmail": null,
+  "projectName": "TapeExit",
+  "repository": "https://github.com/wangyangmingsss/tapeexit",
+  "website": "https://wangyangmingsss.github.io/tapeexit/",
+  "tapeOutName": "2.2.289.tape",
+  "gateways": [
+    "https://2-2-289.netlify.app/",
+    "https://2-2-289.vercel.app/"
+  ],
+  "publishedSourceCommit": "f8771a82c8de048a0ae1d6d41c43d555361dc705",
+  "publishedManifestSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+  "pitch": "PITCH.md",
+  "logo": "logo-24.png",
+  "demoVideoUrl": null,
+  "independentReview": "NOT_COMPLETED",
+  "productionSigningApproved": false,
+  "submissionReceipt": null
+}

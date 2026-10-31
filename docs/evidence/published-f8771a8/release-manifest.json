@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "app": "TapeExit",
+  "version": "0.3.0",
+  "sourceCommit": "f8771a82c8de048a0ae1d6d41c43d555361dc705",
+  "sourceDirty": false,
+  "tapekitCommit": "37c617e7e332787c8a32a81e4d7d05a28a06c156",
+  "chainId": 196,
+  "signingApproved": false,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "size": 1078,
+      "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 45122,
+      "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+      "contentType": "application/octet-stream"
+    },
+    {
+      "path": "assets/VaultWorkspace-CtQsned4.css",
+      "size": 2287,
+      "sha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+      "contentType": "text/css"
+    },
+    {
+      "path": "assets/VaultWorkspace-DG1yHGXA.js",
+      "size": 21549,
+      "sha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/index-BPPGHgaC.js",
+      "size": 321849,
+      "sha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/index-CHL79GPB.css",
+      "size": 25259,
+      "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+      "contentType": "text/css"
+    },
+    {
+      "path": "assets/number-DhCthRxc.js",
+      "size": 1116,
+      "sha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/protocol-DIrrIQ1-.js",
+      "size": 166539,
+      "sha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/recovery-outcome-CvTEJoLd.js",
+      "size": 3164,
+      "sha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "assets/token-id-DVFrjuZZ.js",
+      "size": 53466,
+      "sha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+      "contentType": "text/javascript"
+    },
+    {
+      "path": "icon.png",
+      "size": 410,
+      "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+      "contentType": "image/png"
+    },
+    {
+      "path": "index.html",
+      "size": 658,
+      "sha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "release-info.json",
+      "size": 215,
+      "sha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+      "contentType": "application/json"
+    },
+    {
+      "path": "tapeexit-icon.png",
+      "size": 1282,
+      "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+      "contentType": "image/png"
+    },
+    {
+      "path": "xlayer.png",
+      "size": 313,
+      "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+      "contentType": "image/png"
+    }
+  ]
+}

@@ -1,6 +1,37 @@
 # Published Gateway Acceptance
 
-## Current Release: 0.3.0-2597f66
+## Current Release: 0.3.0-f8771a8
+
+Completed on 2026-10-31 at 08:22 UTC:
+<https://github.com/wangyangmingsss/tapeexit/actions/runs/41184159042>.
+
+- Application source: `f8771a82c8de048a0ae1d6d41c43d555361dc705`.
+- Verifier source: `d353f74de094db111737ad4417338d7744501b92`.
+- Manifest: `4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672`.
+- Publication: 34 confirmed uploads, zero remaining; no duplicate activation.
+- Exact chain readback: 16 files / 647523 bytes, live container.
+- Evidence: [published-f8771a8](evidence/published-f8771a8/README.md).
+
+Fresh desktop (1440 x 1000) and mobile (390 x 844) Chromium contexts at both
+public origins matched all 16 files, totaling 64 checks. Tape identity, activation,
+stores, same-origin Service Worker and usable read-only layout passed.
+
+All four views imported the existing Spark full-redemption recovery file,
+reloaded the application, checked that only the hints persisted, then obtained
+and exported fresh finalized chain verification: 0.500002 USDC received,
+0.498084 spUSDC burned and zero remaining shares. Both Vercel views first
+demonstrated Netlify HTTPS CONNECT failure while the proxy continued blocking
+the primary hostname, including Service Worker connections.
+
+The existing bootstrap files loaded the new chain application without another
+hosting deployment. No wallet was connected or transaction sent during these
+checks. The original restricted wallet journal separately confirms all four
+test transactions and total returns of 1.000002 USDC.
+
+The earlier run `41183703316` stopped while finality was pending. It was rerun
+after real finality arrived; no success flag was substituted.
+
+## Previous Release: 0.3.0-2597f66
 
 The uploaded release passed on 2026-10-30 at 11:14 UTC.
 
@@ -72,18 +103,19 @@ bytes were unchanged.
 
 ## Repeat The Check
 
-Run `Verify public TapeExit gateways` with `release=published`, or:
+Run `Verify public TapeExit gateways` with `release=published, protocol=spark`, or:
 
 ```sh
 npm ci
 npm run build:gateway
 npx playwright install --with-deps chromium
-npm run verify:live-gateway -- docs/published-gateway-profile.json docs/gateway-recovery-task-67042.json
+npm run verify:live-gateway -- docs/published-gateway-profile.json docs/gateway-recovery-task-spark.json
 ```
 
 `published` checks the fixed uploaded release. `candidate` rebuilds the selected
 Git ref, so it matches an existing publication only when that ref identifies the
 exact uploaded application. `historical` checks the original historical profile.
+Choose `protocol=v3` to recheck the earlier V3 transaction against the current release.
 
 ## Remaining Gate
 

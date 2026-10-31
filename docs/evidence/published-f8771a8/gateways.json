@@ -1,0 +1,3236 @@
+{
+  "schemaVersion": 1,
+  "chainId": 196,
+  "sourceCommit": "f8771a82c8de048a0ae1d6d41c43d555361dc705",
+  "manifestSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+  "container": "0x5A8aE6857FD40df5c7dCa7F378e4Cc74Ff58e59D",
+  "tapeName": "2.2.289.tape",
+  "gateways": [
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "operator": "netlify",
+      "releaseBytesChecked": true,
+      "filesChecked": 16,
+      "status": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f44",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 8,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 789,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 21,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 218,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 128,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 10,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 290,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "blockedPrimaryConnections": 0
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "operator": "vercel",
+      "releaseBytesChecked": true,
+      "filesChecked": 16,
+      "status": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f70",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 14,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 464,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 12,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 210,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 138,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 14,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 291,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "blockedPrimaryConnections": 2
+    }
+  ],
+  "verifierSourceCommit": "d353f74de094db111737ad4417338d7744501b92",
+  "observedAt": "2026-10-31T08:20:29.970Z",
+  "status": "TWO_GATEWAYS_CHECKED",
+  "primaryBlockedDuringRecovery": true,
+  "walletTested": false,
+  "signingApproved": false,
+  "recoveryTask": {
+    "protocolId": "spark-spusdc",
+    "recovery": {
+      "schemaVersion": 1,
+      "protocolId": "spark-spusdc",
+      "chainId": 196,
+      "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+      "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+      "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef"
+    },
+    "assets": "500002",
+    "shares": "498084",
+    "remainingShares": "0"
+  },
+  "recoveryTaskCompleted": true,
+  "bootstrap": [
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/blocklist.txt",
+      "status": 200,
+      "contentType": "text/plain; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "83bd48e8ac113a0a5522039cca734444d72296a6af4210cf7a9fe67d23f6e9d6",
+      "bytes": 171
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/boot.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "a4cede78a1e486a17158ca797761871bedb35b1f65cb36f9d48af9d1d725e50a",
+      "bytes": 8685
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/config.json",
+      "status": 200,
+      "contentType": "application/json",
+      "exactMatch": true,
+      "sha256": "531801f059fc1aea6f40d759164811d44df87e203d3a3b1f85977e031f20f7d2",
+      "bytes": 347
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/abi.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "bf4aaadced9f7ffb0696fbf3e6874191d1a0d727d15153da5ba5b651aa472b0f",
+      "bytes": 4388
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/cache.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "beefe9ffceaa0e8dce1dbf2e0f58302bd9401472f20680798a281e3ded33f868",
+      "bytes": 6791
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/config.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "b1ce5fe81f51f4f99e3ed95ec0e55e6f45dbc1f369b8996cc64bc7f15bd70849",
+      "bytes": 12396
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/i18n.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "e8e69c599d3ec09c9677e7cac5d2758b296203b3a2346e6cd0ee48e948cdc745",
+      "bytes": 6465
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/identity.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "55f72cded54e8cfff6ce258fa54f967ea209106a23309e598d19b6d281f7da84",
+      "bytes": 9376
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/index.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "71421dc9cd49f76ee68f23f599c698b3b7a4069521bb7c3a1db7de8b0e4e241b",
+      "bytes": 1192
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/keccak.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "831ab151a6c914aad6bed7e3974a9eb65bf559dbaf81a1b972cc33f8b923a295",
+      "bytes": 3119
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/kernel.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "ea3fa7436d8c2a2876002a56ca50a90c03df68cbca2ccae2239dd7801288c8bd",
+      "bytes": 29552
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/name.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "724e2432b230f8e64965fde6ec547fe7da81a207563d6e6dde95ba2c50ad08c5",
+      "bytes": 5431
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/path.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "f1445206eec87ca27b4a3f47d6c308a19426e4afdb8d99af8345a3ece7d4ce02",
+      "bytes": 1705
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/purity.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "c278952aa706295748ae3ba817919234a9ae65a663af789373828495e18be80c",
+      "bytes": 3696
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/rpc.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "a54cab19263673d17752f9ea4a96bab2c52d8361c46cac17c440cb4360db2fea",
+      "bytes": 20885
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/selectors.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "0b798418fb9eb29aad0d0be7caa01bca0439bc61fa833ac9c1f4c41155527ede",
+      "bytes": 2073
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/kernel/sha.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "566c90e9654a9baab40bd78ba04f74ea454b37907b79015b36586108b31db78a",
+      "bytes": 560
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/pages.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "382440e60eb80dbd792cfdea5f50c845879bfb2d3c64c58bbc1cfd64c53102e2",
+      "bytes": 17657
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/policy.html",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "exactMatch": false,
+      "sha256": "d35649f17ce7044206f0b83cebe5fdb548b1709d26ef7fe00a520c06372f0f18",
+      "bytes": 4942
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": ".tape/serve.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "82b57f8987434a34ef51208df03d9aa54234b879b647aa5de181eb387f2af3d1",
+      "bytes": 4580
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": "TAPEKIT-LICENSE.txt",
+      "status": 200,
+      "contentType": "text/plain; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "49dfa6c15db4cd2b953d5f88e67428b8f04721f13eedd68f00ccdc7259f341a8",
+      "bytes": 1072
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": "index.html",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "exactMatch": false,
+      "sha256": "da1b6872235b870f7d4e64852190667af5cabaf565d9b91879056b118c237041",
+      "bytes": 3352
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": "sw.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=UTF-8",
+      "exactMatch": true,
+      "sha256": "affabe80d05ddb974b4cc9fce81e973255dfdc9b1c653740f7dbc99db3d8ab72",
+      "bytes": 17105
+    },
+    {
+      "origin": "https://2-2-289.netlify.app",
+      "path": "tapeexit-gateway.json",
+      "status": 200,
+      "contentType": "application/json",
+      "exactMatch": true,
+      "sha256": "bf8b31820656a0df8abd7116f8b5befb14a095b671a2b8f37583e08cc1aef6a6",
+      "bytes": 558
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/blocklist.txt",
+      "status": 200,
+      "contentType": "text/plain; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "83bd48e8ac113a0a5522039cca734444d72296a6af4210cf7a9fe67d23f6e9d6",
+      "bytes": 171
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/boot.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "a4cede78a1e486a17158ca797761871bedb35b1f65cb36f9d48af9d1d725e50a",
+      "bytes": 8685
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/config.json",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "531801f059fc1aea6f40d759164811d44df87e203d3a3b1f85977e031f20f7d2",
+      "bytes": 347
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/abi.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "bf4aaadced9f7ffb0696fbf3e6874191d1a0d727d15153da5ba5b651aa472b0f",
+      "bytes": 4388
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/cache.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "beefe9ffceaa0e8dce1dbf2e0f58302bd9401472f20680798a281e3ded33f868",
+      "bytes": 6791
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/config.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "b1ce5fe81f51f4f99e3ed95ec0e55e6f45dbc1f369b8996cc64bc7f15bd70849",
+      "bytes": 12396
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/i18n.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "e8e69c599d3ec09c9677e7cac5d2758b296203b3a2346e6cd0ee48e948cdc745",
+      "bytes": 6465
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/identity.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "55f72cded54e8cfff6ce258fa54f967ea209106a23309e598d19b6d281f7da84",
+      "bytes": 9376
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/index.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "71421dc9cd49f76ee68f23f599c698b3b7a4069521bb7c3a1db7de8b0e4e241b",
+      "bytes": 1192
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/keccak.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "831ab151a6c914aad6bed7e3974a9eb65bf559dbaf81a1b972cc33f8b923a295",
+      "bytes": 3119
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/kernel.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "ea3fa7436d8c2a2876002a56ca50a90c03df68cbca2ccae2239dd7801288c8bd",
+      "bytes": 29552
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/name.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "724e2432b230f8e64965fde6ec547fe7da81a207563d6e6dde95ba2c50ad08c5",
+      "bytes": 5431
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/path.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "f1445206eec87ca27b4a3f47d6c308a19426e4afdb8d99af8345a3ece7d4ce02",
+      "bytes": 1705
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/purity.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "c278952aa706295748ae3ba817919234a9ae65a663af789373828495e18be80c",
+      "bytes": 3696
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/rpc.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "a54cab19263673d17752f9ea4a96bab2c52d8361c46cac17c440cb4360db2fea",
+      "bytes": 20885
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/selectors.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "0b798418fb9eb29aad0d0be7caa01bca0439bc61fa833ac9c1f4c41155527ede",
+      "bytes": 2073
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/kernel/sha.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "566c90e9654a9baab40bd78ba04f74ea454b37907b79015b36586108b31db78a",
+      "bytes": 560
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/pages.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "382440e60eb80dbd792cfdea5f50c845879bfb2d3c64c58bbc1cfd64c53102e2",
+      "bytes": 17657
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/policy.html",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "9eef5fbab55837d35e622c4f42bcf263129458a0e9767c0974a66a4ce141d934",
+      "bytes": 4407
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": ".tape/serve.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "82b57f8987434a34ef51208df03d9aa54234b879b647aa5de181eb387f2af3d1",
+      "bytes": 4580
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": "TAPEKIT-LICENSE.txt",
+      "status": 200,
+      "contentType": "text/plain; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "49dfa6c15db4cd2b953d5f88e67428b8f04721f13eedd68f00ccdc7259f341a8",
+      "bytes": 1072
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": "index.html",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "3cae50fd41819c41851cc8fe28d07d2f3c686298571194857033ac1d61da1941",
+      "bytes": 2817
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": "sw.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "affabe80d05ddb974b4cc9fce81e973255dfdc9b1c653740f7dbc99db3d8ab72",
+      "bytes": 17105
+    },
+    {
+      "origin": "https://2-2-289.vercel.app",
+      "path": "tapeexit-gateway.json",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "exactMatch": true,
+      "sha256": "bf8b31820656a0df8abd7116f8b5befb14a095b671a2b8f37583e08cc1aef6a6",
+      "bytes": 558
+    }
+  ],
+  "views": [
+    {
+      "name": "desktop",
+      "origin": "https://2-2-289.netlify.app",
+      "operator": "netlify",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "contentType": "application/octet-stream",
+          "size": 1078,
+          "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "observedSha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1078",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "contentType": "application/octet-stream",
+          "size": 45122,
+          "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "observedSha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "45122",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-CtQsned4.css",
+          "contentType": "text/css",
+          "size": 2287,
+          "sha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "observedSha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "2287",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-DG1yHGXA.js",
+          "contentType": "text/javascript",
+          "size": 21549,
+          "sha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "observedSha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "21549",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-BPPGHgaC.js",
+          "contentType": "text/javascript",
+          "size": 321849,
+          "sha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "observedSha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "321849",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-CHL79GPB.css",
+          "contentType": "text/css",
+          "size": 25259,
+          "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "observedSha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "25259",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/number-DhCthRxc.js",
+          "contentType": "text/javascript",
+          "size": 1116,
+          "sha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "observedSha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1116",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/protocol-DIrrIQ1-.js",
+          "contentType": "text/javascript",
+          "size": 166539,
+          "sha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "observedSha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "166539",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/recovery-outcome-CvTEJoLd.js",
+          "contentType": "text/javascript",
+          "size": 3164,
+          "sha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "observedSha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3164",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/token-id-DVFrjuZZ.js",
+          "contentType": "text/javascript",
+          "size": 53466,
+          "sha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "observedSha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "53466",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "icon.png",
+          "contentType": "image/png",
+          "size": 410,
+          "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "observedSha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "410",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "index.html",
+          "contentType": "text/html; charset=utf-8",
+          "size": 658,
+          "sha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "observedSha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "658",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/html; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-info.json",
+          "contentType": "application/json",
+          "size": 215,
+          "sha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "observedSha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "215",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "tapeexit-icon.png",
+          "contentType": "image/png",
+          "size": 1282,
+          "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "observedSha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1282",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "xlayer.png",
+          "contentType": "image/png",
+          "size": 313,
+          "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "observedSha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "313",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-manifest.json",
+          "size": 3216,
+          "sha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "contentType": "application/json",
+          "observedSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3216",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f44",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/.tape/status?json=1",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "controller": "https://2-2-289.netlify.app/sw.js",
+      "runtime": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f44",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 8,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 789,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 21,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 218,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 128,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 10,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 290,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440
+      },
+      "recoveryTask": {
+        "status": "FINALIZED_READ_ONLY_RECOVERY_MATCHED",
+        "protocolId": "spark-spusdc",
+        "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef",
+        "importedRecoveryFile": true,
+        "persistedAfterReload": true,
+        "walletConnected": false,
+        "transactionSent": false,
+        "attempts": [
+          {
+            "observedAt": "2026-10-31T08:20:55.490Z",
+            "status": "核验完成：USDC 到账、份额销毁、剩余份额及最终确认一致。"
+          }
+        ]
+      },
+      "blockedPrimaryConnections": 0,
+      "status": "PINNED_RELEASE_BYTES_CHECKED"
+    },
+    {
+      "name": "mobile",
+      "origin": "https://2-2-289.netlify.app",
+      "operator": "netlify",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "contentType": "application/octet-stream",
+          "size": 1078,
+          "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "observedSha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1078",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "contentType": "application/octet-stream",
+          "size": 45122,
+          "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "observedSha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "45122",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-CtQsned4.css",
+          "contentType": "text/css",
+          "size": 2287,
+          "sha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "observedSha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "2287",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-DG1yHGXA.js",
+          "contentType": "text/javascript",
+          "size": 21549,
+          "sha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "observedSha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "21549",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-BPPGHgaC.js",
+          "contentType": "text/javascript",
+          "size": 321849,
+          "sha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "observedSha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "321849",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-CHL79GPB.css",
+          "contentType": "text/css",
+          "size": 25259,
+          "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "observedSha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "25259",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/number-DhCthRxc.js",
+          "contentType": "text/javascript",
+          "size": 1116,
+          "sha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "observedSha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1116",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/protocol-DIrrIQ1-.js",
+          "contentType": "text/javascript",
+          "size": 166539,
+          "sha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "observedSha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "166539",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/recovery-outcome-CvTEJoLd.js",
+          "contentType": "text/javascript",
+          "size": 3164,
+          "sha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "observedSha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3164",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/token-id-DVFrjuZZ.js",
+          "contentType": "text/javascript",
+          "size": 53466,
+          "sha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "observedSha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "53466",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "icon.png",
+          "contentType": "image/png",
+          "size": 410,
+          "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "observedSha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "410",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "index.html",
+          "contentType": "text/html; charset=utf-8",
+          "size": 658,
+          "sha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "observedSha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "658",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/html; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-info.json",
+          "contentType": "application/json",
+          "size": 215,
+          "sha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "observedSha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "215",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "tapeexit-icon.png",
+          "contentType": "image/png",
+          "size": 1282,
+          "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "observedSha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1282",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "xlayer.png",
+          "contentType": "image/png",
+          "size": 313,
+          "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "observedSha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "313",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-manifest.json",
+          "size": 3216,
+          "sha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "contentType": "application/json",
+          "observedSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3216",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f58",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/.tape/status?json=1",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/.tape/status?json=1",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.netlify.app/index.html",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "controller": "https://2-2-289.netlify.app/sw.js",
+      "runtime": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f58",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 19,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 215,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 8,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 411,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 131,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 12,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 296,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      "recoveryTask": {
+        "status": "FINALIZED_READ_ONLY_RECOVERY_MATCHED",
+        "protocolId": "spark-spusdc",
+        "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef",
+        "importedRecoveryFile": true,
+        "persistedAfterReload": true,
+        "walletConnected": false,
+        "transactionSent": false,
+        "attempts": [
+          {
+            "observedAt": "2026-10-31T08:21:17.926Z",
+            "status": "核验完成：USDC 到账、份额销毁、剩余份额及最终确认一致。"
+          }
+        ]
+      },
+      "blockedPrimaryConnections": 0,
+      "status": "PINNED_RELEASE_BYTES_CHECKED"
+    },
+    {
+      "name": "desktop",
+      "origin": "https://2-2-289.vercel.app",
+      "operator": "vercel",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "contentType": "application/octet-stream",
+          "size": 1078,
+          "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "observedSha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1078",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "contentType": "application/octet-stream",
+          "size": 45122,
+          "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "observedSha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "45122",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-CtQsned4.css",
+          "contentType": "text/css",
+          "size": 2287,
+          "sha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "observedSha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "2287",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-DG1yHGXA.js",
+          "contentType": "text/javascript",
+          "size": 21549,
+          "sha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "observedSha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "21549",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-BPPGHgaC.js",
+          "contentType": "text/javascript",
+          "size": 321849,
+          "sha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "observedSha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "321849",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-CHL79GPB.css",
+          "contentType": "text/css",
+          "size": 25259,
+          "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "observedSha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "25259",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/number-DhCthRxc.js",
+          "contentType": "text/javascript",
+          "size": 1116,
+          "sha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "observedSha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1116",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/protocol-DIrrIQ1-.js",
+          "contentType": "text/javascript",
+          "size": 166539,
+          "sha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "observedSha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "166539",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/recovery-outcome-CvTEJoLd.js",
+          "contentType": "text/javascript",
+          "size": 3164,
+          "sha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "observedSha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3164",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/token-id-DVFrjuZZ.js",
+          "contentType": "text/javascript",
+          "size": 53466,
+          "sha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "observedSha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "53466",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "icon.png",
+          "contentType": "image/png",
+          "size": 410,
+          "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "observedSha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "410",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "index.html",
+          "contentType": "text/html; charset=utf-8",
+          "size": 658,
+          "sha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "observedSha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "658",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/html; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-info.json",
+          "contentType": "application/json",
+          "size": 215,
+          "sha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "observedSha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "215",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "tapeexit-icon.png",
+          "contentType": "image/png",
+          "size": 1282,
+          "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "observedSha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1282",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "xlayer.png",
+          "contentType": "image/png",
+          "size": 313,
+          "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "observedSha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "313",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-manifest.json",
+          "size": 3216,
+          "sha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "contentType": "application/json",
+          "observedSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3216",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f70",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/.tape/status?json=1",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "primaryBlockExercised": true,
+      "primaryProbe": {
+        "origin": "https://2-2-289.netlify.app",
+        "error": "page.goto: net::ERR_TUNNEL_CONNECTION_FAILED at https://2-2-289.netlify.app/\nCall log:\n  - navigating to \"https://2-2-289.netlify.app/\", waiting until \"load\"\n",
+        "blockedConnections": 1
+      },
+      "controller": "https://2-2-289.vercel.app/sw.js",
+      "runtime": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f70",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 14,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 464,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 12,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 210,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 138,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 14,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 291,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440
+      },
+      "recoveryTask": {
+        "status": "FINALIZED_READ_ONLY_RECOVERY_MATCHED",
+        "protocolId": "spark-spusdc",
+        "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef",
+        "importedRecoveryFile": true,
+        "persistedAfterReload": true,
+        "walletConnected": false,
+        "transactionSent": false,
+        "attempts": [
+          {
+            "observedAt": "2026-10-31T08:21:41.562Z",
+            "status": "核验完成：USDC 到账、份额销毁、剩余份额及最终确认一致。"
+          }
+        ]
+      },
+      "blockedPrimaryConnections": 1,
+      "status": "PINNED_RELEASE_BYTES_CHECKED"
+    },
+    {
+      "name": "mobile",
+      "origin": "https://2-2-289.vercel.app",
+      "operator": "vercel",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "contentType": "application/octet-stream",
+          "size": 1078,
+          "sha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "observedSha256": "e06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1078",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "contentType": "application/octet-stream",
+          "size": 45122,
+          "sha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "observedSha256": "29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "45122",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/octet-stream",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-CtQsned4.css",
+          "contentType": "text/css",
+          "size": 2287,
+          "sha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "observedSha256": "d695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "2287",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/VaultWorkspace-DG1yHGXA.js",
+          "contentType": "text/javascript",
+          "size": 21549,
+          "sha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "observedSha256": "57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "21549",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-BPPGHgaC.js",
+          "contentType": "text/javascript",
+          "size": 321849,
+          "sha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "observedSha256": "86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "321849",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/index-CHL79GPB.css",
+          "contentType": "text/css",
+          "size": 25259,
+          "sha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "observedSha256": "306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "25259",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/css; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/number-DhCthRxc.js",
+          "contentType": "text/javascript",
+          "size": 1116,
+          "sha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "observedSha256": "361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1116",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/protocol-DIrrIQ1-.js",
+          "contentType": "text/javascript",
+          "size": 166539,
+          "sha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "observedSha256": "54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "166539",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/recovery-outcome-CvTEJoLd.js",
+          "contentType": "text/javascript",
+          "size": 3164,
+          "sha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "observedSha256": "34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3164",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "assets/token-id-DVFrjuZZ.js",
+          "contentType": "text/javascript",
+          "size": 53466,
+          "sha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "observedSha256": "ad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "53466",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/javascript; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "icon.png",
+          "contentType": "image/png",
+          "size": 410,
+          "sha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "observedSha256": "033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "410",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "index.html",
+          "contentType": "text/html; charset=utf-8",
+          "size": 658,
+          "sha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "observedSha256": "5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "658",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "text/html; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-info.json",
+          "contentType": "application/json",
+          "size": 215,
+          "sha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "observedSha256": "2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "215",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "tapeexit-icon.png",
+          "contentType": "image/png",
+          "size": 1282,
+          "sha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "observedSha256": "2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "1282",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "xlayer.png",
+          "contentType": "image/png",
+          "size": 313,
+          "sha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "observedSha256": "ab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "313",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "image/png",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        },
+        {
+          "path": "release-manifest.json",
+          "size": 3216,
+          "sha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "contentType": "application/json",
+          "observedSha256": "4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+          "headers": {
+            "cache-control": "no-cache",
+            "content-length": "3216",
+            "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://xlayer.drpc.org; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; report-uri /.tape/csp-report",
+            "content-type": "application/json; charset=utf-8",
+            "referrer-policy": "no-referrer",
+            "x-content-type-options": "nosniff",
+            "x-tape-block": "0x4734f84",
+            "x-tape-container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+            "x-tape-mode": "client",
+            "x-tape-name": "2.2.289.tape",
+            "x-tape-sha256": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672",
+            "x-tape-status": "ok",
+            "x-tape-verified": "1"
+          }
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/.tape/status?json=1",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://2-2-289.vercel.app/index.html",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "primaryBlockExercised": true,
+      "primaryProbe": {
+        "origin": "https://2-2-289.netlify.app",
+        "error": "page.goto: net::ERR_TUNNEL_CONNECTION_FAILED at https://2-2-289.netlify.app/\nCall log:\n  - navigating to \"https://2-2-289.netlify.app/\", waiting until \"load\"\n",
+        "blockedConnections": 1
+      },
+      "controller": "https://2-2-289.vercel.app/sw.js",
+      "runtime": {
+        "version": "0.3.0",
+        "name": "2.2.289.tape",
+        "short": "2.2.289",
+        "label": "#2@2.289",
+        "chainId": 196,
+        "network": "xlayer",
+        "status": "ok",
+        "url": "tape://2.2.289.tape/",
+        "cpu": "289",
+        "cpuName": "my 123",
+        "holder": "0x101fd328a0b2fd9e853909651dab1c0b55947c03",
+        "container": "0x5a8ae6857fd40df5c7dca7f378e4cc74ff58e59d",
+        "block": "0x4734f84",
+        "paid": true,
+        "paidUntil": "1795783111",
+        "paidVia": "name",
+        "stores": {
+          "ok": true,
+          "stores": [
+            {
+              "address": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+              "impl": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+              "expected": [
+                "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f"
+              ],
+              "ok": true
+            },
+            {
+              "address": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+              "impl": "0x5ebf29b80789e548907c707530c3c7607c4347df",
+              "expected": [
+                "0x5ebf29b80789e548907c707530c3c7607c4347df"
+              ],
+              "ok": true
+            }
+          ]
+        },
+        "showable": true,
+        "devPreview": false,
+        "files": [
+          {
+            "path": "index.html",
+            "size": 658,
+            "status": "ok",
+            "sha": "0x5f4d6d0b2f052fa65a11abf714054b61d64f142286964651a985bdb4ec1d562d"
+          },
+          {
+            "path": "assets/index-CHL79GPB.css",
+            "size": 25259,
+            "status": "ok",
+            "sha": "0x306aefa9efcff89aae46c1da933ec030b6d8db821250f86cc951e574a84efa9a"
+          },
+          {
+            "path": "assets/index-BPPGHgaC.js",
+            "size": 321849,
+            "status": "ok",
+            "sha": "0x86eff4eb4d7505471b374b0cc789b676e19879ca6dc4a77c35877f8cea12d710"
+          },
+          {
+            "path": "assets/token-id-DVFrjuZZ.js",
+            "size": 53466,
+            "status": "ok",
+            "sha": "0xad2e26f57a357588aa1f747a9350041136803100121187bff70342935768aa22"
+          },
+          {
+            "path": "xlayer.png",
+            "size": 313,
+            "status": "ok",
+            "sha": "0xab96af1188d19680397424b2df95a773e6037a77a7e056d3ee07fc7fcf712923"
+          },
+          {
+            "path": "tapeexit-icon.png",
+            "size": 1282,
+            "status": "ok",
+            "sha": "0x2ffbaa29c3d15430d1b2c715518ee0e8f06d1e5a5b7b264aab47a6521b2ebda9"
+          },
+          {
+            "path": "release-manifest.json",
+            "size": 3216,
+            "status": "ok",
+            "sha": "0x4ed49b70d6352065ca402b101b5d8c3dfe420072d6aefd52bcfce1e07f800672"
+          },
+          {
+            "path": "LICENSE.txt",
+            "size": 1078,
+            "status": "ok",
+            "sha": "0xe06bef2e04b87de3e4418425f42359ca321bf8d32cdb5c0c2e5819ce8b609d40"
+          },
+          {
+            "path": "THIRD-PARTY-NOTICES.txt",
+            "size": 45122,
+            "status": "ok",
+            "sha": "0x29fd45720d25e1cc410ecc8cadc1aec584feebc115c83ddf68f2d5d6af214c32"
+          },
+          {
+            "path": "assets/VaultWorkspace-CtQsned4.css",
+            "size": 2287,
+            "status": "ok",
+            "sha": "0xd695c9a5d6464221019ba9eee9cb11a4a0e41ac54a7f31375fc0ce60dc15deee"
+          },
+          {
+            "path": "assets/VaultWorkspace-DG1yHGXA.js",
+            "size": 21549,
+            "status": "ok",
+            "sha": "0x57a0e76c298e96a87adac9b011b9086dbe65eb5d2c40398da18ba92d1af9eef7"
+          },
+          {
+            "path": "assets/number-DhCthRxc.js",
+            "size": 1116,
+            "status": "ok",
+            "sha": "0x361ad18986395d7f64d923221b47caaee6da160b035ff14c9e59901d538c9b66"
+          },
+          {
+            "path": "assets/protocol-DIrrIQ1-.js",
+            "size": 166539,
+            "status": "ok",
+            "sha": "0x54ebaceaa93319d582f93a6c0bf757fce55dcef34ffcc001651b1e6f10a36954"
+          },
+          {
+            "path": "assets/recovery-outcome-CvTEJoLd.js",
+            "size": 3164,
+            "status": "ok",
+            "sha": "0x34548500855dbf09ca0a65d07dc1d344d593bfb5b4f5fce703d4fe7ec1a23bcb"
+          },
+          {
+            "path": "icon.png",
+            "size": 410,
+            "status": "ok",
+            "sha": "0x033d2c11086f847db101b164b6fd792718e24a05648c1193c1b5c7b15908b99d"
+          },
+          {
+            "path": "release-info.json",
+            "size": 215,
+            "status": "ok",
+            "sha": "0x2d4f7dc3b28b66ec08745c0b0fa16d1d9581afdcb50c7cd19c703624dede28f8"
+          }
+        ],
+        "external": [],
+        "blocked": [],
+        "offchain": [],
+        "nodes": {
+          "rpc.xlayer.tech": {
+            "ok": 13,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 197,
+            "cooldownUntil": 0
+          },
+          "xlayerrpc.okx.com": {
+            "ok": 10,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 212,
+            "cooldownUntil": 0
+          },
+          "xlayer.drpc.org": {
+            "ok": 41,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 129,
+            "cooldownUntil": 0
+          },
+          "196.rpc.thirdweb.com": {
+            "ok": 16,
+            "fail": 0,
+            "rateLimited": 0,
+            "lastMs": 290,
+            "cooldownUntil": 0
+          }
+        },
+        "quorum": 2,
+        "nodeHosts": [
+          "rpc.xlayer.tech",
+          "xlayerrpc.okx.com",
+          "xlayer.drpc.org",
+          "196.rpc.thirdweb.com"
+        ],
+        "cache": "idb",
+        "settings": {
+          "userBlocklist": [],
+          "locale": null
+        }
+      },
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      "recoveryTask": {
+        "status": "FINALIZED_READ_ONLY_RECOVERY_MATCHED",
+        "protocolId": "spark-spusdc",
+        "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef",
+        "importedRecoveryFile": true,
+        "persistedAfterReload": true,
+        "walletConnected": false,
+        "transactionSent": false,
+        "attempts": [
+          {
+            "observedAt": "2026-10-31T08:22:04.526Z",
+            "status": "核验完成：USDC 到账、份额销毁、剩余份额及最终确认一致。"
+          }
+        ]
+      },
+      "blockedPrimaryConnections": 2,
+      "status": "PINNED_RELEASE_BYTES_CHECKED"
+    }
+  ],
+  "scope": "Two public gateway origins, fresh desktop/mobile Chromium contexts and exact publication bytes pinned by the selected profile. Netlify HTTPS CONNECT is blocked during Vercel checks, including Service Worker traffic. Does not authenticate gateway operator independence or upstream worker code, test wallet extension behavior, approve signing or protect against future origin changes.",
+  "blockMechanism": "HTTPS_CONNECT_PROXY",
+  "completedAt": "2026-10-31T08:22:04.591Z"
+}
