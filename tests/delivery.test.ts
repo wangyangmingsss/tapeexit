@@ -19,6 +19,11 @@ it('packages one clean source and rejects mixed channels or altered recovery fil
     await save('vercel.json', {});
     await writeFile(resolve(directory, 'README.md'), 'TapeExit');
     await writeFile(resolve(directory, 'docs/RELEASE-CHANNELS.md'), 'Release fixture');
+    await cp(resolve('docs/published-gateway-profile.json'),
+      resolve(directory, 'docs/published-gateway-profile.json'));
+    const publishedProfile = JSON.parse(await readFile(resolve(directory, 'docs/published-gateway-profile.json'), 'utf8'));
+    const evidenceDirectory = `docs/evidence/published-${publishedProfile.sourceCommit.slice(0, 7)}`;
+    await cp(resolve(evidenceDirectory), resolve(directory, evidenceDirectory), { recursive: true });
     command('git', ['init', '-q']);
     command('git', ['add', '.']);
     command('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'fixture']);
@@ -43,6 +48,8 @@ it('packages one clean source and rejects mixed channels or altered recovery fil
     const status = JSON.parse(await readFile(resolve(directory, 'release-artifacts/delivery/release-status.json'), 'utf8'));
     expect(status.sourceCommit).toBe(sourceCommit);
     expect(status.channels.gateways.status).toBe('PREPARED_NOT_DEPLOYED');
+    expect(status.channels.gateways.recordedPublication.sourceCommit).toBe(publishedProfile.sourceCommit);
+    expect(status.channels.gateways.recordedPublication.manifestSha256).toBe(publishedProfile.manifestSha256);
     for (const archive of status.archives)
       expect(sha256(await readFile(resolve(directory, 'release-artifacts/delivery', archive.file)))).toBe(archive.sha256);
     await save('dist-demo/release-info.json', { ...identity, channel: 'simulation', sourceCommit: 'f'.repeat(40) });
