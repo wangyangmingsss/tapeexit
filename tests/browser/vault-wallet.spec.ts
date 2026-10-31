@@ -44,9 +44,12 @@ async function install(page: Page, mode = 'pending-once') {
   await page.route('**/vault-wallet-test', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.route('**/client.js', route => route.fulfill({ contentType: 'text/javascript', body: js }));
   await page.route('**/styles.css', route => route.fulfill({ contentType: 'text/css', body: css }));
-  let checks = 0;
+  let checks = 0, previews = 0, reservations = 0;
   await page.route('**/api/*', async route => {
     const action = new URL(route.request().url()).pathname.split('/').at(-1)!;
+    if (action === 'preview' && mode === 'redeem-preview-busy' && previews++ === 0 ||
+        action === 'reserve' && mode === 'redeem-reserve-busy' && reservations++ === 0)
+      return route.fulfill({ status: 409, json: { error: 'Check already running' } });
     let value: unknown = context;
     if (action === 'preview') value = previewForStage();
     if (action === 'reserve') {
@@ -273,4 +276,19 @@ test('changing to another account clears redeem consent and requires reconnectio
   await expect(page.locator('#preview')).toBeEmpty();
   await expect(page.locator('#send')).toContainText('连接 OKX 钱包以继续');
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends)).toEqual([]);
+});
+for (const operation of ['preview', 'reserve']) test(`busy ${operation} retries the redeem preview without requesting a transaction`, async ({ page }) => {
+  await page.clock.install();
+  await install(page, `redeem-${operation}-busy`); await page.locator('#send').click();
+  await page.clock.fastForward(3100);
+  if (operation === 'reserve') {
+    await expect(page.locator('#preview')).toContainText('赎回一半份额');
+    await page.locator('#consent').check(); await page.locator('#send').click();
+  }
+  await expect(page.locator('#action-status')).toContainText('后台还有读取任务');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends)).toEqual([]);
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#preview')).toContainText('赎回一半份额');
+  await expect(page.locator('#consent')).not.toBeChecked();
+  await expect(page.locator('#send')).toBeDisabled();
 });

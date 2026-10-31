@@ -105,6 +105,11 @@ async function run(name, action) {
       status(denied
         ? '钱包连接未获授权。请打开 Chrome 右上角的 OKX 扩展，解锁并允许本页连接后重试；尚未请求本笔交易。'
         : `连接未完成：${error.message || '请打开 OKX 扩展后重试'}；尚未请求本笔交易。`);
+    } else if (/^Check already running/.test(error.message || '') && !context?.unresolved) {
+      clearPreview(); schedulePreparation();
+      status(nextPrepare
+        ? '后台还有读取任务，3 秒后重新准备本笔预览；请在新预览后重新核对确认，尚未请求交易。'
+        : '后台还有读取任务，请稍后重新准备本笔预览；尚未请求交易。');
     } else status(`${error.message || '未完成'}；已有请求保留，请勿重复发送。`);
   }
   finally {
