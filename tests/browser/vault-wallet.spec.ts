@@ -16,7 +16,8 @@ async function install(page: Page, mode = 'pending-once') {
       data: encodeFunctionData({ abi: walletVaultAbi, functionName: 'approve', args: [p.vault, 1000000n] }) } };
   const context = { policy: p, contextId: 'a'.repeat(64), sourceCommit: 'b'.repeat(40),
     stage: 'approve', complete: false, freshlyVerified: false, remainingWalletConfirmations: 4,
-    unresolved: null as string | null, attempts: [] as any[] };
+    unresolved: null as string | null, attempts: [] as any[],
+    verification: null as any };
   if (mode === 'approved-start') {
     context.stage = 'deposit'; context.remainingWalletConfirmations = 3;
     context.attempts.push({ id: 'approved', status: 'confirmed', quote, hash,
@@ -60,9 +61,14 @@ async function install(page: Page, mode = 'pending-once') {
     }
     if (action === 'hash') context.attempts.at(-1).hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
-      if (checks++ < (mode === 'long-finality' ? 21 : 1)) return route.fulfill({ status: 409, json: {
+      if (checks++ < (mode === 'long-finality' ? 21 : 1)) {
+        context.verification = { phase: 'waiting-finality', stage: context.stage,
+          receiptBlock: '1000', finalizedBlock: '850', blocksRemaining: '150' };
+        return route.fulfill({ status: 409, json: {
         error: mode === 'busy-check' ? 'Check already running' : 'Receipt not finalized',
-      } });
+        } });
+      }
+      context.verification = { phase: 'complete' };
       const attempt = context.attempts.at(-1);
       context.unresolved = null;
       context.stage = { approve: 'deposit', deposit: 'partial', partial: 'full', full: 'complete' }[attempt.quote.stage as string]!;
@@ -129,9 +135,11 @@ for (const width of [390, 1440]) test(`vault wallet consent and 3-second read-on
   await page.locator('#send').click();
   await expect(page.locator('#hash')).toHaveValue(hash);
   await expect(page.locator('#next-check')).toContainText('只读核验');
+  await expect(page.locator('#verification-detail')).toContainText('交易区块 1000；最终确认高度 850；相差 150 个区块');
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends)).toEqual([[quote.transaction]]);
   await page.clock.fastForward(3100);
   await expect(page.locator('#status')).toContainText('本笔已核验');
+  await expect(page.locator('#verification-detail')).toBeEmpty();
   await expect(page.locator('#prepare')).toBeEnabled();
   await expect(page.locator('#prepare')).toContainText('存入 1 USDC');
   await expect(page.locator('#preview')).toBeEmpty();

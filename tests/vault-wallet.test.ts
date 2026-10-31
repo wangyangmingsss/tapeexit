@@ -135,12 +135,13 @@ it('propagates the deployment/risk identity check instead of continuing to appro
   await expect(f.test.preview()).rejects.toThrow('implementation changed');
   expect(f.journal.attempts).toHaveLength(0);
 });
-it.each(['revert', 'excess-fee'])('normalizes raw quorum responses before inspecting a %s receipt', async mode => {
+it.each(['revert', 'excess-fee', 'not-finalized'])('normalizes raw quorum responses before inspecting a %s receipt', async mode => {
   const f = fixture(), attempt = await f.reserve(), tx = attempt.quote.transaction;
   const hash = `0x${'cd'.repeat(32)}` as Hex;
   await f.test.attachHash(attempt.id, hash);
   vi.spyOn(SparkVaultAdapter.prototype, 'verifyDeployment').mockResolvedValue();
-  vi.spyOn(f.rpc, 'block').mockResolvedValue(f.block);
+  vi.spyOn(f.rpc, 'block').mockImplementation(async tag =>
+    tag === 'finalized' && mode === 'not-finalized' ? { ...f.block, number: '0x1' } : f.block);
   const receipt = { status: '0x0', transactionHash: hash, blockNumber: f.block.number,
     blockHash: f.block.hash, transactionIndex: '0x0', from: p.account, to: p.asset,
     logs: [], gasUsed: '0x5208', effectiveGasPrice: mode === 'excess-fee' ? '0x989681' : tx.gasPrice };
@@ -151,11 +152,39 @@ it.each(['revert', 'excess-fee'])('normalizes raw quorum responses before inspec
     if (method === 'eth_getTransactionByHash') return actual as any;
     throw Error(`Unexpected method ${method}`);
   });
-  if (mode === 'excess-fee') {
+  if (mode === 'not-finalized') {
+    await expect(f.test.reconcile()).rejects.toThrow('Receipt not finalized');
+    expect(f.test.context()).toMatchObject({ unresolved: attempt.id, freshlyVerified: false,
+      verification: { phase: 'waiting-finality', receiptBlock: '16', finalizedBlock: '1', blocksRemaining: '15' } });
+    expect(f.journal.attempts[0].status).toBe('reserved');
+    expect(SparkVaultAdapter.prototype.verifyDeployment).not.toHaveBeenCalled();
+  } else if (mode === 'excess-fee') {
     await expect(f.test.reconcile()).rejects.toThrow('settled fee differs');
     expect(f.test.context().unresolved).toBe(attempt.id);
   } else {
     expect((await f.test.reconcile()).attempts[0].status).toBe('reverted');
     expect(f.test.context().complete).toBe(false);
   }
+});
+it('checks pending finality before replaying history and does not advance when history changes', async () => {
+  const f = fixture(), approval = await f.reserve();
+  const outcome = { assets: '0', shares: '0', remainingShares: '0', block: f.block,
+    finalized: true as const, gasUsed: '21000', effectiveGasPrice: '10000000' };
+  Object.assign(f.journal.attempts[0], { status: 'confirmed', hash: `0x${'aa'.repeat(32)}`, outcome });
+  const verify = vi.spyOn(f.test as any, 'verify').mockResolvedValue({ status: 'confirmed', outcome });
+  f.allowance(1000000n);
+  const deposit = await f.reserve();
+  await f.test.attachHash(deposit.id, `0x${'bb'.repeat(32)}`);
+  verify.mockClear();
+  verify.mockImplementation(async (attempt: any) => {
+    if (attempt.id === deposit.id) return { status: 'confirmed', outcome: { ...outcome, assets: '1000000' } };
+    throw Error('Previously confirmed transaction changed');
+  });
+  const saved = f.save.mock.calls.length;
+  await expect(f.test.reconcile()).rejects.toThrow('Previously confirmed transaction changed');
+  expect(verify.mock.calls.map(([attempt]) => (attempt as any).id)).toEqual([deposit.id, approval.id]);
+  expect(f.test.context()).toMatchObject({ stage: 'deposit', unresolved: deposit.id, freshlyVerified: false });
+  expect(f.journal.attempts.at(-1)?.status).toBe('reserved');
+  expect(f.journal.attempts.at(-1)?.outcome).toBeUndefined();
+  expect(f.save.mock.calls).toHaveLength(saved);
 });

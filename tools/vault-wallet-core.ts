@@ -73,6 +73,8 @@ export class VaultWalletTest {
   private busy = false;
   private fault = false;
   private fresh = false;
+  private verification: { phase: 'receipt' | 'waiting-finality' | 'balances' | 'complete' | 'failed';
+    stage?: Stage; receiptBlock?: string; finalizedBlock?: string; blocksRemaining?: string } | null = null;
   constructor(private rpc: StrictRpc, private journal: VaultTestJournal,
     private store: { save(journal: VaultTestJournal): Promise<void> }, private now = Date.now) {
     if (journal.schemaVersion !== 1 || journal.contextId !== VaultWalletTest.contextId ||
@@ -160,6 +162,7 @@ export class VaultWalletTest {
       productionSigningApproved: false, independentReview: 'NOT_COMPLETED',
       baseline: this.journal.baseline, stage: this.stages()[successful.length] ?? 'complete',
       complete: successful.some(a => a.quote.stage === 'full'), freshlyVerified: this.fresh,
+      verification: this.verification && { ...this.verification },
       unresolved: this.pending()?.id ?? null, attempts: structuredClone(this.journal.attempts),
       remainingWalletConfirmations: this.journal.baseline ? this.stages().length - successful.length : null,
     };
@@ -315,6 +318,7 @@ export class VaultWalletTest {
   }
   private async verify(attempt: VaultTestAttempt) {
     if (!attempt.hash) throw Error('Supply the wallet transaction hash first');
+    this.verification = { phase: 'receipt', stage: attempt.quote.stage };
     await this.rpc.checkChain(196);
     const evidence = await this.evidence(attempt.hash), { receipt, tx } = evidence;
     assertTransactionIdentity(tx.evidence, receipt.evidence);
@@ -328,7 +332,11 @@ export class VaultWalletTest {
       throw Error('Actual transaction or settled fee differs from consent');
     const block = await this.rpc.block(r.blockNumber), final = await this.rpc.block('finalized');
     if (block.hash !== r.blockHash) throw Error('Receipt block changed');
-    if (BigInt(final.number) < BigInt(block.number)) throw Error('Receipt not finalized; check again without resending');
+    const remaining = BigInt(block.number) > BigInt(final.number) ? BigInt(block.number) - BigInt(final.number) : 0n;
+    this.verification = { phase: remaining ? 'waiting-finality' : 'balances', stage: q.stage,
+      receiptBlock: String(BigInt(block.number)), finalizedBlock: String(BigInt(final.number)),
+      blocksRemaining: String(remaining) };
+    if (remaining) throw Error('Receipt not finalized; check again without resending');
     const adapter = new SparkVaultAdapter(this.rpc);
     await adapter.verifyDeployment(block);
     let assets = '0', shares = '0', remainingShares = q.beforeShares;
@@ -386,15 +394,20 @@ export class VaultWalletTest {
   reconcile() {
     return this.exclusive(async () => {
       this.fresh = false;
-      for (const attempt of this.successful()) {
-        const checked = await this.verify(attempt);
-        if (checked.status !== 'confirmed') throw Error('Previously confirmed transaction changed; inspect before proceeding');
-        attempt.outcome = checked.outcome;
-      }
       const attempt = this.pending();
-      if (attempt) Object.assign(attempt, await this.verify(attempt));
-      else if (!this.successful().length) throw Error('No transaction available to verify');
+      // Check pending finality first; keep every historical verification before persisting success.
+      const pendingResult = attempt ? await this.verify(attempt) : null;
+      const history = [];
+      for (const previous of this.successful()) {
+        const checked = await this.verify(previous);
+        if (checked.status !== 'confirmed') throw Error('Previously confirmed transaction changed; inspect before proceeding');
+        history.push({ attempt: previous, outcome: checked.outcome });
+      }
+      if (!attempt && !history.length) throw Error('No transaction available to verify');
+      for (const previous of history) previous.attempt.outcome = previous.outcome;
+      if (attempt && pendingResult) Object.assign(attempt, pendingResult);
       await this.persist();
+      this.verification = { phase: 'complete' };
       this.fresh = true; return this.context();
     });
   }

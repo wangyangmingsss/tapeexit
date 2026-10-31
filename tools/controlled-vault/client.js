@@ -11,6 +11,14 @@ const gasCost = value => {
   return `${n / 10n ** 18n}.${(n % 10n ** 18n).toString().padStart(18, '0')} OKB`;
 };
 const status = text => { $('status').textContent = text; $('action-status').textContent = text; };
+function verificationDetail() {
+  const v = context?.verification, stage = names[v?.stage] || '本笔';
+  $('verification-detail').textContent = !v || v.phase === 'complete' ? ''
+    : v.phase === 'waiting-finality'
+      ? `${stage}已取得链上回执，等待最终确认。交易区块 ${v.receiptBlock}；最终确认高度 ${v.finalizedBlock}；相差 ${v.blocksRemaining} 个区块。区块差不是秒数，可能需要数分钟；不会重发交易。`
+      : v.phase === 'receipt' ? `正在核对“${stage}”的交易回执与最终确认高度。`
+        : v.phase === 'balances' ? `正在完整核对“${stage}”的合约、事件与资产余额。` : '本次核验未完成，请查看上方原因。';
+}
 function field(id, name, value) {
   const dt = document.createElement('dt'), dd = document.createElement('dd');
   dt.textContent = name; dd.textContent = String(value); $(id).append(dt, dd);
@@ -62,6 +70,7 @@ function controls() {
   }
 }
 function render() {
+  verificationDetail();
   $('identity').replaceChildren();
   for (const [name, value] of [['钱包', context.policy.account], ['金库', context.policy.vault],
     ['USDC', context.policy.asset], ['网络', 'X Layer · 196'], ['源码', context.sourceCommit],
@@ -99,6 +108,17 @@ async function run(name, action) {
   if (busy) return;
   busy = true; started = Date.now(); operation = name;
   $('progress').hidden = false; $('action-progress').hidden = false; controls();
+  let tracking = true, reading = false;
+  const tracker = setInterval(async () => {
+    if (!tracking || reading || !/核验|模拟/.test(name)) return;
+    reading = true;
+    try {
+      const current = await api('context');
+      if (tracking && current.contextId === context?.contextId) {
+        context.verification = current.verification; verificationDetail();
+      }
+    } catch {} finally { reading = false; }
+  }, 3000);
   try { await action(); } catch (error) {
     if (name === '连接钱包') {
       const denied = error.code === 4001 || /denied|rejected/i.test(error.message || '');
@@ -113,6 +133,7 @@ async function run(name, action) {
     } else status(`${error.message || '未完成'}；已有请求保留，请勿重复发送。`);
   }
   finally {
+    tracking = false; clearInterval(tracker);
     try { await refresh(); } catch { quote = null; status('本地服务不可用，请保留钱包哈希，停止发送'); }
     busy = false; started = 0; $('progress').hidden = true; $('action-progress').hidden = true; controls();
   }
@@ -214,7 +235,9 @@ async function reconcile() {
       nextCheck = Date.now() + 3000;
       status(/^Check already running/.test(error.message || '')
         ? '后台正在核验上一笔，3 秒后继续读取结果；不会重复请求钱包。'
-        : '交易已提交，正在等待链上确认；保留哈希，无需重发。');
+        : /^Receipt not finalized/.test(error.message || '')
+          ? '已取得交易回执，正在等待链的最终确认，可能需要数分钟；页面会继续检查，无需重新签名。'
+          : '交易已提交，正在等待打包；保留哈希，无需重发。');
       return;
     }
     throw error;
