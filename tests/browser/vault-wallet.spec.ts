@@ -61,11 +61,12 @@ async function install(page: Page, mode = 'pending-once') {
     }
     if (action === 'hash') context.attempts.at(-1).hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
-      if (checks++ < (mode === 'long-finality' ? 21 : 1)) {
+      if (checks++ < (mode === 'long-finality' ? 21 : mode === 'late-completion' ? 0 : 1)) {
         context.verification = { phase: 'waiting-finality', stage: context.stage,
           receiptBlock: '1000', finalizedBlock: '850', blocksRemaining: '150' };
         return route.fulfill({ status: 409, json: {
-        error: mode === 'busy-check' ? 'Check already running' : 'Receipt not finalized',
+        error: mode === 'busy-check' ? 'Check already running' : mode === 'rpc-unavailable'
+          ? 'Independent RPC responses unavailable; signing stopped' : 'Receipt not finalized',
         } });
       }
       context.verification = { phase: 'complete' };
@@ -75,7 +76,9 @@ async function install(page: Page, mode = 'pending-once') {
       context.complete = context.stage === 'complete';
       context.remainingWalletConfirmations = { deposit: 3, partial: 2, full: 1, complete: 0 }[context.stage]!;
       context.freshlyVerified = true; attempt.status = 'confirmed';
-      attempt.outcome = { assets: '0', shares: '0', remainingShares: '0', gasUsed: '50000', effectiveGasPrice: '10000000' };
+      attempt.outcome = { assets: '0', shares: '0', remainingShares: '0', gasUsed: '50000', effectiveGasPrice: '10000000',
+        finalized: true };
+      if (mode === 'late-completion') return route.fulfill({ status: 503, json: { error: '原核验服务暂不可用' } });
     }
     await route.fulfill({ json: value });
   });
@@ -299,4 +302,21 @@ for (const operation of ['preview', 'reserve']) test(`busy ${operation} retries 
   await expect(page.locator('#preview')).toContainText('赎回一半份额');
   await expect(page.locator('#consent')).not.toBeChecked();
   await expect(page.locator('#send')).toBeDisabled();
+});
+test('temporary RPC unavailability retries verification without another signature', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'rpc-unavailable'); await ready(page); await page.locator('#send').click();
+  await expect(page.locator('#action-status')).toContainText('RPC 查询暂不可用');
+  await expect(page.locator('#next-check')).toContainText('只读核验');
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#status')).toContainText('本笔已核验');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+});
+test('a lost verification response recovers a freshly confirmed result from context', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'late-completion'); await ready(page); await page.locator('#send').click();
+  await expect(page.locator('#status')).toContainText('本笔已核验');
+  await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
+  await expect(page.locator('#next-check')).toContainText('自动准备');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
 });

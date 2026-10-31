@@ -225,15 +225,32 @@ $('consent').addEventListener('change', controls);
 $('cancel-consent').addEventListener('change', controls);
 async function reconcile() {
   nextCheck = 0; nextPrepare = 0;
-  try {
-    const result = await api('reconcile', {});
+  const pendingId = context?.unresolved;
+  const accept = result => {
     context = result; clearPreview(); render(); schedulePreparation();
     status(result.complete ? '全部链上步骤核验通过；可导出恢复文件，并在本地主网界面重新核验。'
       : `本笔已核验；下一步：${names[result.stage]}。${nextPrepare ? '3 秒后自动准备预览' : '请点击准备按钮'}，仍需逐笔勾选并点击钱包确认。`);
+  };
+  try {
+    const result = await api('reconcile', {});
+    accept(result);
   } catch (error) {
-    if (/^(Receipt not finalized|Transaction pending;|Check already running)/.test(error.message || '') && $('auto-check').checked) {
+    if (pendingId) try {
+      const current = await api('context');
+      if (current.contextId !== context.contextId) throw Error('实测范围已变化');
+      if (current.freshlyVerified && !current.unresolved &&
+          current.attempts.some(a => a.id === pendingId && a.status === 'confirmed' && a.outcome?.finalized)) {
+        accept(current); return;
+      }
+      context = current;
+    } catch {}
+    const unavailable = /^(Independent RPC responses unavailable|Independent finality responses unavailable|RPC HTTP (429|502|503|504)|原核验服务暂不可用|Failed to fetch)/.test(error.message || '') ||
+      error.name === 'TimeoutError';
+    if ((/^(Receipt not finalized|Transaction pending;|Check already running)/.test(error.message || '') ||
+        unavailable && context?.attempts.some(a => a.id === pendingId && a.hash)) && $('auto-check').checked) {
       nextCheck = Date.now() + 3000;
-      status(/^Check already running/.test(error.message || '')
+      status(unavailable ? 'RPC 查询暂不可用或响应超时，3 秒后重试只读核验；已有交易保留，不会重新请求钱包。'
+        : /^Check already running/.test(error.message || '')
         ? '后台正在核验上一笔，3 秒后继续读取结果；不会重复请求钱包。'
         : /^Receipt not finalized/.test(error.message || '')
           ? '已取得交易回执，正在等待链的最终确认，可能需要数分钟；页面会继续检查，无需重新签名。'
