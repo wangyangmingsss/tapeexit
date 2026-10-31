@@ -29,11 +29,15 @@ function controls() {
   $('wallet').disabled = busy;
   $('connect').disabled = busy || !context || !wallets.size;
   $('prepare').disabled = busy || !context || !!pending || context.complete;
-  $('consent').disabled = busy || !quote;
-  $('send').disabled = busy || !provider || !account || !quote || !!pending ||
-    quote.stage !== context?.stage || quote.expiresAt <= Date.now() || !$('consent').checked;
+  const connected = !!provider && !!account;
+  $('consent').disabled = busy || !quote || !connected;
+  $('send').disabled = busy || !context || !!pending || context.complete ||
+    (!connected ? !wallets.size : !quote || quote.stage !== context.stage ||
+      quote.expiresAt <= Date.now() || !$('consent').checked);
   $('prepare').textContent = context?.complete ? '实测流程完成' : `准备：${names[context?.stage] || '下一笔'}`;
-  $('send').textContent = `在 OKX 钱包中确认：${names[quote?.stage || context?.stage] || '这一笔'}`;
+  $('send').textContent = connected
+    ? `在 OKX 钱包中确认：${names[quote?.stage || context?.stage] || '这一笔'}`
+    : `连接 OKX 钱包以继续：${names[context?.stage] || '当前步骤'}`;
   $('next-action').textContent = busy ? `${operation}，请等待页面结果。` : pending
     ? '本笔请求尚待核验，请先处理下方记录，不要重复发送。' : context?.complete
       ? '全部步骤已核验，可导出金库恢复文件。' : !provider || !account
@@ -94,7 +98,14 @@ async function run(name, action) {
   if (busy) return;
   busy = true; started = Date.now(); operation = name;
   $('progress').hidden = false; $('action-progress').hidden = false; controls();
-  try { await action(); } catch (error) { status(`${error.message || '未完成'}；已有请求保留，请勿重复发送。`); }
+  try { await action(); } catch (error) {
+    if (name === '连接钱包') {
+      const denied = error.code === 4001 || /denied|rejected/i.test(error.message || '');
+      status(denied
+        ? '钱包连接未获授权。请打开 Chrome 右上角的 OKX 扩展，解锁并允许本页连接后重试；尚未请求本笔交易。'
+        : `连接未完成：${error.message || '请打开 OKX 扩展后重试'}；尚未请求本笔交易。`);
+    } else status(`${error.message || '未完成'}；已有请求保留，请勿重复发送。`);
+  }
   finally {
     try { await refresh(); } catch { quote = null; status('本地服务不可用，请保留钱包哈希，停止发送'); }
     busy = false; started = 0; $('progress').hidden = true; $('action-progress').hidden = true; controls();
@@ -130,24 +141,41 @@ async function assertWallet(p, version) {
     throw Error('请使用指定原钱包，并在 OKX 扩展中选择 X Layer');
 }
 $('wallet').addEventListener('change', () => { removeObservers(); invalidate(); });
-$('connect').addEventListener('click', () => run('连接钱包', async () => {
+function observeWallet(p) {
+  if (typeof p.on !== 'function' || typeof p.removeListener !== 'function') return;
+  const accountsChanged = accounts => {
+    if (!Array.isArray(accounts) || typeof accounts[0] !== 'string' ||
+        accounts[0].toLowerCase() !== context.policy.account.toLowerCase()) invalidate();
+  };
+  const chainChanged = chain => {
+    if (typeof chain !== 'string' || !/^0x[0-9a-f]+$/i.test(chain) || BigInt(chain) !== 196n) invalidate();
+  };
+  const observers = [['accountsChanged', accountsChanged], ['chainChanged', chainChanged], ['disconnect', invalidate]];
+  observers.forEach(([name, handler]) => p.on(name, handler));
+  removeObservers = () => observers.forEach(([name, handler]) => p.removeListener(name, handler));
+}
+async function connectWallet() {
   removeObservers(); invalidate();
   const selected = wallets.get($('wallet').value);
   if (!selected) throw Error('Chrome 未检测到钱包，请启用 OKX 扩展');
   const p = selected.provider, version = generation;
-  if (typeof p.on === 'function' && typeof p.removeListener === 'function') {
-    const events = ['accountsChanged', 'chainChanged', 'disconnect'];
-    events.forEach(name => p.on(name, invalidate));
-    removeObservers = () => events.forEach(name => p.removeListener(name, invalidate));
+  observeWallet(p);
+  // Reuse existing site authorization before asking the extension to open a connection prompt.
+  let accounts;
+  try { accounts = await walletRead(p, 'eth_accounts'); } catch {}
+  if (!Array.isArray(accounts) || !accounts.length) {
+    status('请打开 Chrome 右上角的 OKX 扩展，解锁并允许本页连接；本步不发送交易。');
+    await walletRead(p, 'eth_requestAccounts');
   }
-  await walletRead(p, 'eth_requestAccounts'); await assertWallet(p, version);
+  await assertWallet(p, version);
   provider = p; account = context.policy.account;
   $('account').textContent = `${selected.name} · ${account}`;
   if (!context.unresolved && !context.complete && context.attempts.some(a => a.status === 'confirmed')) {
     schedulePreparation();
     status(`钱包已匹配；下一步：${names[context.stage]}。${nextPrepare ? '3 秒后自动准备预览' : '请点击准备按钮'}，无需重复授权。`);
   } else status('钱包已匹配，尚未请求交易');
-}));
+}
+$('connect').addEventListener('click', () => run('连接钱包', connectWallet));
 async function preparePreview() {
   nextPrepare = 0; clearPreview();
   const version = generation, prepared = await api('preview', {});
@@ -161,7 +189,9 @@ async function preparePreview() {
     ['原生币转账', '0 OKB'], ['EVM Gas 费用上限', gasCost(quote.maximumGasCostWei)],
     ['预览到期', new Date(quote.expiresAt).toLocaleString()]]) field('preview', label, value);
   $('consent-label').textContent = `我确认未独立审阅的 1 USDC 主网实测，本笔为“${names[quote.stage]}”，金额和原钱包收款如上，EVM Gas 最多 ${gasCost(quote.maximumGasCostWei)}，链特有附加费以钱包显示为准。`;
-  status(`“${names[quote.stage]}”模拟通过。请核对金额与费用，勾选后点击“在 OKX 钱包中确认：${names[quote.stage]}”。`);
+  status(!provider || !account
+    ? `“${names[quote.stage]}”模拟通过。请先点击下方“连接 OKX 钱包以继续”，连接本身不会发送交易。`
+    : `“${names[quote.stage]}”模拟通过。请核对金额与费用，勾选后点击“在 OKX 钱包中确认：${names[quote.stage]}”。`);
 }
 $('prepare').addEventListener('click', () => run('准备并模拟', preparePreview));
 $('consent').addEventListener('change', controls);
@@ -203,7 +233,9 @@ async function walletSend(p, attempt) {
     timer = setTimeout(() => { timedOut = true; reject(Error('钱包等待超过 90 秒，原请求保留；请打开扩展检查，不要重发')); }, 90000);
   })]); } finally { clearTimeout(timer); }
 }
-$('send').addEventListener('click', () => run('请求钱包并核验', async () => {
+$('send').addEventListener('click', () => {
+  if (!provider || !account) return run('连接钱包', connectWallet);
+  return run('请求钱包并核验', async () => {
   if (!navigator.locks) throw Error('请在 Chrome 中使用本页');
   await navigator.locks.request('tapeexit-controlled-vault-wallet', { ifAvailable: true }, async lock => {
     if (!lock) throw Error('另一页面正在请求钱包');
@@ -223,7 +255,8 @@ $('send').addEventListener('click', () => run('请求钱包并核验', async () 
     await walletSend(p, attempt); await reconcile();
   });
   $('consent').checked = false;
-}));
+  });
+});
 $('attach').addEventListener('click', () => run('保存哈希', async () => {
   await api('hash', { id: context.unresolved, hash: $('hash').value.trim() }); status('哈希已保存，可继续核验');
 }));
