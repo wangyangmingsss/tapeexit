@@ -42,6 +42,17 @@ async function install(page: Page, mode = 'pending-once') {
     context.attempts.push({ id: 'deposited', status: 'confirmed', quote: previewForStage(), hash });
     context.stage = 'partial'; context.remainingWalletConfirmations = 2;
   }
+  if (mode === 'full-finality') {
+    for (const stage of ['approve', 'deposit', 'partial', 'full']) {
+      context.stage = stage;
+      context.attempts.push({ id: `saved-${stage}`, status: stage === 'full' ? 'reserved' : 'confirmed',
+        quote: previewForStage(), hash });
+    }
+    context.remainingWalletConfirmations = 1;
+    context.unresolved = 'saved-full';
+    context.verification = { phase: 'waiting-finality', stage: 'full',
+      receiptBlock: '1000', finalizedBlock: '850', blocksRemaining: '150' };
+  }
   await page.route('**/vault-wallet-test', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.route('**/client.js', route => route.fulfill({ contentType: 'text/javascript', body: js }));
   await page.route('**/styles.css', route => route.fulfill({ contentType: 'text/css', body: css }));
@@ -61,7 +72,7 @@ async function install(page: Page, mode = 'pending-once') {
     }
     if (action === 'hash') context.attempts.at(-1).hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
-      if (checks++ < (mode === 'long-finality' ? 21 : mode === 'late-completion' ? 0 : 1)) {
+      if (checks++ < (mode === 'full-finality' ? Infinity : mode === 'long-finality' ? 21 : mode === 'late-completion' ? 0 : 1)) {
         context.verification = { phase: 'waiting-finality', stage: context.stage,
           receiptBlock: '1000', finalizedBlock: '850', blocksRemaining: '150' };
         return route.fulfill({ status: 409, json: {
@@ -117,7 +128,8 @@ async function install(page: Page, mode = 'pending-once') {
   }, { account: p.account, hash, mode });
   await page.goto('/vault-wallet-test');
   await expect(page.locator('#status')).toContainText(
-    mode === 'approved-start' || mode.startsWith('redeem-') ? '无需重复授权' : '尚未请求签名');
+    mode === 'full-finality' ? '待核验请求' :
+      mode === 'approved-start' || mode.startsWith('redeem-') ? '无需重复授权' : '尚未请求签名');
   return { quote, hash };
 }
 async function ready(page: Page) {
@@ -215,6 +227,18 @@ test('waiting for finality continues beyond twenty checks without resending', as
   }
   await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+});
+test('the last submitted redemption shows zero wallet confirmations without claiming final verification', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'full-finality');
+  await expect(page.locator('#identity dt').filter({ hasText: '尚需钱包确认' }).locator('+ dd')).toHaveText('0');
+  await expect(page.locator('#record')).toContainText('赎回剩余份额 · 已上链，待最终确认');
+  await expect(page.locator('#record')).not.toContainText('赎回剩余份额 · 已重新核验');
+  await expect(page.locator('#prepare')).toBeDisabled();
+  await expect(page.locator('#send')).toBeDisabled();
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#next-check')).toContainText('只读核验');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(0);
 });
 test('changed vault reservation never opens the wallet transaction prompt', async ({ page }) => {
   await install(page, 'tampered'); await ready(page); await page.locator('#send').click();

@@ -71,13 +71,17 @@ function controls() {
 }
 function render() {
   verificationDetail();
+  const pending = context.attempts.find(a => a.id === context.unresolved);
+  const confirmations = context.remainingWalletConfirmations;
+  const awaitingFinality = a => a.status === 'reserved' && !!a.hash &&
+    context.verification?.stage === a.quote.stage && context.verification.phase === 'waiting-finality';
   $('identity').replaceChildren();
   for (const [name, value] of [['钱包', context.policy.account], ['金库', context.policy.vault],
     ['USDC', context.policy.asset], ['网络', 'X Layer · 196'], ['源码', context.sourceCommit],
-    ['待确认交易数', context.remainingWalletConfirmations ?? '读取后计算，通常 4 笔'],
+    ['尚需钱包确认', confirmations == null ? '读取后计算，通常 4 笔'
+      : Math.max(0, confirmations - (pending?.hash ? 1 : 0))],
     ['生产签名', '关闭']]) field('identity', name, value);
   $('stage').textContent = names[context.stage];
-  const pending = context.attempts.find(a => a.id === context.unresolved);
   $('pending-section').hidden = !pending;
   if (pending) {
     let saved;
@@ -86,7 +90,8 @@ function render() {
   }
   $('record').replaceChildren();
   for (const a of context.attempts) {
-    field('record', `${names[a.quote.stage]} · ${a.status === 'confirmed' ? context.freshlyVerified ? '已重新核验' : '历史确认' : a.status === 'reserved' ? '待核验，请勿重发' : a.status}`, a.hash || '尚无钱包哈希');
+    field('record', `${names[a.quote.stage]} · ${a.status === 'confirmed' ? context.freshlyVerified ? '已重新核验' : '历史确认' : awaitingFinality(a)
+      ? '已上链，待最终确认' : a.status === 'reserved' ? '待核验，请勿重发' : a.status}`, a.hash || '尚无钱包哈希');
     if (a.outcome) {
       if (a.quote.stage !== 'approve') field('record', a.quote.stage === 'deposit' ? 'USDC 存入' : 'USDC 到账', amount(a.outcome.assets));
       field('record', '剩余 spUSDC', amount(a.outcome.remainingShares));
