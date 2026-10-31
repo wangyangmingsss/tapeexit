@@ -28,8 +28,8 @@ function controls() {
   const pending = context?.attempts.find(a => a.id === context.unresolved);
   $('wallet').disabled = busy;
   $('connect').disabled = busy || !context || !wallets.size;
-  $('prepare').disabled = busy || !context || !!pending || context.complete;
   const connected = !!provider && !!account;
+  $('prepare').disabled = busy || !context || !connected || !!pending || context.complete;
   $('consent').disabled = busy || !quote || !connected;
   $('send').disabled = busy || !context || !!pending || context.complete ||
     (!connected ? !wallets.size : !quote || quote.stage !== context.stage ||
@@ -92,7 +92,8 @@ function clearPreview() {
   $('consent-label').textContent = '确认本次预览的金额、原钱包收款和费用。';
 }
 function schedulePreparation() {
-  nextPrepare = !context.unresolved && !context.complete && $('auto-check').checked ? Date.now() + 3000 : 0;
+  nextPrepare = provider && account && !context.unresolved && !context.complete &&
+    $('auto-check').checked ? Date.now() + 3000 : 0;
 }
 async function run(name, action) {
   if (busy) return;

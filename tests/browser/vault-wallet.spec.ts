@@ -155,7 +155,8 @@ test('reload after approved USDC resumes at deposit without another approval', a
   await expect(page.locator('#status')).toContainText('无需重复授权');
   await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
   await page.clock.fastForward(4100);
-  await expect(page.locator('#preview')).toContainText('存入 1 USDC');
+  await expect(page.locator('#preview')).toBeEmpty();
+  await expect(page.locator('#prepare')).toBeDisabled();
   await expect(page.locator('#send')).toContainText('连接 OKX 钱包以继续');
   await expect(page.locator('#send')).toBeEnabled();
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends)).toEqual([]);
@@ -219,6 +220,9 @@ test('lost vault wallet response remains blocked after reload', async ({ page })
 test('redeem action reconnects an authorized wallet without another permission prompt or transaction', async ({ page }) => {
   await page.clock.install();
   await install(page, 'redeem-authorized');
+  await page.clock.fastForward(4100);
+  await expect(page.locator('#preview')).toBeEmpty();
+  await expect(page.locator('#prepare')).toBeDisabled();
   await expect(page.locator('#send')).toContainText('连接 OKX 钱包以继续：赎回一半份额');
   await page.locator('#send').click();
   await expect(page.locator('#account')).toContainText(p.account);
