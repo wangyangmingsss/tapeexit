@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="280" viewBox="0 0 960 280" role="img" aria-labelledby="title description">
+  <title id="title">TapeOut and TapeExit recovery paths</title>
+  <desc id="description">TapeOut application files are loaded through a primary or backup gateway into TapeExit. A local recovery bundle provides another entry to TapeExit. TapeExit uses RPC services to read positions, preview exits and verify transactions.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#374151"/>
+    </marker>
+  </defs>
+  <rect width="960" height="280" rx="8" fill="#ffffff"/>
+  <g fill="none" stroke="#374151" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M214 82H258"/>
+    <path d="M450 82H494"/>
+    <path d="M666 82H728"/>
+    <path d="M450 222H581V128"/>
+  </g>
+  <g stroke-width="1.5">
+    <rect x="24" y="38" width="190" height="88" rx="6" fill="#f3f4f6" stroke="#9ca3af"/>
+    <rect x="260" y="38" width="190" height="88" rx="6" fill="#f3f4f6" stroke="#9ca3af"/>
+    <rect x="496" y="38" width="170" height="88" rx="6" fill="#e7f8ee" stroke="#23804b"/>
+    <rect x="730" y="38" width="206" height="88" rx="6" fill="#f3f4f6" stroke="#9ca3af"/>
+    <rect x="260" y="178" width="190" height="88" rx="6" fill="#f3f4f6" stroke="#9ca3af"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#172126">
+    <g font-size="21" font-weight="700">
+      <text x="119" y="73">TapeOut</text>
+      <text x="355" y="73">Gateways</text>
+      <text x="581" y="89">TapeExit</text>
+      <text x="833" y="73">RPC services</text>
+      <text x="355" y="213">Local bundle</text>
+    </g>
+    <g font-size="15">
+      <text x="119" y="100">On-chain app files</text>
+      <text x="355" y="100">Primary / backup</text>
+      <text x="833" y="100">Read / preview / verify</text>
+      <text x="355" y="240">Matching app files</text>
+    </g>
+  </g>
+</svg>

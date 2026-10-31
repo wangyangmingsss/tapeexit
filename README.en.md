@@ -27,13 +27,7 @@ TapeExit provides **position reading, exit simulation, transaction verification 
 
 **TapeOut preserves the application entry. TapeExit implements protocol-specific exit and recovery workflows.**
 
-```mermaid
-flowchart LR
-  T["TapeOut on-chain application files"] --> G["Primary / backup gateway"]
-  G --> A["TapeExit"]
-  L["Local recovery bundle"] --> A
-  A --> R["RPC: read, simulate and verify"]
-```
+![TapeOut app files reach TapeExit through primary or backup gateways; a local bundle provides another entry; TapeExit reads, previews and verifies through RPC](docs/diagrams/tapeout-recovery.svg)
 
 The application is published as `2.2.289.tape`. Both public gateways read the same container and release manifest. The local recovery bundle contains matching application files. Future protocol adapters are built, checked and published with the application.
 

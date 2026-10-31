@@ -27,13 +27,7 @@ TapeExit 把这些步骤放进可另行获取的应用中：**读取仓位 → �
 
 **TapeOut 保存应用入口，TapeExit 适配退出与恢复流程。**
 
-```mermaid
-flowchart LR
-  T["TapeOut 链上应用文件"] --> G["主网关 / 备用网关"]
-  G --> A["TapeExit"]
-  L["本地恢复包"] --> A
-  A --> R["RPC：读取仓位、预演、核验结果"]
-```
+![TapeOut 链上应用经主备网关进入 TapeExit；本地恢复包提供另一入口；TapeExit 经 RPC 读取、预演与核验](docs/diagrams/tapeout-recovery.svg)
 
 应用已发布至 `2.2.289.tape`。两个公网网关读取同一容器、同一发行清单；本地恢复包包含相同应用文件。后续协议模块也随应用版本构建、校验和发布。
 
