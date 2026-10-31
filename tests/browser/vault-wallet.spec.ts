@@ -46,7 +46,9 @@ async function install(page: Page, mode = 'pending-once') {
     }
     if (action === 'hash') context.attempts.at(-1).hash = route.request().postDataJSON().hash;
     if (action === 'reconcile') {
-      if (checks++ === 0) return route.fulfill({ status: 409, json: { error: 'Receipt not finalized' } });
+      if (checks++ < (mode === 'long-finality' ? 21 : 1)) return route.fulfill({ status: 409, json: {
+        error: mode === 'busy-check' ? 'Check already running' : 'Receipt not finalized',
+      } });
       const attempt = context.attempts.at(-1);
       context.unresolved = null; context.stage = attempt.quote.stage === 'approve' ? 'deposit' : 'partial';
       context.remainingWalletConfirmations = attempt.quote.stage === 'approve' ? 3 : 2;
@@ -145,6 +147,27 @@ test('automatic next preparation can be disabled after verification', async ({ p
   await page.clock.fastForward(4100);
   await expect(page.locator('#preview')).toBeEmpty();
   await expect(page.locator('#next-check')).toBeEmpty();
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+});
+test('another in-flight verification continues read-only checks and resumes without resending', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'busy-check'); await ready(page); await page.locator('#send').click();
+  await expect(page.locator('#action-status')).toContainText('后台正在核验');
+  await expect(page.locator('#next-check')).toContainText('只读核验');
+  await expect(page.locator('#send')).toBeDisabled();
+  await page.clock.fastForward(3100);
+  await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
+  await expect(page.locator('#action-status')).toContainText('本笔已核验');
+  expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
+});
+test('waiting for finality continues beyond twenty checks without resending', async ({ page }) => {
+  await page.clock.install();
+  await install(page, 'long-finality'); await ready(page); await page.locator('#send').click();
+  for (let check = 0; check < 21; check++) {
+    await expect(page.locator('#next-check')).toContainText('只读核验');
+    await page.clock.fastForward(3100);
+  }
+  await expect(page.locator('#stage')).toHaveText('存入 1 USDC');
   expect(await page.evaluate(() => (window as any).vaultWalletFixture.sends.length)).toBe(1);
 });
 test('changed vault reservation never opens the wallet transaction prompt', async ({ page }) => {

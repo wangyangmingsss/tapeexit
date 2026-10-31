@@ -32,6 +32,23 @@ it('rejects foreign origins, extra parameters, large bodies and arbitrary broadc
   expect((await post('reserve', { previewId: 'q', consent: 'c', maximumGasCostWei: '1' })).status).toBe(200);
   expect(bench.reserve).toHaveBeenCalledWith('q', 'c', '1');
 });
+it('permits cross-site document navigation without permitting cross-site API calls', async () => {
+  const navigation = { 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' };
+  // Node fetch replaces sec-fetch-mode, so use HTTP to preserve browser navigation headers.
+  const requestStatus = (path: string, requestHeaders: Record<string, string>, method = 'GET') =>
+    new Promise<number | undefined>((resolve, reject) => {
+      const request = http.request(origin + path, { method, headers: requestHeaders }, response => {
+        response.resume();
+        response.on('end', () => resolve(response.statusCode));
+      });
+      request.on('error', reject);
+      request.end(method === 'POST' ? '{}' : undefined);
+    });
+  expect(await requestStatus('/', navigation)).toBe(200);
+  expect(await requestStatus('/api/context', navigation)).toBe(403);
+  expect(await requestStatus('/', { ...navigation, origin: 'https://evil.example' })).toBe(403);
+  expect(await requestStatus('/api/preview', { ...headers, ...navigation }, 'POST')).toBe(403);
+});
 it('read-only recovery exposes verification while refusing every write operation', async () => {
   const recoveryPort = 14736, recoveryOrigin = `http://127.0.0.1:${recoveryPort}`;
   const recovery = await createControlledTestServer(bench as unknown as ControlledTest,

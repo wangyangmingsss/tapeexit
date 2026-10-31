@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id), wallets = new Map();
 const names = { approve: '批准本次 1 USDC', deposit: '存入 1 USDC', partial: '赎回一半份额', full: '赎回剩余份额', complete: '实测流程完成' };
 let context, quote, provider, account, busy = false, generation = 0, removeObservers = () => {};
-let started = 0, operation = '', nextCheck = 0, nextPrepare = 0, checks = 0;
+let started = 0, operation = '', nextCheck = 0, nextPrepare = 0;
 const amount = value => {
   const n = BigInt(value);
   return `${n / 1000000n}.${(n % 1000000n).toString().padStart(6, '0')}`;
@@ -10,7 +10,7 @@ const gasCost = value => {
   const n = BigInt(value);
   return `${n / 10n ** 18n}.${(n % 10n ** 18n).toString().padStart(18, '0')} OKB`;
 };
-const status = text => { $('status').textContent = text; };
+const status = text => { $('status').textContent = text; $('action-status').textContent = text; };
 function field(id, name, value) {
   const dt = document.createElement('dt'), dd = document.createElement('dd');
   dt.textContent = name; dd.textContent = String(value); $(id).append(dt, dd);
@@ -52,7 +52,10 @@ function controls() {
   $('export-recovery').disabled = busy || !context?.attempts.some(a => a.outcome?.recovery);
   const next = nextCheck || nextPrepare;
   $('next-check').textContent = next ? `${Math.max(0, Math.ceil((next - Date.now()) / 1000))} 秒后${nextCheck ? '继续只读核验' : `自动准备“${names[context?.stage]}”预览`}，不会自动签名。` : '';
-  if (started) $('progress').textContent = `${operation}：已等待 ${Math.floor((Date.now() - started) / 1000)} 秒，超时倒计时 ${Math.max(0, 90 - Math.floor((Date.now() - started) / 1000))} 秒。`;
+  if (started) {
+    const text = `${operation}：已等待 ${Math.floor((Date.now() - started) / 1000)} 秒，超时倒计时 ${Math.max(0, 90 - Math.floor((Date.now() - started) / 1000))} 秒。`;
+    $('progress').textContent = text; $('action-progress').textContent = text;
+  }
 }
 function render() {
   $('identity').replaceChildren();
@@ -89,11 +92,12 @@ function schedulePreparation() {
 }
 async function run(name, action) {
   if (busy) return;
-  busy = true; started = Date.now(); operation = name; $('progress').hidden = false; controls();
+  busy = true; started = Date.now(); operation = name;
+  $('progress').hidden = false; $('action-progress').hidden = false; controls();
   try { await action(); } catch (error) { status(`${error.message || '未完成'}；已有请求保留，请勿重复发送。`); }
   finally {
     try { await refresh(); } catch { quote = null; status('本地服务不可用，请保留钱包哈希，停止发送'); }
-    busy = false; started = 0; $('progress').hidden = true; controls();
+    busy = false; started = 0; $('progress').hidden = true; $('action-progress').hidden = true; controls();
   }
 }
 function invalidate() {
@@ -163,16 +167,18 @@ $('prepare').addEventListener('click', () => run('准备并模拟', preparePrevi
 $('consent').addEventListener('change', controls);
 $('cancel-consent').addEventListener('change', controls);
 async function reconcile() {
-  nextCheck = 0; nextPrepare = 0; checks++;
+  nextCheck = 0; nextPrepare = 0;
   try {
     const result = await api('reconcile', {});
     context = result; clearPreview(); render(); schedulePreparation();
     status(result.complete ? '全部链上步骤核验通过；可导出恢复文件，并在本地主网界面重新核验。'
       : `本笔已核验；下一步：${names[result.stage]}。${nextPrepare ? '3 秒后自动准备预览' : '请点击准备按钮'}，仍需逐笔勾选并点击钱包确认。`);
   } catch (error) {
-    if (/^(Receipt not finalized|Transaction pending;)/.test(error.message || '') && $('auto-check').checked && checks < 20) {
+    if (/^(Receipt not finalized|Transaction pending;|Check already running)/.test(error.message || '') && $('auto-check').checked) {
       nextCheck = Date.now() + 3000;
-      status('交易已提交，正在等待链上确认；保留哈希，无需重发。');
+      status(/^Check already running/.test(error.message || '')
+        ? '后台正在核验上一笔，3 秒后继续读取结果；不会重复请求钱包。'
+        : '交易已提交，正在等待链上确认；保留哈希，无需重发。');
       return;
     }
     throw error;
@@ -210,10 +216,11 @@ $('send').addEventListener('click', () => run('请求钱包并核验', async () 
         q.transaction.from !== context.policy.account ||
         q.transaction.to !== (q.stage === 'approve' ? context.policy.asset : context.policy.vault) ||
         q.transaction.value !== '0x0' || q.transaction.chainId !== '0xc4') throw Error('预约不匹配，未请求钱包');
+    status('本笔已保存，正在核对钱包账户与网络；通过后请求 OKX 确认窗口。');
     await refresh(); await assertWallet(p, version);
     if (q.expiresAt <= Date.now()) throw Error('预览已过期，预约保留，请先在钱包核对取消');
     status('请打开 OKX 扩展，核对并确认本笔交易');
-    await walletSend(p, attempt); checks = 0; await reconcile();
+    await walletSend(p, attempt); await reconcile();
   });
   $('consent').checked = false;
 }));
@@ -221,7 +228,7 @@ $('attach').addEventListener('click', () => run('保存哈希', async () => {
   await api('hash', { id: context.unresolved, hash: $('hash').value.trim() }); status('哈希已保存，可继续核验');
 }));
 for (const id of ['reconcile', 'recheck']) $(id).addEventListener('click', () => {
-  checks = 0; nextCheck = 0; void run('重新核验链上记录', reconcile);
+  nextCheck = 0; void run('重新核验链上记录', reconcile);
 });
 $('cancel').addEventListener('click', () => run('核对取消', async () => {
   if (!$('cancel-consent').checked) throw Error('请先在钱包取消或拒绝旧请求');

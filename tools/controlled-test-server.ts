@@ -29,8 +29,10 @@ export async function createControlledTestServer(bench: ControlledWorkbench, por
     const reply = (status: number, value: unknown) => {
       res.writeHead(status, { ...headers, 'content-type': 'application/json' }); res.end(JSON.stringify(value));
     };
+    const navigation = req.method === 'GET' && req.url === '/' &&
+      req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document';
     if (req.headers.host !== `127.0.0.1:${port}` || req.headers.origin && req.headers.origin !== origin ||
-        req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(String(req.headers['sec-fetch-site'])))
+        !navigation && req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(String(req.headers['sec-fetch-site'])))
       return reply(403, { error: 'Foreign Host or origin blocked' });
     if (req.method === 'GET' && files.has(req.url)) {
       const { bytes, type } = files.get(req.url);
