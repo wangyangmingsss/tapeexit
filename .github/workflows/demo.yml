@@ -33,6 +33,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run build:demo -- --base=/tapeexit/
+      - name: Include Chinese competition pitch
+        run: |
+          mkdir -p dist-demo/pitch
+          cp docs/competition/player.html dist-demo/pitch/index.html
+          cp docs/competition/media/TapeExit-Competition-Pitch.mp4 docs/competition/media/TapeExit-Pitch.zh.srt docs/competition/media/poster.png dist-demo/pitch/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
