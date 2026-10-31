@@ -8,8 +8,11 @@ import { resolve } from 'node:path';
 const [evidencePath, demoPath, outputPath, ...extra] = process.argv.slice(2);
 if (!outputPath || extra.length) throw new Error(
   'Usage: render-competition-video.mjs published-evidence demo-video-directory output-directory');
-const { createCanvas, loadImage } = createRequire(import.meta.url)(
+const { createCanvas, loadImage, GlobalFonts } = createRequire(import.meta.url)(
   process.env.TAPEEXIT_CANVAS_MODULE ?? '@napi-rs/canvas');
+if (!GlobalFonts.registerFromPath(process.env.TAPEEXIT_VIDEO_FONT ??
+    '/System/Library/Fonts/STHeiti Medium.ttc', 'TapeExitCJK'))
+  throw new Error('A Chinese font must be available for legible captions');
 const output = resolve(outputPath), evidence = resolve(evidencePath), demo = resolve(demoPath);
 await mkdir(output, { recursive: true });
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
@@ -52,7 +55,7 @@ const scenes = [
     text: '目标用户是提前准备退出路径的 DeFi 用户和协议团队。基础工具开源免费，未来探索协议适配、故障演练和维护服务，目前没有宣称客户或收入。V3 与金库证明两类资产可以使用同一适配架构。其他平台逐个接入，生产签名继续关闭，独立安全审阅仍待完成。',
   },
 ];
-const font = '"PingFang SC", "Arial", sans-serif';
+const font = '"TapeExitCJK", "Arial", sans-serif';
 function wrap(ctx, text, x, y, width, lineHeight) {
   let line = '';
   for (const character of text) {
@@ -91,7 +94,8 @@ for (const [index, scene] of scenes.entries()) {
   else fit(ctx, await loadImage(`${evidence}/${scene.image}`), 40, 155, 1280, 720);
   ctx.font = `bold 34px ${font}`; ctx.fillStyle = '#29634d'; ctx.fillText('TapeExit', 45, 53);
   ctx.font = `bold 36px ${font}`; ctx.fillStyle = '#162b22'; ctx.fillText(scene.title, 245, 53);
-  ctx.font = `25px ${font}`; ctx.fillStyle = '#495d53'; ctx.fillText(scene.tag, 45, 112);
+  ctx.font = `25px ${font}`; ctx.fillStyle = '#495d53';
+  ctx.fillText(scene.tag + (scene.video ? ` · 录像源码 ${recording.sourceCommit.slice(0, 7)}` : ''), 45, 112);
   ctx.fillStyle = '#29634d'; ctx.fillRect(1364, 178, 4, 670);
   ctx.font = `bold 29px ${font}`; ctx.fillStyle = '#162b22';
   let y = 225;

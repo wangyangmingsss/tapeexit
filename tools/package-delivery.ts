@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { PRODUCT } from '../src/product';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
 import { loadPublication } from './publish-core';
+import { loadPublishedReleaseEvidence } from './published-release-evidence';
 
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const sourceCommit = git('rev-parse', 'HEAD');
@@ -17,6 +18,7 @@ const production = await readJson('dist/release-info.json');
 const simulation = await readJson('dist-demo/release-info.json');
 const recoveryManifest = await readFile('recovery/dist/release-manifest.json');
 const { version } = await readJson('package.json');
+const published = await loadPublishedReleaseEvidence();
 for (const identity of [manifest, production, simulation]) {
   if (identity.sourceCommit !== sourceCommit || identity.sourceDirty !== false ||
       identity.version !== version || identity.signingApproved !== false)
@@ -53,7 +55,13 @@ await writeFile(`${directory}/release-status.json`, JSON.stringify({
     demo: { sourceCommit, url: PRODUCT.demo, status: 'BUILT_AWAITING_PAGES_DEPLOYMENT' },
     recovery: { sourceCommit, status: 'PACKAGED', manifestSha256: sha256(recoveryManifest) },
     gateways: { candidateSourceCommit: sourceCommit, status: 'PREPARED_NOT_DEPLOYED',
-      recordedPublication: PRODUCT.publication },
+      recordedPublication: {
+        name: published.tapeName, container: published.container,
+        release: `${version}-${published.sourceCommit.slice(0, 7)}`,
+        sourceCommit: published.sourceCommit, manifestSha256: published.manifestSha256,
+        gateways: published.gateways.map(g => g.origin), evidence: published.directory,
+        observedAt: published.observedAt, scope: published.scope,
+      } },
   }, archives,
 }, null, 2) + '\n');
 await writeFile(`${directory}/SHA256SUMS`, archives.map(item => `${item.sha256}  ${item.file}`).join('\n') + '\n');

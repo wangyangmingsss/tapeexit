@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { loadPublication, digest } from './publish-core';
 import { RELEASE_APPROVED, SUPPORTED_TOKENS } from '../src/config';
 import { loadHistoricalEvidence } from './historical-evidence';
+import { loadPublishedReleaseEvidence } from './published-release-evidence';
 
 const output = 'release-artifacts/readiness.json';
 await mkdir('release-artifacts', { recursive: true });
@@ -25,14 +26,16 @@ const report = {
   status: 'NOT_MAINNET_APPROVED', signingApproved: RELEASE_APPROVED,
   approvedTokenCount: SUPPORTED_TOKENS.length, dependencyFindings: audit.metadata.vulnerabilities,
   historicalPublication: await loadHistoricalEvidence(manifest.sourceCommit),
+  publishedRelease: await loadPublishedReleaseEvidence(),
   requirements: [
     { id: 'asset-review', status: SUPPORTED_TOKENS.length ? 'REQUIRES_REVIEW_EVIDENCE' : 'NO_APPROVED_ASSETS' },
     { id: 'independent-security-review', status: 'HUMAN_VERIFICATION_REQUIRED' },
-    { id: 'tapeout-publication-and-readback', status: 'HISTORICAL_RELEASE_CHECKED_CURRENT_CANDIDATE_NOT_PUBLISHED' },
-    { id: 'target-wallet-on-real-origin', status: 'PERMISSIONED_EXTERNAL_ACCEPTANCE_REQUIRED' },
-    { id: 'public-gateway-fault-rehearsal', status: 'HISTORICAL_READ_ONLY_REHEARSAL_CHECKED_WALLET_TASK_REQUIRED' },
+    { id: 'tapeout-publication-and-readback', status: 'PUBLISHED_F8771A8_CHECKED_LATER_BUILDS_SEPARATE' },
+    { id: 'restricted-spark-wallet-test', status: 'FOUR_MAINNET_TRANSACTIONS_FINALIZED' },
+    { id: 'target-wallet-on-real-origin', status: 'POST_REVIEW_PRODUCTION_ACCEPTANCE_NOT_COMPLETED' },
+    { id: 'public-gateway-fault-rehearsal', status: 'FOUR_VAULT_RECOVERY_VIEWS_CHECKED_64_FILES' },
     { id: 'user-validation', status: 'CONSENTED_PARTICIPANTS_REQUIRED' },
-    { id: 'competition-submission', status: 'RULES_TEAM_INFORMATION_AND_RECEIPT_REQUIRED' },
+    { id: 'competition-submission', status: 'RULES_OBSERVED_TEAM_INFORMATION_AND_RECEIPT_REQUIRED' },
   ],
   scope: 'Development status only. Does not trust a self-asserted checklist as independent acceptance. ' +
     'Never changes the signing gate or asset allowlist. Generated tools, fixtures and demo video do not waive external requirements.',

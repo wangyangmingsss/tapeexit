@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { digest, loadPublication } from './publish-core';
 import { loadHistoricalEvidence } from './historical-evidence';
+import { loadPublishedReleaseEvidence } from './published-release-evidence';
 
 const root = 'release-artifacts/competition';
 await rm('release-artifacts/TapeExit-Competition-Draft.tar.gz', { force: true });
@@ -18,6 +19,9 @@ await cp('docs/REAL-ACCEPTANCE.md', `${root}/docs/REAL-ACCEPTANCE.md`);
 await cp('docs/CONTROLLED-RECOVERY.md', `${root}/docs/CONTROLLED-RECOVERY.md`);
 await cp('docs/ASSET-REVIEW-66666.md', `${root}/docs/ASSET-REVIEW-66666.md`);
 const historical = await loadHistoricalEvidence(sourceCommit);
+const published = await loadPublishedReleaseEvidence();
+await cp(published.directory, `${root}/published-evidence`, { recursive: true });
+await writeFile(`${root}/published-release.json`, JSON.stringify(published, null, 2) + '\n');
 await cp('evidence/historical', `${root}/historical-evidence`, { recursive: true });
 await writeFile(`${root}/historical-publication.json`, JSON.stringify(historical, null, 2) + '\n');
 await cp('dist/release-manifest.json', `${root}/release-manifest.json`);
@@ -51,11 +55,14 @@ if (recording.sourceCommit !== sourceCommit || recording.environment !== 'ISOLAT
 await writeFile(`${root}/submission-fields.json`, JSON.stringify({
   schemaVersion: 1, status: 'DRAFT_NOT_SUBMITTED', sourceCommit,
   manifestSha256: publication.manifestSha256, repository: 'https://github.com/wangyangmingsss/tapeexit',
-  teamName: null, teamMembers: [], contact: null, officialRulesVerifiedAt: null, submissionForm: null,
-  actualTapeOutEntry: `tape://${historical.tapeName}/`, actualContainer: historical.container,
-  publishedSourceCommit: historical.sourceCommit, publishedManifestSha256: historical.manifestSha256,
-  candidateMatchesPublishedSource: historical.candidateMatchesPublishedSource,
-  publicGateways: historical.gateways.map((gateway: { origin: string }) => gateway.origin),
+  entryFields: JSON.parse(await readFile('docs/competition/submission-fields.json', 'utf8')),
+  teamName: null, teamMembers: [], contact: null, officialRulesVerifiedOn: '2026-10-31',
+  submissionForm: 'https://forms.gle/EoDNbxQ65dev1wFd9',
+  actualTapeOutEntry: `tape://${published.tapeName}/`, actualContainer: published.container,
+  publishedSourceCommit: published.sourceCommit, publishedManifestSha256: published.manifestSha256,
+  candidateMatchesPublishedSource: sourceCommit === published.sourceCommit,
+  publicGateways: published.gateways.map(gateway => gateway.origin),
+  restrictedVaultTest: published.restrictedWalletTest,
   mainnetTransaction: null, mainnetExitTransaction: null,
   historicalPublicationEvidence: 'historical-publication.json',
   videoEnvironment: 'ISOLATION_DEMO', userEvidence: 'NOT_COLLECTED', submissionReceipt: null,
@@ -65,7 +72,8 @@ await writeFile(`${root}/README.txt`, [
   `Source: ${sourceCommit}`,
   `Manifest SHA-256: ${publication.manifestSha256}`,
   'Video is a labelled local simulation; it is not a live TapeOut or mainnet recording.',
-  'A prior read-only release was published; historical-publication.json preserves its separate source and dates.',
+  'published-release.json records the latest uploaded Spark release and its separate source and dates.',
+  'published-evidence/ contains the four finalized restricted-wallet transactions and public recovery evidence.',
   'The current source candidate is not automatically deployed or approved by historical observations.',
   'Fill submission-fields.json only with actual verified information.',
   'No users, independent review, protocol endorsement or competition submission are implied.',
