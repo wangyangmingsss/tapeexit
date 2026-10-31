@@ -57,6 +57,18 @@ npm run package:delivery
 发行压缩包内的 `PREPARED_NOT_DEPLOYED` 表示打包时的状态；后续发布状态以本次验收记录与交付目录的 `deployment-receipt.json` 为准。
 旧版 `0.3.0-2597f66` 与 `0.2.0-0d9ff56` 的证据继续保留，不作为新版验收结果。
 
+### 对应恢复包
+
+[固定版本 Release：v0.3.0-f8771a8](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.3.0-f8771a8)
+提供原始 `TapeExit-0.3.0-f8771a8-recovery.zip`，与上述链上应用使用相同的发行清单。
+原压缩包未重新构建或改写，SHA-256 为
+`69dcdfefdf591c956dafde061dcef167c91c3b09657c64975fc0c3f1891c1c2b`。
+本次核对压缩包摘要、解压后逐文件校验，并对比固定清单和源码中的启动、校验工具。
+
+旧 `v0.3.0-readonly` Release 的附件仍对应 `2597f66`，作为历史记录保留。
+首页下载指向上述固定版本；[中英文快速开始](RECOVERY-QUICKSTART.md)说明校验、启动与只读恢复方式。
+文档与下载入口更新不要求钱包交互，也不会改变 TapeOut 中的应用文件。
+
 ## 新版链上更新
 
 使用已独立保存的旧清单与文件生成迁移方案：

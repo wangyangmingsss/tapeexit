@@ -1,121 +1,108 @@
-<p>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/tapeexit-wordmark-dark.png" />
-    <img src="docs/brand/tapeexit-wordmark.png" alt="TapeExit" width="320" />
-  </picture>
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/tapeexit-wordmark-dark.png" />
+  <img src="docs/brand/tapeexit-wordmark.png" alt="TapeExit" width="320" />
+</picture>
+
+[中文](README.md) | [English](README.en.md)
 
 # TapeExit
 
 **原平台打不开时，给你的链上资产留一条退出路径。**
 
-TapeExit 基于 **TapeOut 协议**构建，目标是成为 **X Layer 的 DeFi 资产应急出口**，逐步覆盖流动性池、质押、收益金库和借贷平台。
+TapeExit 是基于 **TapeOut 协议**构建的 **X Layer DeFi 资产应急出口**：通过链上应用、备用网关和本地恢复包，继续查看仓位、预演退出、核对到账。资产始终由原钱包和原协议管理。
 
-**当前源码已有两类适配：Uniswap V3 流动性仓位，以及 Spark Savings USDC 金库。** 前者读取仓位 NFT，后者读取 spUSDC 份额；两者各自预览退出、核对到账并保留恢复路径。
+[**体验 Demo · 无需钱包**](https://wangyangmingsss.github.io/tapeexit/) · [**观看视频 · 普通话男声 · 2:22**](https://wangyangmingsss.github.io/tapeexit/pitch/?v=male-41851e6e) · [主网只读入口](https://2-2-289.netlify.app/) · [备用入口](https://2-2-289.vercel.app/)
 
-**两个公网 TapeOut 入口已更新为 `0.3.0-f8771a8`，同时包含 V3 与 Spark USDC 金库。** 金库 1 USDC 受限真实测试、全部赎回及跨网关恢复已完成；证据绑定具体版本。
+[**下载恢复包 · 0.3.0-f8771a8**](https://github.com/wangyangmingsss/tapeexit/releases/download/v0.3.0-f8771a8/TapeExit-0.3.0-f8771a8-recovery.zip) · [校验与启动](docs/RECOVERY-QUICKSTART.md) · [发行记录](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.3.0-f8771a8)
 
-**TapeOut 保留链上应用入口，TapeExit 提供退出与恢复流程。** 应用文件发布在 X Layer 的 TapeOut 容器中，资产继续由原有钱包和协议合约管理，TapeExit 不接管资金。
+> **当前公开版只读，生产签名关闭，独立安全审阅尚未完成。** Demo 使用模拟资产；已完成的真实交易来自单独的受限测试工具。各版本与证据范围见[当前状态](docs/CURRENT-STATUS.md)。
 
-[**在线演示 · 无需钱包**](https://wangyangmingsss.github.io/tapeexit/) · [主网只读入口](https://2-2-289.netlify.app/) · [备用入口](https://2-2-289.vercel.app/) · [下载新版恢复包](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.3.0-readonly) · [详细文档](#文档导航)
+## 为什么需要它
 
-[**中文演示视频 · 普通话男声 · 2 分 22 秒**](https://wangyangmingsss.github.io/tapeexit/pitch/?v=male-41851e6e) · [参赛简介与材料](docs/competition/SUBMISSION-CHECKLIST.md)
+原网站停止服务，不一定意味着链上仓位消失。但用户可能失去熟悉的操作页面，难以判断资产是否到账、能否退出，以及如何避免重复发送交易。
 
-首次体验可先打开在线演示：资产总览 → 打开模拟仓位 `28491` → 读取 → 选择比例 → 预演并确认模拟退出。“恢复入口”展示 TapeOut 版本和备用路径；“故障演练”展示异常处理。演示使用测试资产，不发送真实交易。
+TapeExit 把这些步骤放进可另行获取的应用中：**读取仓位 → 预演退出 → 核对交易 → 保存恢复记录**。原入口失效后，可以换网关或运行提前下载的恢复包，再从链上重新核验结果。
 
-> **当前公开版本为只读版，生产交易签名关闭。** 可以查看仓位、核对已有交易和使用恢复入口。演示使用模拟数据；真实交易在单独的受限工具中完成。最新结果与剩余边界见[当前状态](docs/CURRENT-STATUS.md)，独立安全审阅尚未完成。
+## TapeOut 在其中的作用
 
-## 它解决什么问题
-
-资产存入 DeFi 协议后，如果原来的交易网站打不开，仓位和资产可能仍然在链上，但你失去了熟悉的操作页面。
-
-TapeExit 为这种情况准备了三个入口：
-
-| 入口 | 使用方式 |
-| --- | --- |
-| 在线入口 | 通过 TapeOut 网关访问链上发布的应用 |
-| 备用入口 | 主入口不可用时，换一个网关读取同一容器 |
-| 本地恢复包 | 提前下载，在自己的电脑上运行 |
-
-本地恢复包仍然需要联网读取区块链，不是离线转账工具。
-
-## 为什么结合 TapeOut
-
-应急工具本身也需要一个能找回的入口。TapeExit 使用 TapeOut，把应用文件放进链上容器，让多个网关能够读取同一份已发布内容；本地恢复包则提供另一种运行方式。
-
-| 组成 | 负责什么 |
-| --- | --- |
-| **TapeOut** | 承载应用文件，提供链上名称、容器与网关读取机制 |
-| **TapeExit** | 读取资产、适配退出规则、展示预览并核对交易结果 |
-| **用户钱包与原协议合约** | 由用户确认交易，按协议规则处理资产 |
-
-各部分的关系：
+**TapeOut 保存应用入口，TapeExit 适配退出与恢复流程。**
 
 ```mermaid
-flowchart TD
-  T["TapeOut 链上容器"] --> G["在线 / 备用网关"]
+flowchart LR
+  T["TapeOut 链上应用文件"] --> G["主网关 / 备用网关"]
   G --> A["TapeExit"]
-  A --> R["公共 RPC：读取仓位与核验结果"]
-  A --> W["可签名版本：用户钱包确认"]
-  W --> P["原 DeFi 协议合约"]
+  L["本地恢复包"] --> A
+  A --> R["RPC：读取仓位、预演、核验结果"]
 ```
 
-TapeOut 保存的是应用文件。它不托管用户资金，也不替原 DeFi 协议执行赎回。未来接入的协议模块，也会随 TapeExit 的具体版本构建、校验和发布，而不是临时加载未核验的第三方代码。
+应用已发布至 `2.2.289.tape`。两个公网网关读取同一容器、同一发行清单；本地恢复包包含相同应用文件。后续协议模块也随应用版本构建、校验和发布。
 
-**已有真实集成：** `0.3.0-f8771a8` 已发布至 `2.2.289.tape`，16 个文件逐字节回读通过。两个公网网关的桌面、手机访问，以及阻断主入口后的真实金库交易恢复检查均通过。发布身份、文件摘要和记录见[链上发行证据](docs/evidence/published-f8771a8/README.md)。
+TapeOut 不托管资金、不执行赎回。链上发布也不保证永久可用：访问仍依赖容器状态、可用入口、RPC 和区块链；本地恢复包需要联网。详见[集成与发布证据](docs/evidence/published-f8771a8/README.md)。
 
-容器内容可以更新，所以每次发行需要保留对应版本的文件摘要并重新核对。访问仍依赖可用的网关或本地入口、容器状态、RPC 和链；链上发布不等于永久可用。
+## 已支持的两类协议
 
-## 可以做什么
+| 协议 | 读取什么 | 当前可用能力 |
+| --- | --- | --- |
+| **Uniswap V3** | 钱包直接持有的仓位 NFT、币对、流动性 | 部分 / 全部退出及仅领取预览；已有交易的到账、剩余流动性与恢复核验 |
+| **Spark Savings USDC** | 公开地址持有的 spUSDC 份额、折算资产、赎回上限 | 按比例赎回预览；已有直接赎回交易的 USDC 到账、份额销毁与最终确认核验 |
 
-- **查看仓位**：读取币对、流动性和钱包所有权。
-- **资产总览**：按页展示已接入的 V3 仓位、币对及状态；保留手动输入编号。读取失败不会当作余额为零。
-- **预览退出**：计算部分退出、全部退出或仅领取的结果，展示待核对的交易内容。
-- **核对到账**：根据交易哈希，检查链上交易、领取记录和剩余流动性。
-- **恢复查询**：导出公开的交易恢复文件，在其他入口导入后重新核验；新版源码支持刷新后恢复查询信息。
-- **USDC 金库**：按公开地址读取 Spark spUSDC 份额、资产折算与赎回上限，预演按比例赎回，并核验已有直接赎回交易的 USDC 到账和份额销毁。见[金库说明](docs/SPARK-USDC-VAULT.md)。
+退出计划只调用对应的原协议合约，收款人为用户本人；不新增托管、不转移 V3 NFT、不兑换代币。V3 NFT 已存入农场或其他托管合约的情况尚不支持。
 
-V3 退出计划只调用原仓位管理合约；金库计划只调用指定 Spark 金库。接收地址固定为用户本人。应用不申请新授权、不托管资产、不转移仓位 NFT，也不进行代币兑换。
+**V3 半额退出预览，使用模拟资产：**
 
-**适用范围：** X Layer 主网的自持 Uniswap V3 仓位，以及指定 Spark USDC 金库的自持份额。V3 NFT 已存入农场或其他托管合约的情况仍不在范围内。金库模块保持只读，不提供主网交易签名。
+![V3 模拟仓位与 50% 退出预览](docs/screenshots/v3-demo.png)
+
+**真实金库赎回后的只读核验，来自备用网关验收：**
+
+![备用网关核验最终赎回到账 0.500002 USDC、剩余份额为零](docs/evidence/published-f8771a8/vercel-desktop.png)
+
+截图来源与版本见[截图说明](docs/screenshots/README.md)。模拟预览与真实到账记录分别展示。
+
+## 三分钟体验
+
+打开 [Demo](https://wangyangmingsss.github.io/tapeexit/)，不需要安装钱包或准备资金。
+
+| 场景 | 操作 | 你会看到 |
+| --- | --- | --- |
+| **V3 仓位** | “退出仓位” → 使用预填编号 `28491` → “读取仓位” → `50%` → “预演退出” → “核对交易” | 币对、预估领取、目标合约与收款人；确认模拟操作后可查看结果 |
+| **USDC 金库** | “USDC 金库” → 保留预填模拟地址 → “读取金库份额” → `50%` → “预演金库赎回” | 50 spUSDC 的模拟持仓；销毁 25 spUSDC，预计到账 25.5 USDC；不会出现真实钱包签名 |
+| **故障处理** | 回到“退出仓位”，在“故障演练”中选择 RPC 分歧或来源中断，再次读取 | 异常时停止流程，不把读取失败显示成零余额 |
+
+手机上先打开菜单。Demo 只用于体验；其中的余额、币对和故障均为模拟。
+
+真实查询请使用[主网入口](https://2-2-289.netlify.app/)或[备用入口](https://2-2-289.vercel.app/)：V3 按页面提示连接钱包、输入自持仓位编号；金库输入持有人公开地址即可查询。
+已有金库赎回可导入[公开恢复示例](docs/evidence/published-f8771a8/recovery-task.json)，再点击“核验金库赎回”。导入只提供线索，结果必须重新查链，不会重发交易。
+
+## 已完成的实际验证
+
+| 项目 | 结果与证据 |
+| --- | --- |
+| **TapeOut 发布** | `0.3.0-f8771a8`；34 笔上传完成；16 文件、647,523 字节逐字节回读通过 |
+| **双网关恢复** | 桌面 / 手机视口共四个新会话、64 次文件检查；阻断主入口后，从备用入口导入、刷新并重新核验金库交易 |
+| **V3 小额退出** | USDt0 / USDC 仓位完成过一次受限退出，核对到账和剩余流动性 |
+| **金库真实测试** | 1 USDC 存入后分两次赎回，合计到账 **1.000002 USDC**，份额归零；四笔交易最终确认 |
+
+[发行与金库证据](docs/evidence/published-f8771a8/README.md) · [公网恢复验收](docs/public-gateway-acceptance.md) · [V3 退出记录](docs/CONTROLLED-TEST-67042.md) · [自动检查](https://github.com/wangyangmingsss/tapeexit/actions/workflows/ci.yml)
+
+这些记录对应具体版本和观察时间，不替代独立审阅，也不保证未来在线。源码与 Demo 持续更新；**链上应用和上述恢复包固定为 `f8771a8`**。版本对应关系见[版本与交付](docs/RELEASE-CHANNELS.md)。
 
 ## 未来方向
 
-V3 是起点。我们希望用户以后只需要：**连接钱包 → 查看已接入协议的资产 → 按协议规则退出 → 核对到账**。
+目标是让同一套恢复流程逐步服务更多 X Layer 协议。
 
-| 模块 | 当前进度 | 后续目标 |
-| --- | --- | --- |
-| Uniswap V3 | 已有实现；公开版只读 | 沿用现有仓位、退出预览与恢复能力 |
-| TapeOut 链上入口 | 已完成一次实际发布与双网关检查 | 后续协议模块随应用版本发布并重新核验 |
-| 多协议适配接口 | V3 与 Spark 金库均已实现 | 复用固定区块读取与退出模拟边界，保留各协议的核验规则 |
-| V2 类流动性池 | 规划中 | 按 LP 份额移除流动性 |
-| 质押与收益农场 | 规划中 | 解除质押、提取本金、领取奖励 |
-| Spark Savings USDC 金库 | 已发布至 TapeOut；读取、预览、受限真实赎回与恢复已验证 | 生产签名单独评估 |
-| 借贷平台 | 规划中 | 核对存款与债务，按协议条件提取资产 |
-| 需要等待的赎回产品 | 规划中 | 申请退出、跟踪等待进度、到期领取 |
+| 模块 | 当前状态 |
+| --- | --- |
+| Uniswap V3、Spark USDC 金库 | 两类适配已实现、已发布；公开版只读 |
+| V2 LP | 规划：按 LP 份额移除流动性 |
+| 质押与收益农场 | 规划：解除质押、提取本金、领取奖励 |
+| 借贷平台 | 规划：核对债务与提取条件后退出 |
+| 需要等待的赎回产品 | 规划：申请退出、跟踪等待、到期领取 |
 
-每个平台需要单独核对合约和退出规则，逐个接入。**上表中的规划项尚未支持，也不表示已覆盖 X Layer 全部平台。** 应急入口不能绕过协议锁定期、暂停或偿付条件。
+每个平台需要单独适配、验证并发布，尚未覆盖 X Layer 全部协议；应急工具不能绕过锁定期、暂停或协议损失。开发入口：[ProtocolAdapter](src/core/protocol-adapter.ts) · [两类实现与扩展说明](docs/PROTOCOL-ADAPTERS.md)。
 
-开发者可从 [ProtocolAdapter 接口](src/core/protocol-adapter.ts)和[扩展说明](docs/PROTOCOL-ADAPTERS.md)了解两个实际实现。当前按明确登记的协议接入，尚无自动发现全部协议或加载第三方插件的功能。
+## 本地运行
 
-## 先体验，再看代码
-
-### 在线演示
-
-打开 [Demo 网站](https://wangyangmingsss.github.io/tapeexit/)，无需安装或连接钱包，即可体验仓位读取、退出预览、模拟确认与故障演练。
-新版 Demo 增加“USDC 金库”：读取模拟份额 → 选择比例 → 预演赎回。模拟份额不是你的主网余额。
-
-### 在线查看
-
-1. 打开[在线入口](https://2-2-289.netlify.app/)。
-2. 按页面提示选择钱包，输入自己的仓位编号（Token ID）。
-3. 查看仓位信息；已有交易可以通过恢复入口核验。
-
-在线与备用入口已更新为 `0.3.0-f8771a8`。Demo 属于 `0.3.0` 系列，随源码更新；源码、Demo 和已发布应用各自保留完整提交标识，见[版本与交付](docs/RELEASE-CHANNELS.md)。旧 Release 附件标有旧版号，不能当作新版应用文件。
-
-### 本地演示
-
-需要 **Node.js 22.12 或更新版本**，以及 Git。
+需要 Node.js **22.12 或更新版本**和 Git。
 
 ```sh
 git clone https://github.com/wangyangmingsss/tapeexit.git
@@ -124,80 +111,41 @@ npm ci
 npm run dev:demo
 ```
 
-打开 **http://127.0.0.1:4174**。演示不连接钱包、不发送真实交易，可以先熟悉仓位、退出预览和恢复流程。
+打开 `http://127.0.0.1:4174`。主网只读界面使用 `npm run dev`，访问终端显示的地址。无需开发环境的用户可以[下载固定版本恢复包](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.3.0-f8771a8)，按[校验与启动说明](docs/RECOVERY-QUICKSTART.md)运行。
 
-### 本地主网只读界面
-
-在项目目录运行：
-
-```sh
-npm run dev
-```
-
-打开终端显示的本地地址，查询自己直接持有的真实仓位。生产签名仍保持关闭。
-
-## 已有的实际验证
-
-| 项目 | 已有记录 |
-| --- | --- |
-| 链上发布 | `0.3.0-f8771a8` 的 34 笔更新交易全部确认；16 个文件、647523 字节回读通过，容器已激活 |
-| 双网关访问 | 四个桌面、移动视图共 64 次文件检查通过；主入口阻断后，备用入口的金库交易恢复通过 |
-| 小额真实退出 | USDt0 / USDC 仓位完成过一次受限退出，到账与剩余流动性已核对 |
-| 金库真实测试 | 1 USDC 存入后分两次赎回，合计到账 1.000002 USDC、份额归零；四笔交易最终确认，恢复文件导入和刷新重查通过 |
-| 自动化测试 | 包含核心计算、交易核验、恢复流程及 Chromium / Firefox / WebKit 浏览器测试 |
-
-实际记录见[发行证据](docs/evidence/published-f8771a8/README.md)、[公网网关验收](docs/public-gateway-acceptance.md)和[小额退出测试](docs/CONTROLLED-TEST-67042.md)。不同版本的测试结果分别记录，受限钱包测试不替代独立安全审阅。
-
-## 开发与检查
-
-常用命令：
+<details>
+<summary>开发检查命令与代码结构</summary>
 
 ```sh
-npm run typecheck       # 检查类型
-npm test               # 运行单元与集成测试
-npm run build          # 构建应用和本地恢复包
-npm run check:release  # 检查构建产物
-```
-
-运行浏览器测试前，先安装浏览器并完成构建：
-
-```sh
-npx playwright install chromium firefox webkit
+npm run typecheck
+npm test
 npm run build
-npm run build:demo
-npm run test:e2e
+npm run check:release
 ```
 
-部分测试需要本地 EVM；浏览器测试需要系统允许启动浏览器。环境受限时，查看对应提交的 [GitHub Actions](https://github.com/wangyangmingsss/tapeexit/actions) 结果。
+浏览器检查先执行 `npx playwright install chromium firefox webkit`、`npm run build:demo`，再运行 `npm run test:e2e`。部分测试需要本地 EVM，系统须允许启动测试浏览器。构建产物为 `dist/` 和 `recovery/`。
 
-构建后，`dist/` 是静态应用，`recovery/` 是本地恢复包。恢复包的摘要校验、启动和发布步骤见[发行操作手册](docs/OPERATIONS.md)。
+| 目录 | 内容 |
+| --- | --- |
+| `src/`、`src/core/` | 界面、协议读取、钱包连接、交易与恢复核验 |
+| `src/demo/` | 隔离模拟 |
+| `tools/`、`tests/` | 构建发布工具与自动化检查 |
+| `docs/` | 操作说明、设计与证据 |
+
+</details>
 
 ## 文档导航
 
-| 想了解什么 | 从这里开始 |
+| 想了解什么 | 文档 |
 | --- | --- |
-| 项目思路与参赛介绍 | [项目说明](docs/competition/PROJECT.md) |
-| 已实现内容、版本与实际证据状态 | [当前状态](docs/CURRENT-STATUS.md) |
-| 多协议扩展接口与后续方向 | [协议适配说明](docs/PROTOCOL-ADAPTERS.md) |
-| TapeOut 实际集成与发布身份 | [链上发行证据](docs/evidence/published-f8771a8/README.md) |
-| 退出后如何核对、刷新和恢复查询 | [交易恢复流程](docs/EXIT-RECOVERY-WORKFLOW.md) |
-| 网关、本地恢复包和开发工具 | [发行操作手册](docs/OPERATIONS.md) |
-| Demo、恢复包与链上版如何对应 | [版本与交付](docs/RELEASE-CHANNELS.md) |
-| 如何发布到 TapeOut | [链上发布手册](docs/PUBLISHING.md) |
-| 风险、信任边界与依赖 | [威胁模型](docs/THREAT-MODEL.md) · [依赖审查](docs/DEPENDENCY-REVIEW.md) |
-| 独立安全审阅需要哪些资料 | [审阅交接](docs/SECURITY-REVIEW-PACKET.md) |
-
-## 代码结构
-
-```text
-src/              应用界面与核心逻辑
-src/core/         链上读取、钱包连接、交易核验与恢复
-src/demo/         独立的模拟演示
-tools/            构建、发布、网关和验证工具
-tests/            单元、集成与浏览器测试
-docs/             操作手册、设计说明与证据
-```
+| 参赛介绍、视频和准备材料 | [项目介绍](docs/competition/PROJECT.md) · [参赛清单](docs/competition/SUBMISSION-CHECKLIST.md) |
+| 当前状态与真实验证范围 | [当前状态](docs/CURRENT-STATUS.md) |
+| 恢复包下载、摘要校验与启动 | [恢复包快速开始](docs/RECOVERY-QUICKSTART.md) |
+| 交易后如何保存、导入与重新核验 | [恢复流程](docs/EXIT-RECOVERY-WORKFLOW.md) |
+| 两类协议与未来接入 | [协议适配](docs/PROTOCOL-ADAPTERS.md) |
+| 版本、网关与链上发布 | [版本与交付](docs/RELEASE-CHANNELS.md) · [发行手册](docs/OPERATIONS.md) · [TapeOut 发布](docs/PUBLISHING.md) |
+| 风险与安全审阅资料 | [威胁模型](docs/THREAT-MODEL.md) · [依赖审查](docs/DEPENDENCY-REVIEW.md) · [审阅交接](docs/SECURITY-REVIEW-PACKET.md) |
 
 ## 许可证
 
-[MIT](LICENSE)。补充许可文本见 [docs/licenses/](docs/licenses/)，构建产物另附第三方许可清单。
+[MIT](LICENSE)。补充许可见 [docs/licenses/](docs/licenses/)，构建产物附第三方许可清单。
