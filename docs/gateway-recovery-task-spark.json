@@ -1,0 +1,14 @@
+{
+  "protocolId": "spark-spusdc",
+  "recovery": {
+    "schemaVersion": 1,
+    "protocolId": "spark-spusdc",
+    "chainId": 196,
+    "vault": "0xf90E63079D97a0A1f479b2b168457F420CAFf6ba",
+    "account": "0x101FD328a0B2Fd9E853909651dAB1c0B55947C03",
+    "hash": "0xaac3b6f96483f1863a865a2607bce70bdd1caddf1bacd9e630e71ff98f19d1ef"
+  },
+  "assets": "500002",
+  "shares": "498084",
+  "remainingShares": "0"
+}

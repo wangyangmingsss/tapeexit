@@ -7,12 +7,17 @@ on:
         type: choice
         options: [published, candidate, historical]
         default: published
+      protocol:
+        description: 'Existing mainnet transaction to recover without connecting a wallet'
+        type: choice
+        options: [spark, v3]
+        default: spark
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,7 +27,9 @@ jobs:
       - run: npm ci
       - run: npm run build:gateway
       - run: npx playwright install --with-deps chromium
-      - if: inputs.release == 'published'
+      - if: inputs.release == 'published' && inputs.protocol == 'spark'
+        run: npx tsx tools/verify-live-gateway.ts docs/published-gateway-profile.json docs/gateway-recovery-task-spark.json
+      - if: inputs.release == 'published' && inputs.protocol == 'v3'
         run: npx tsx tools/verify-live-gateway.ts docs/published-gateway-profile.json docs/gateway-recovery-task-67042.json
       - if: inputs.release == 'candidate'
         run: |
