@@ -13,7 +13,7 @@
 | 真实金库 | 四笔受限交易最终确认；存入 1 USDC，返回 1.000002 USDC，剩余份额 0 |
 | 官方规则 | 2026-10-31 核对实际活动页与报名表；见 [OFFICIAL-RULES.md](OFFICIAL-RULES.md) |
 | Logo | [logo-24.png](logo-24.png)，24 × 24 像素；沿用项目现有标识 |
-| 视频 | 三分钟以内，中文合成旁白；模拟与真实证据分别标记，详情见最终 `video.json` |
+| 视频 | 2 分 22 秒，普通话男声合成旁白；模拟与真实证据分别标记，详情见最终 `video.json` |
 | 报名字段 | [submission-fields.json](submission-fields.json)，缺失个人信息保持空 |
 | 独立审阅 | 尚未完成；生产签名关闭 |
 | 报名回执 | 空，实际提交后才能填写 |

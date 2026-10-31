@@ -19,7 +19,7 @@ TapeExit 基于 **TapeOut 协议**构建，目标是成为 **X Layer 的 DeFi �
 
 [**在线演示 · 无需钱包**](https://wangyangmingsss.github.io/tapeexit/) · [主网只读入口](https://2-2-289.netlify.app/) · [备用入口](https://2-2-289.vercel.app/) · [下载新版恢复包](https://github.com/wangyangmingsss/tapeexit/releases/tag/v0.3.0-readonly) · [详细文档](#文档导航)
 
-[**中文演示视频 · 普通话配音 · 2 分 14 秒**](https://wangyangmingsss.github.io/tapeexit/pitch/) · [参赛简介与材料](docs/competition/SUBMISSION-CHECKLIST.md)
+[**中文演示视频 · 普通话男声 · 2 分 22 秒**](https://wangyangmingsss.github.io/tapeexit/pitch/?v=male-41851e6e) · [参赛简介与材料](docs/competition/SUBMISSION-CHECKLIST.md)
 
 首次体验可先打开在线演示：资产总览 → 打开模拟仓位 `28491` → 读取 → 选择比例 → 预演并确认模拟退出。“恢复入口”展示 TapeOut 版本和备用路径；“故障演练”展示异常处理。演示使用测试资产，不发送真实交易。
 

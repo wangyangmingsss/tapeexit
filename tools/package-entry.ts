@@ -46,7 +46,8 @@ await cp('release-artifacts/readiness.json', `${root}/readiness.json`);
 const readiness = JSON.parse(await readFile(`${root}/readiness.json`, 'utf8'));
 if (readiness.sourceCommit !== sourceCommit || readiness.manifestSha256 !== publication.manifestSha256)
   throw new Error('Readiness report is stale');
-await writeFile(`${root}/TapeExit-Source.tar.gz`, execFileSync('git', ['archive', '--format=tar.gz', sourceCommit]));
+execFileSync('git', ['archive', '--format=tar.gz',
+  '--output', resolve(`${root}/TapeExit-Source.tar.gz`), sourceCommit]);
 await cp('release-artifacts/demo-video', `${root}/demo-video`, { recursive: true });
 const recording = JSON.parse(await readFile(`${root}/demo-video/recording.json`, 'utf8'));
 if (recording.sourceCommit !== sourceCommit || recording.environment !== 'ISOLATION_DEMO' ||
